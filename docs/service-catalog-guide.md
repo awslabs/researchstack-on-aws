@@ -2,6 +2,25 @@
 
 This guide walks through deploying the ARC Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates.
 
+## Architecture
+
+<!-- TODO: Add Service Catalog architecture diagram (draw.io) -->
+<!-- Diagram should show:
+  - Hub Account (center):
+    - CDK deploys: Assets S3 Bucket, SC Portfolio, Products (linked to CFN templates)
+    - Per-product Launch Roles created locally in hub
+  - StackSets (arrows from hub to spoke accounts):
+    - Launch Role StackSets push per-product IAM roles into spoke accounts
+  - Spoke Accounts (in target OUs):
+    - Receive portfolio share via OU sharing
+    - Launch roles exist locally (created by StackSets)
+    - Users provision products → CloudFormation creates resources with tags
+  - AWS Organizations context:
+    - Management Account delegates SC + StackSets admin to Hub Account
+    - OUs contain spoke accounts
+  - Flow: CDK deploy → Assets Bucket + Portfolio + StackSets → OU Share → Spoke users see portfolio → Provision product → Launch role scopes permissions → CFN creates tagged resources
+-->
+
 ## Why CDK?
 
 Service Catalog deployment uses CDK (not raw CloudFormation or boto3) because:

@@ -2,6 +2,26 @@
 
 A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The ARC Toolkit provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
 
+## Why ARC?
+
+Research institutions have three personas that all need something different from AWS:
+
+- **Researchers** want to jump into their work at whatever phase of the research lifecycle they're in — not learn networking, security groups, and IAM. ARC gives them pre-built templates that handle the infrastructure so they can focus on research.
+- **IT admins** want researchers to self-serve compute and storage, but using best practices and in a standardized way so that troubleshooting is repeatable. ARC templates enforce security defaults, consistent architecture, and known-good configurations across the institution.
+- **FinOps teams** need cost visibility across grants and an easy path to chargeback. Every ARC-deployed resource is automatically tagged with project, cost center, and owner — ready for Cost and Usage Reports without manual tagging.
+
+## Architecture
+
+<!-- TODO: Add high-level architecture diagram (draw.io) -->
+<!-- Diagram should show:
+  - Two deployment paths side by side:
+    1. Standalone: User → CloudFormation → AWS Resources (with tags)
+    2. Service Catalog: Hub Account → SC Portfolio → OU Sharing → Spoke Accounts → AWS Resources (with tags)
+  - Template categories feeding into both paths (compute, storage, ml, networking)
+  - Cost tracking flow: Tags → Cost and Usage Reports → Grant Chargeback
+  - Future: Quick Suite AI layer sitting above both paths
+-->
+
 ## Overview
 
 The ARC Toolkit helps research institutions:
@@ -158,10 +178,11 @@ All templates include required tags for cost allocation:
 - **ManagedBy**: Always "ARC-Toolkit"
 - **Environment**: Always "Research"
 
-Use these tags in AWS Cost Explorer for chargeback reporting.
+Use these tags in AWS Cost Explorer for chargeback reporting. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for enabling cost allocation tags, setting up Cost and Usage Reports, and grant budgeting tips.
 
 ## Documentation
 
+- [Service Catalog Deployment Guide](docs/service-catalog-guide.md) - Full walkthrough for multi-account governance deployment
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) - Map your research phase to appropriate templates
 - [Cost Optimization Guide](docs/cost-optimization-guide.md) - Strategies to minimize AWS costs
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute templates
