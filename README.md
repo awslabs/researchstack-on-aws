@@ -1,26 +1,26 @@
 # AWS Research Cloud (ARC) Toolkit
 
-A template-first, maintainable solution for research institutions deploying AWS resources. The ARC Toolkit provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
+A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The ARC Toolkit provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
 
 ## Overview
 
 The ARC Toolkit helps research institutions:
 - **Deploy quickly**: Pre-built CloudFormation templates for common research workloads
-- **Track costs**: Built-in tagging for grant chargeback and F&A calculations
-- **Scale governance**: Optional Service Catalog for multi-account deployments
+- **Track costs**: Built-in tagging for grant chargeback
+- **Scale governance**: Optional Service Catalog for multi-account template governance and deployment
 - **Accelerate adoption**: AI-powered template selection and deployment (coming soon)
 
 ## Repository Structure
 
 ```
 aws-research-cloud/
-├── templates/                # CloudFormation templates (Phase 1)
+├── templates/                # CloudFormation templates
 │   ├── compute/             # EC2, ParallelCluster
 │   ├── storage/             # S3, EFS
 │   ├── ml/                  # SageMaker
 │   ├── networking/          # VPC
 │   └── data/                # (future: RDS, Athena)
-├── service-catalog/          # CDK code for SC deployment (Phase 2)
+├── service-catalog/          # CDK code for Service Catalog deployment
 │   ├── app.py               # CDK entrypoint
 │   ├── framework_config.yaml # Deployment settings (account, region, org)
 │   ├── portfolios/          # Portfolio TOML configs with inline products
@@ -60,20 +60,23 @@ aws-research-cloud/
 
 ### Option 2: Deploy via Service Catalog (Governance for Multi-Account)
 
-Service Catalog wraps the same templates with portfolio-based access control, OU sharing, and per-product launch roles.
+Service Catalog wraps the same templates with portfolio-based access control, OU sharing, and per-product launch roles. It uses CDK because StackSets, launch role lifecycle, and portfolio dependencies require state management that raw CloudFormation doesn't handle well.
 
-1. **Configure** — edit `service-catalog/framework_config.yaml` with your account, region, and org ID
-2. **Define portfolios** — edit or create TOML files in `service-catalog/portfolios/` (see `research-computing.toml` for the example)
-3. **Deploy**:
-   ```bash
-   cd service-catalog
-   pip install -e .
-   cdk bootstrap aws://ACCOUNT_ID/REGION
-   cdk deploy --all
-   ```
-4. **Grant access** — in the AWS Console, share the portfolio with IAM Identity Center groups or roles
+Prerequisites: Python 3.11+, AWS CLI, CDK CLI (`npm install -g aws-cdk`), AWS Organizations with delegated admin for Service Catalog and CloudFormation StackSets.
 
-Prerequisites: AWS Organizations, delegated admin for Service Catalog and CloudFormation StackSets in the hub account.
+```bash
+cd service-catalog
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+
+# Edit framework_config.yaml with your account, region, org ID
+# Edit portfolios/research-computing.toml with your OU IDs
+
+cdk bootstrap aws://ACCOUNT_ID/REGION
+cdk deploy --all
+```
+
+After deployment, grant portfolio access in the SC console. See the [Service Catalog Deployment Guide](docs/service-catalog-guide.md) for full prerequisites, configuration details, and post-deployment steps.
 
 ## Common Deployment Patterns
 
@@ -173,7 +176,7 @@ Use these tags in AWS Cost Explorer for chargeback reporting.
 
 - **Phase 1** (Complete): Repository structure + initial templates
 - **Phase 2** (Current): Service Catalog integration (simplified CDK)
-- **Phase 3**: Quick Suite AI-powered deployment
+- **Phase 3**: Gen AI-powered deployment
 - **Phase 4**: Additional templates and community expansion
 
 ## License
