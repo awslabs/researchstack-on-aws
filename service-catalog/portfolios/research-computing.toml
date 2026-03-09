@@ -1,0 +1,72 @@
+# ARC Toolkit - Research Computing Portfolio
+# This portfolio contains all standard research computing templates.
+# Customize products and sharing targets for your institution.
+
+[portfolio]
+name = "research-computing"
+display_name = "Research Computing"
+description = "Standard research computing resources for researchers and IT staff"
+provider_name = "ARC Toolkit"
+
+# OUs to share this portfolio with (must be listed in framework_config.yaml available_ous)
+share_target_ous = [
+    # "ou-xxxx-xxxxxxxx",
+]
+
+# Share settings
+share_tag_options = true
+share_principals = true
+
+# --- Products ---
+# Each product points at a CloudFormation template and declares the managed policies
+# its launch role needs. One IAM role is created per product (least privilege).
+
+[[portfolio.products]]
+name = "s3-research-bucket"
+template = "../templates/storage/s3-research-bucket.yaml"
+launch_role_policies = ["AmazonS3FullAccess"]
+
+[[portfolio.products]]
+name = "efs-shared-storage"
+template = "../templates/storage/efs-shared-storage.yaml"
+launch_role_policies = ["AmazonElasticFileSystemFullAccess", "AmazonEC2FullAccess"]
+
+[[portfolio.products]]
+name = "ec2-general-purpose"
+template = "../templates/compute/ec2-general-purpose.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "ec2-compute-optimized"
+template = "../templates/compute/ec2-compute-optimized.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "ec2-memory-optimized"
+template = "../templates/compute/ec2-memory-optimized.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "ec2-accelerated-gpu"
+template = "../templates/compute/ec2-accelerated-gpu.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "ec2-hpc-optimized"
+template = "../templates/compute/ec2-hpc-optimized.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "parallelcluster-hpc"
+template = "../templates/compute/parallelcluster-hpc.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonS3FullAccess", "AmazonSSMManagedInstanceCore"]
+
+[[portfolio.products]]
+name = "sagemaker-studio"
+template = "../templates/ml/sagemaker-studio.yaml"
+launch_role_policies = ["AmazonSageMakerFullAccess"]
+
+[[portfolio.products]]
+name = "research-vpc"
+template = "../templates/networking/research-vpc.yaml"
+launch_role_policies = ["AmazonVPCFullAccess"]

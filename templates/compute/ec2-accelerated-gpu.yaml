@@ -1,0 +1,268 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EC2 Accelerated Computing - GPU instances (G/P-series) and AWS Trainium/Inferentia for ML workloads'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
+      - Label:
+          default: 'Instance Configuration'
+        Parameters:
+          - InstanceType
+          - AMI
+          - VolumeSize
+      - Label:
+          default: 'Network Configuration (Optional)'
+        Parameters:
+          - VpcId
+          - SubnetId
+  
+  ResearchLifecycle:
+    Phases:
+      - Phase2B
+      - Phase2C
+    Description: 'ML training/inference, graphics rendering, and GPU-accelerated computing'
+  
+  QuickSuite:
+    Keywords:
+      - ec2
+      - gpu
+      - accelerated
+      - ml
+      - training
+      - inference
+      - trainium
+      - inferentia
+    UseCases:
+      - ML model training
+      - ML inference
+      - Graphics rendering
+      - Scientific simulations
+
+Parameters:
+  ProjectName:
+    Type: String
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    MinLength: 3
+    MaxLength: 40
+  
+  CostCenter:
+    Type: String
+    MinLength: 1
+  
+  Owner:
+    Type: String
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+  
+  InstanceType:
+    Type: String
+    Default: g6.xlarge
+    AllowedValues:
+      - g6.xlarge
+      - g6.2xlarge
+      - g6.4xlarge
+      - g6.8xlarge
+      - g6.12xlarge
+      - g6.16xlarge
+      - g5.xlarge
+      - g5.2xlarge
+      - g5.4xlarge
+      - g5.8xlarge
+      - p5.48xlarge
+      - p4d.24xlarge
+      - trn1.2xlarge
+      - trn1.32xlarge
+      - trn2.48xlarge
+      - inf2.xlarge
+      - inf2.8xlarge
+      - inf2.24xlarge
+      - inf2.48xlarge
+  
+  AMI:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+  
+  VolumeSize:
+    Type: Number
+    Default: 100
+    MinValue: 30
+    MaxValue: 16384
+  
+  VpcId:
+    Type: String
+    Default: ''
+  
+  SubnetId:
+    Type: String
+    Default: ''
+
+Conditions:
+  CreateVpc: !Equals [!Ref VpcId, '']
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Condition: CreateVpc
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-vpc'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Condition: CreateVpc
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-igw'
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-public-subnet'
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: CreateVpc
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Condition: CreateVpc
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: CreateVpc
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Security group for ${ProjectName}'
+      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-sg'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref AMI
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !If [CreateVpc, !Ref PublicSubnet, !Ref SubnetId]
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref VolumeSize
+            VolumeType: gp3
+            Encrypted: true
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-instance'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+Outputs:
+  InstanceId:
+    Value: !Ref Instance
+  
+  PublicIp:
+    Value: !GetAtt Instance.PublicIp
+  
+  PrivateIp:
+    Value: !GetAtt Instance.PrivateIp

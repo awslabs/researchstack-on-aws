@@ -1,0 +1,18 @@
+# ARC Toolkit - Service Catalog Framework Configuration
+# Update these values for your organization before deploying.
+
+deployment:
+  hub_account: "123456789012"       # Your SC hub account ID (12 digits)
+  hub_region: "us-east-1"           # Region to deploy SC resources
+  organization_id: "o-exampleorgid" # Your AWS Organization ID
+  default_env_name: "dev"
+
+# OUs that portfolios can share to (validated against portfolio configs)
+available_ous:
+  - "ou-xxxx-xxxxxxxx"  # Replace with your OU IDs
+
+# Tags applied to all CDK-managed stacks
+tagging:
+  required_tags:
+    Project: "ARC-Toolkit"
+    ManagedBy: "ServiceCatalog"

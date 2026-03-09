@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 Research Bucket - Secure storage for research data with versioning, encryption, and intelligent tiering'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
+      - Label:
+          default: 'Bucket Configuration'
+        Parameters:
+          - BucketBaseName
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center / Grant Number'
+      Owner:
+        default: 'Owner Email'
+      BucketBaseName:
+        default: 'Bucket Base Name'
+  
+  ResearchLifecycle:
+    Phases:
+      - Phase2A  # Data Collection
+      - Phase2B  # Exploration
+      - Phase2C  # Production
+      - Phase3   # Archival
+    Description: 'Suitable for all research phases - data collection, analysis, and long-term archival'
+  
+  QuickSuite:
+    Keywords:
+      - storage
+      - data
+      - s3
+      - bucket
+      - research-data
+      - object-storage
+    UseCases:
+      - Data collection and ingress
+      - Analysis results storage
+      - Long-term archival
+      - Collaboration and data sharing
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Research project name (for cost tracking and resource naming)'
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
+    MinLength: 3
+    MaxLength: 40
+  
+  CostCenter:
+    Type: String
+    Description: 'Department or grant number for cost allocation'
+    MinLength: 1
+  
+  Owner:
+    Type: String
+    Description: 'PI or researcher email address'
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    ConstraintDescription: 'Must be a valid email address'
+  
+  BucketBaseName:
+    Type: String
+    Default: research-data
+    Description: 'Base name for the S3 bucket (will be suffixed with account ID and region for uniqueness)'
+    AllowedPattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
+    ConstraintDescription: 'Must be lowercase letters, numbers, and hyphens only'
+    MinLength: 3
+    MaxLength: 40
+
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketBaseName}-${AWS::AccountId}-${AWS::Region}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      IntelligentTieringConfigurations:
+        - Id: EntireBucket
+          Status: Enabled
+          Tierings:
+            - AccessTier: ARCHIVE_ACCESS
+              Days: 90
+            - AccessTier: DEEP_ARCHIVE_ACCESS
+              Days: 180
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+Outputs:
+  BucketName:
+    Description: 'Name of the created S3 bucket'
+    Value: !Ref S3Bucket
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketName'
+  
+  BucketArn:
+    Description: 'ARN of the created S3 bucket'
+    Value: !GetAtt S3Bucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-BucketArn'
+  
+  BucketRegionalDomainName:
+    Description: 'Regional domain name of the bucket (for S3 access)'
+    Value: !GetAtt S3Bucket.RegionalDomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-RegionalDomainName'
