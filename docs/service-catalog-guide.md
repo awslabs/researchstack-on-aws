@@ -19,6 +19,11 @@ This guide walks through deploying the ARC Toolkit's Service Catalog layer, whic
     - Management Account delegates SC + StackSets admin to Hub Account
     - OUs contain spoke accounts
   - Flow: CDK deploy → Assets Bucket + Portfolio + StackSets → OU Share → Spoke users see portfolio → Provision product → Launch role scopes permissions → CFN creates tagged resources
+  - OU evolution note: Institutions typically start with a single "Research" OU, then split over time
+    into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA, Research-Production).
+    The SC layer supports sharing to multiple OUs — just add them to share_target_ous in the portfolio TOML.
+  - TODO (future arch section): Discuss OU scaling best practices, link to AWS Organizing Your Environment
+    whitepaper, and call out how LZA / Secure Research Environment accelerate compliance-heavy OU structures.
 -->
 
 ## Why CDK?
@@ -30,6 +35,18 @@ The Service Catalog layer uses CDK as its infrastructure-as-code tool (with Pyth
 - CDK handles drift detection and state tracking automatically
 
 You don't need to know CDK to use this — just edit config files and run `cdk deploy`.
+
+## Key Concepts
+
+Quick reference for the AWS services involved in this deployment:
+
+- **AWS Organizations** — Central management of multiple AWS accounts. Provides the OU structure that Service Catalog shares portfolios into, and that StackSets deploy launch roles across.
+- **Service Catalog** — Lets IT publish approved CloudFormation templates as "products" in a "portfolio." Researchers browse and launch products without needing CloudFormation knowledge.
+- **Portfolio** — A collection of products shared to specific OUs. Controls who can launch what.
+- **Product** — A single CloudFormation template wrapped for Service Catalog consumption.
+- **Launch Role** — An IAM role that Service Catalog assumes when provisioning a product. Scoped per-product so each template gets only the permissions it needs (least privilege).
+- **StackSets** — Deploys the same CloudFormation template (in this case, launch roles) across multiple accounts in an OU automatically.
+- **Delegated Administrator** — An Organizations feature that lets a non-management account (the hub) administer Service Catalog and StackSets on behalf of the org.
 
 ## Prerequisites
 
@@ -51,7 +68,7 @@ Before deploying, you need three things set up in AWS and a few tools installed 
      --service-principal member.org.stacksets.cloudformation.amazonaws.com
    ```
 
-3. **Target OU IDs identified** — Know which OUs contain the accounts where researchers will consume templates. You can find OU IDs in the [AWS Organizations console](https://console.aws.amazon.com/organizations/) — they look like `ou-xxxx-xxxxxxxx`.
+3. **Target OU IDs identified** — Know which OUs contain the accounts where researchers will consume templates. You can find OU IDs in the [AWS Organizations console](https://console.aws.amazon.com/organizations/) — they look like `ou-xxxx-xxxxxxxx`. We recommend starting with a single "Research" OU. As your organization scales, you can split into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA). See [Organizing Your AWS Environment](https://docs.aws.amazon.com/whitepapers/latest/organizing-your-aws-environment/organizing-your-aws-environment.html) for best practices, and consider [Landing Zone Accelerator](https://aws.amazon.com/solutions/implementations/landing-zone-accelerator-on-aws/) or [Secure Research Environment](https://aws.amazon.com/solutions/implementations/secure-research-environment-on-aws/) for compliance-heavy setups.
 
 ### Local Tools
 
@@ -105,10 +122,10 @@ Once config files are set, deploy from the `service-catalog/` directory. CDK wil
 ```bash
 cd service-catalog
 
-# Set up Python environment
+# Set up Python environment (isolates CDK library + project dependencies from your global Python)
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e .  # installs aws-cdk-lib, constructs, and project dependencies from pyproject.toml
 
 # Bootstrap CDK (first time only, per account/region)
 cdk bootstrap aws://ACCOUNT_ID/REGION

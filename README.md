@@ -20,6 +20,11 @@ Research institutions have three personas that all need something different from
   - Template categories feeding into both paths (compute, storage, ml, networking)
   - Cost tracking flow: Tags → Cost and Usage Reports → Grant Chargeback
   - Future: Quick Suite AI layer sitting above both paths
+  - OU evolution note: Institutions typically start with a single "Research" OU, then split over time
+    into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA, Research-Production).
+    Show this as a callout or dashed-line expansion on the SC path.
+  - TODO (future arch section): Discuss OU scaling best practices, link to AWS Organizing Your Environment
+    whitepaper, and call out how LZA / Secure Research Environment accelerate compliance-heavy OU structures.
 -->
 
 ## Overview
