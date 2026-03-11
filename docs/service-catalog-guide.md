@@ -1,6 +1,6 @@
 # Service Catalog Deployment Guide
 
-This guide walks through deploying the ARC Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates.
+This guide walks through deploying the ARC Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates. It's intended for IT admins or cloud teams setting up governed self-service for researchers across multiple AWS accounts.
 
 ## Architecture
 
@@ -23,7 +23,8 @@ This guide walks through deploying the ARC Toolkit's Service Catalog layer, whic
 
 ## Why CDK?
 
-Service Catalog deployment uses CDK (not raw CloudFormation or boto3) because:
+The Service Catalog layer uses CDK as its infrastructure-as-code tool (with Python as the language). Here's why CDK over raw CloudFormation or boto3 scripts:
+
 - StackSets for launch roles require lifecycle management (create, update, delete across accounts)
 - Portfolio → product → launch role → StackSet dependencies need ordering
 - CDK handles drift detection and state tracking automatically
@@ -32,41 +33,50 @@ You don't need to know CDK to use this — just edit config files and run `cdk d
 
 ## Prerequisites
 
+Before deploying, you need three things set up in AWS and a few tools installed locally.
+
 ### AWS Account Setup
-- AWS Organizations enabled
-- A designated hub account for Service Catalog
-- Hub account is **delegated administrator** for:
-  - AWS Service Catalog
-  - CloudFormation StackSets
-- Target OUs exist in your organization
 
-To enable delegated admin (run from the management account):
-```bash
-aws organizations register-delegated-administrator \
-  --account-id HUB_ACCOUNT_ID \
-  --service-principal servicecatalog.amazonaws.com
+1. **AWS Organizations enabled** — Service Catalog OU sharing and StackSets both require Organizations. If you haven't set this up yet, see [AWS Organizations Getting Started](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html).
 
-aws organizations enable-aws-service-access \
-  --service-principal member.org.stacksets.cloudformation.amazonaws.com
-```
+2. **A designated hub account as delegated administrator** — Pick one account (not the management account) to host your Service Catalog portfolios. This hub account needs delegated admin for both Service Catalog and CloudFormation StackSets. Run these from the **management account**:
+   ```bash
+   # Delegate Service Catalog admin to hub account
+   aws organizations register-delegated-administrator \
+     --account-id HUB_ACCOUNT_ID \
+     --service-principal servicecatalog.amazonaws.com
+
+   # Enable StackSets service access across the org
+   aws organizations enable-aws-service-access \
+     --service-principal member.org.stacksets.cloudformation.amazonaws.com
+   ```
+
+3. **Target OU IDs identified** — Know which OUs contain the accounts where researchers will consume templates. You can find OU IDs in the [AWS Organizations console](https://console.aws.amazon.com/organizations/) — they look like `ou-xxxx-xxxxxxxx`.
 
 ### Local Tools
-- Python 3.11+
-- AWS CLI configured with hub account credentials (`aws configure`)
-- CDK CLI: `npm install -g aws-cdk`
 
-Verify:
+ARC's Service Catalog layer is a CDK project written in Python. You'll need:
+
+- **Python 3.11+** — CDK dependency. Install via [python.org](https://www.python.org/downloads/) or your system package manager.
+- **Node.js 18+** — Required by the CDK CLI runtime. Install via [nodejs.org](https://nodejs.org/).
+- **AWS CDK CLI** — Install globally after Node.js: `npm install -g aws-cdk`
+- **AWS CLI** — Configured with credentials for the hub account (`aws configure`). Install via [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+
+Verify everything is ready:
 ```bash
-python3 --version   # 3.11+
-aws sts get-caller-identity   # should show hub account
-cdk --version
+python3 --version            # 3.11+
+node --version               # 18+
+cdk --version                # 2.x
+aws sts get-caller-identity  # should show your hub account ID
 ```
 
 ## Configuration
 
+Two config files control what gets deployed and where. Edit these before running `cdk deploy`.
+
 ### 1. Framework Config (`service-catalog/framework_config.yaml`)
 
-Set your deployment target:
+Sets your deployment target — which account, region, and org to deploy into:
 ```yaml
 deployment:
   hub_account: "123456789012"       # Your hub account ID
@@ -90,6 +100,8 @@ To create additional portfolios (e.g., admin vs. user), create a new TOML file i
 
 ## Deployment
 
+Once config files are set, deploy from the `service-catalog/` directory. CDK will create the assets bucket, portfolio, products, launch roles, and StackSets.
+
 ```bash
 cd service-catalog
 
@@ -112,7 +124,7 @@ cdk deploy --all
 
 ## Post-Deployment: Grant Portfolio Access
 
-After deployment, users need access to the portfolio. This is a manual step in the AWS Console:
+After deployment, researchers need access to the portfolio before they can launch products. This is currently a manual step in the AWS Console.
 
 1. Open **AWS Service Catalog** console in the hub account
 2. Go to **Portfolios** → click your portfolio
@@ -131,15 +143,16 @@ This grants access to all users with that Identity Center permission set. Repeat
 
 ## Updating Products
 
-To update a template: edit the YAML file in `templates/`, then `cdk deploy --all`. SC updates the product's provisioning artifact in place. Existing provisioned resources are unaffected.
+How to manage templates after initial deployment.
 
-To add a new product: add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
-
-To remove a product: remove it from the TOML and deploy. The product is disassociated from the portfolio. Existing provisioned resources continue running.
-
-For side-by-side versions, create a new template file (e.g., `s3-research-bucket-v2.yaml`) and add it as a separate product.
+- **Update a template**: Edit the YAML file in `templates/`, then `cdk deploy --all`. SC updates the product's provisioning artifact in place. Existing provisioned resources are unaffected.
+- **Add a new product**: Add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
+- **Remove a product**: Remove it from the TOML and deploy. The product is disassociated from the portfolio. Existing provisioned resources continue running.
+- **Side-by-side versions**: Create a new template file (e.g., `s3-research-bucket-v2.yaml`) and add it as a separate product.
 
 ## Troubleshooting
+
+Common issues and how to resolve them.
 
 | Issue | Solution |
 |-------|----------|

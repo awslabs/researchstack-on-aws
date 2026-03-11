@@ -60,6 +60,8 @@ aws-research-cloud/
 
 ### Option 1: Deploy Templates Directly (Standalone)
 
+For IT admins or lab leads deploying resources in a single account or small team.
+
 1. **Choose a template** from the `templates/` directory
 2. **Deploy via AWS Console**:
    - Go to CloudFormation → Create Stack
@@ -79,6 +81,8 @@ aws-research-cloud/
    ```
 
 ### Option 2: Deploy via Service Catalog (Governance for Multi-Account)
+
+For IT admins or cloud teams setting up governed self-service across multiple accounts. Once deployed, researchers consume templates through the Service Catalog console.
 
 Service Catalog wraps the same templates with portfolio-based access control, OU sharing, and per-product launch roles. It uses CDK because StackSets, launch role lifecycle, and portfolio dependencies require state management that raw CloudFormation doesn't handle well.
 
