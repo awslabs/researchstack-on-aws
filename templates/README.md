@@ -1,121 +1,57 @@
 # ARC Toolkit Templates
 
-This directory contains CloudFormation templates optimized for research workloads.
+CloudFormation templates optimized for research workloads. Each template can be deployed standalone via the AWS Console or CLI, or governed via [Service Catalog](../docs/service-catalog-guide.md).
 
-## Template Categories
+## Available Templates
 
-### Compute (`compute/`)
-Templates for computational resources:
-- **EC2 instances**: Various instance types for different workload patterns
-- **Batch**: Managed batch computing for parallel jobs
-- **ParallelCluster**: Full HPC clusters with Slurm
+### Networking (`networking/`)
+- **research-vpc.yaml** — Reusable VPC with public/private subnets, NAT gateway, and VPC endpoints
 
 ### Storage (`storage/`)
-Templates for data storage:
-- **S3**: Object storage with versioning and intelligent tiering
-- **EFS**: Network file systems for shared access
-- **FSx**: High-performance file systems
+- **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
+- **efs-shared-storage.yaml** — Network file system for shared access across multiple instances
+
+### Compute (`compute/`)
+- **ec2-general-purpose.yaml** — M-series instances for balanced workloads
+- **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks
+- **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads
+- **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML
+- **ec2-hpc-optimized.yaml** — HPC-optimized instances for parallel workloads
+- **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and DCV remote desktop
 
 ### Machine Learning (`ml/`)
-Templates for ML/AI workloads:
-- **SageMaker Studio**: Managed Jupyter environment
-- **SageMaker Notebooks**: Individual notebook instances
-- **Bedrock**: Foundation model access
-
-### Data (`data/`)
-Templates for data processing:
-- **RDS**: Managed relational databases
-- **Athena**: Serverless SQL queries
-- **Glue**: ETL and data cataloging
+- **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support
 
 ## Template Standards
 
-All templates follow these standards:
+All templates follow these conventions:
 
-### Required Metadata
-```yaml
-Metadata:
-  AWS::CloudFormation::Interface:
-    # Parameter grouping for better UX
-    
-  ResearchLifecycle:
-    Phases: ['Phase2A', 'Phase2B']  # Applicable research phases
-    Description: 'When to use this template'
-  
-  QuickSuite:  # For future AI integration
-    Keywords: ['storage', 'data', 's3']
-    UseCases: ['Data collection', 'Analysis']
-```
+- **Required parameters**: ProjectName, CostCenter (Owner is optional)
+- **Required tags**: Project, CostCenter, ManagedBy (ARC-Toolkit), Environment (Research)
+- **Security defaults**: Encryption enabled, public access blocked, least privilege where applicable
+- **Naming**: Resources include account ID and region for uniqueness
 
-### Required Parameters
-```yaml
-Parameters:
-  ProjectName:
-    Type: String
-    Description: 'Research project name (for cost tracking)'
-    
-  CostCenter:
-    Type: String
-    Description: 'Department or grant number'
-    
-  Owner:
-    Type: String
-    Description: 'PI or researcher email'
-```
-
-### Required Tags
-```yaml
-Tags:
-  - Key: Project
-    Value: !Ref ProjectName
-  - Key: CostCenter
-    Value: !Ref CostCenter
-  - Key: Owner
-    Value: !Ref Owner
-  - Key: ManagedBy
-    Value: ARC-Toolkit
-  - Key: Environment
-    Value: Research
-```
-
-### Security Defaults
-- Encryption enabled by default
-- Public access blocked by default
-- Least privilege IAM policies
-- VPC isolation where applicable
-
-## Using Templates
+## Deploying
 
 ### Via AWS Console
-1. Navigate to CloudFormation → Create Stack
-2. Upload template YAML file
-3. Fill in parameters
-4. Review and create
+1. Go to CloudFormation → Create Stack
+2. Upload the template YAML
+3. Fill in parameters (Project, CostCenter, etc.)
+4. Create stack
 
 ### Via AWS CLI
 ```bash
 aws cloudformation create-stack \
-  --stack-name my-stack \
-  --template-body file://template.yaml \
-  --parameters file://parameters.json \
-  --capabilities CAPABILITY_IAM
+  --stack-name my-research-bucket \
+  --template-body file://storage/s3-research-bucket.yaml \
+  --parameters \
+    ParameterKey=ProjectName,ParameterValue=my-project \
+    ParameterKey=CostCenter,ParameterValue=dept-123
 ```
 
-### Via Service Catalog (Phase 2)
-Documentation coming soon.
+### Via Service Catalog
+See the [Service Catalog Deployment Guide](../docs/service-catalog-guide.md) for multi-account governed deployment.
 
-## Template Structure
+## Contributing
 
-Each template directory contains:
-- `template.yaml` - The CloudFormation template
-- `README.md` - Usage guide and documentation
-- `parameters.example.json` - Example parameter file
-- `product.yaml` - Service Catalog configuration (Phase 2)
-
-## Contributing Templates
-
-See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines on:
-- Template design standards
-- Testing requirements
-- Documentation requirements
-- Submission process
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for template design guidelines and submission process.
