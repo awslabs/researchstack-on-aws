@@ -77,14 +77,16 @@ ARC's Service Catalog layer is a CDK project written in Python. You'll need:
 - **Python 3.11+** — CDK dependency. Install via [python.org](https://www.python.org/downloads/) or your system package manager.
 - **Node.js 18+** — Required by the CDK CLI runtime. Install via [nodejs.org](https://nodejs.org/).
 - **AWS CDK CLI** — Install globally after Node.js: `npm install -g aws-cdk`
-- **AWS CLI** — Configured with credentials for the hub account (`aws configure`). Install via [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
+- **AWS CLI** — Install via [AWS CLI docs](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), then configure credentials for the hub account: `aws configure sso` for [IAM Identity Center](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (recommended) or `aws configure` for [IAM access keys](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html).
 
 Verify everything is ready:
 ```bash
 python3 --version            # 3.11+
 node --version               # 18+
 cdk --version                # 2.x
+aws --version                # 2.x
 aws sts get-caller-identity  # should show your hub account ID
+# If using named profiles: aws sts get-caller-identity --profile your-profile-name
 ```
 
 ## Configuration

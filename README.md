@@ -10,6 +10,8 @@ Research institutions have three personas that all need something different from
 - **IT admins** want researchers to self-serve compute and storage, but using best practices and in a standardized way so that troubleshooting is repeatable. ARC templates enforce security defaults, consistent architecture, and known-good configurations across the institution.
 - **FinOps teams** need cost visibility across grants and an easy path to chargeback. Every ARC-deployed resource is automatically tagged with project, cost center, and owner — ready for Cost and Usage Reports without manual tagging.
 
+Browse the available templates in [`templates/`](templates/) or jump to the [template list](#templates) below.
+
 ## Architecture
 
 <!-- TODO: Add high-level architecture diagram (draw.io) -->
