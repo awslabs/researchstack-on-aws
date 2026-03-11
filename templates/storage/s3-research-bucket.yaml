@@ -18,62 +18,42 @@ Metadata:
       ProjectName:
         default: 'Project Name'
       CostCenter:
-        default: 'Cost Center / Grant Number'
+        default: 'Cost Center'
       Owner:
-        default: 'Owner Email'
+        default: 'Owner Email (optional)'
       BucketBaseName:
         default: 'Bucket Base Name'
-  
-  ResearchLifecycle:
-    Phases:
-      - Phase2A  # Data Collection
-      - Phase2B  # Exploration
-      - Phase2C  # Production
-      - Phase3   # Archival
-    Description: 'Suitable for all research phases - data collection, analysis, and long-term archival'
-  
-  QuickSuite:
-    Keywords:
-      - storage
-      - data
-      - s3
-      - bucket
-      - research-data
-      - object-storage
-    UseCases:
-      - Data collection and ingress
-      - Analysis results storage
-      - Long-term archival
-      - Collaboration and data sharing
 
 Parameters:
   ProjectName:
     Type: String
-    Description: 'Research project name (for cost tracking and resource naming)'
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
     AllowedPattern: '^[a-zA-Z0-9-]+$'
     ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
     MaxLength: 40
-  
+
   CostCenter:
     Type: String
     Description: 'Department or grant number for cost allocation'
     MinLength: 1
-  
+
   Owner:
     Type: String
-    Description: 'PI or researcher email address'
-    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    ConstraintDescription: 'Must be a valid email address'
-  
+    Default: ''
+    Description: 'PI or researcher email for cost tracking — helps FinOps trace resources back to a person (optional)'
+
   BucketBaseName:
     Type: String
     Default: research-data
-    Description: 'Base name for the S3 bucket (will be suffixed with account ID and region for uniqueness)'
+    Description: 'Base name for the S3 bucket (suffixed with account ID and region for uniqueness)'
     AllowedPattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
     ConstraintDescription: 'Must be lowercase letters, numbers, and hyphens only'
     MinLength: 3
     MaxLength: 40
+
+Conditions:
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
 
 Resources:
   S3Bucket:
@@ -104,12 +84,33 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ARC-Toolkit
         - Key: Environment
           Value: Research
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyUnencryptedTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt S3Bucket.Arn
+              - !Sub '${S3Bucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
 
 Outputs:
   BucketName:
@@ -117,15 +118,9 @@ Outputs:
     Value: !Ref S3Bucket
     Export:
       Name: !Sub '${AWS::StackName}-BucketName'
-  
+
   BucketArn:
     Description: 'ARN of the created S3 bucket'
     Value: !GetAtt S3Bucket.Arn
     Export:
       Name: !Sub '${AWS::StackName}-BucketArn'
-  
-  BucketRegionalDomainName:
-    Description: 'Regional domain name of the bucket (for S3 access)'
-    Value: !GetAtt S3Bucket.RegionalDomainName
-    Export:
-      Name: !Sub '${AWS::StackName}-RegionalDomainName'

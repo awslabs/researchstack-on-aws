@@ -191,6 +191,8 @@ All templates include required tags for cost allocation:
 
 Use these tags in AWS Cost Explorer for chargeback reporting. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for enabling cost allocation tags, setting up Cost and Usage Reports, and grant budgeting tips.
 
+These tags also serve as the foundation for [attribute-based access control (ABAC)](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html). Institutions using IAM Identity Center can write permission set policies that condition on resource tags (e.g., allow S3 access only when `s3:ResourceTag/Project` matches the user's `aws:PrincipalTag/Project`). ARC doesn't ship IAM policies — access control is institution-specific — but the consistent tagging makes ABAC straightforward to implement.
+
 ## Documentation
 
 - [Service Catalog Deployment Guide](docs/service-catalog-guide.md) - Full walkthrough for multi-account governance deployment
