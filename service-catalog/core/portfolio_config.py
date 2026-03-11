@@ -35,9 +35,11 @@ class PortfolioConfig:
     provider_name: str = "ARC Toolkit"
     support_email: str = ""
     support_url: str = ""
+    support_description: str = ""
     distributor: str = ""
     products: List[ProductConfig] = field(default_factory=list)
     target_ous: List[str] = field(default_factory=list)
+    access_principals: List[str] = field(default_factory=list)  # wildcard ARNs for IAM_PATTERN
     share_tag_options: bool = True
     share_principals: bool = True
 
@@ -110,9 +112,11 @@ class PortfolioConfigLoader:
             provider_name=ps.get("provider_name", "ARC Toolkit"),
             support_email=ps.get("support_email", ""),
             support_url=ps.get("support_url", ""),
+            support_description=ps.get("support_description", ""),
             distributor=ps.get("distributor", ""),
             products=products,
             target_ous=ps.get("share_target_ous", []),
+            access_principals=ps.get("access_principals", []),
             share_tag_options=ps.get("share_tag_options", True),
             share_principals=ps.get("share_principals", True),
         )

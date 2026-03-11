@@ -1,6 +1,6 @@
 # Service Catalog Deployment Guide
 
-This guide walks through deploying the ARC Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates. It's intended for IT admins or cloud teams setting up governed self-service for researchers across multiple AWS accounts.
+This guide walks through deploying the ARC Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates. It follows a hub-and-spoke model: one central account (the hub) manages portfolios and shares them out to researcher accounts (spokes) across your organization. It's intended for IT admins or cloud teams setting up governed self-service for researchers across multiple AWS accounts.
 
 ## Architecture
 
@@ -24,6 +24,10 @@ This guide walks through deploying the ARC Toolkit's Service Catalog layer, whic
     The SC layer supports sharing to multiple OUs — just add them to share_target_ous in the portfolio TOML.
   - TODO (future arch section): Discuss OU scaling best practices, link to AWS Organizing Your Environment
     whitepaper, and call out how LZA / Secure Research Environment accelerate compliance-heavy OU structures.
+  - TODO (future arch section): Recommend IAM Identity Center (IDC) as the default identity approach.
+    Show two starting permission sets: AWSServiceCatalogEndUserAccess (researchers) and
+    AdministratorAccess (IT admins). Explain how IDC permission sets auto-create matching IAM roles
+    in every assigned account, which enables automated principal sharing via access_principals in the TOML.
 -->
 
 ## Why CDK?
@@ -112,6 +116,7 @@ Each TOML file defines a portfolio with inline products. The example `research-c
 
 - Add/remove products by editing `[[portfolio.products]]` entries
 - Set `share_target_ous` to the OUs you want to share with
+- Set `access_principals` to grant portfolio access automatically (see [Granting Portfolio Access](#granting-portfolio-access) below)
 - Each product's `launch_role_policies` declares the AWS managed policies its launch role needs
 
 To create additional portfolios (e.g., admin vs. user), create a new TOML file in the same directory.
@@ -140,24 +145,44 @@ cdk deploy --all [--profile your-profile-name]
 
 `cdk deploy --all` runs synthesis automatically, so `cdk synth` is optional — useful for catching config errors before hitting AWS.
 
-## Post-Deployment: Grant Portfolio Access
+## Granting Portfolio Access
 
-After deployment, researchers need access to the portfolio before they can launch products. This is currently a manual step in the AWS Console.
+Researchers need access to the portfolio before they can launch products. The recommended approach is to define principal ARN patterns in your portfolio TOML — this grants access automatically in the hub account and propagates to all spoke accounts via principal sharing.
 
-1. Open **AWS Service Catalog** console in the hub account
-2. Go to **Portfolios** → **Imported** → click your portfolio
+### Recommended: Automated via TOML Config
+
+Add `access_principals` to your portfolio TOML with IAM principal ARN patterns. Wildcards are supported, which is especially useful for IDC roles where the suffix varies per IDC instance.
+
+This approach works when the specified roles exist across all spoke accounts that receive the portfolio share. IDC [permission sets](https://docs.aws.amazon.com/singlesignon/latest/userguide/permissionsetsconcept.html) automatically create matching IAM roles in every assigned account, making them a natural fit. Standard IAM roles work too, as long as they're provisioned consistently across accounts (e.g., via StackSets or CloudFormation).
+
+```toml
+access_principals = [
+    "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess*",
+    "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSServiceCatalogEndUserAccess*"
+]
+```
+
+Then run `cdk deploy --all`. Service Catalog associates these patterns with the portfolio and — because `share_principals = true` — automatically grants access to matching roles in every spoke account that receives the portfolio share. No manual steps per account.
+
+**ARN format differs between IDC and IAM roles:**
+
+| Role type | ARN pattern |
+|-----------|-------------|
+| IDC (Identity Center) | `arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_PermissionSetName*` |
+| Standard IAM role | `arn:aws:iam:::role/RoleName` |
+| All roles (broad access) | `arn:aws:iam:::role/*` |
+
+IDC roles live under the `aws-reserved/sso.amazonaws.com/` path in IAM — this must be included in the ARN pattern. Standard IAM roles sit directly under `role/`. The `*` wildcard matches any suffix, including the IDC instance ID that gets appended to permission set names.
+
+### Alternative: Manual Console Grant
+
+For one-off access grants or spoke-account-specific overrides, you can grant access manually:
+
+1. Open **AWS Service Catalog** console in the target account
+2. Go to **Portfolios** → click your portfolio (or **Imported** in spoke accounts)
 3. Click the **Access** tab → **Grant access**
-4. Select **Role** as the type
-5. Enter the IAM Identity Center role pattern:
-   ```
-   AWSReservedSSO_ResearcherAccess*
-   ```
-   (Replace `ResearcherAccess` with your permission set name. The wildcard matches the SSO role suffix.)
-6. Click **Grant access**
-
-This grants access to all users with that Identity Center permission set. Repeat for additional permission sets as needed.
-
-> **Future improvement**: Automated IDC assignment is planned as a future feature.
+4. Select the principal type and enter the role name or ARN
+5. Click **Grant access**
 
 ## Updating Products
 
@@ -179,5 +204,5 @@ Common issues and how to resolve them.
 | `cdk bootstrap` fails | Verify AWS credentials: `aws sts get-caller-identity` |
 | `Template not found` | Check that product `template` paths in TOML are correct relative to `service-catalog/` |
 | StackSet deployment fails | Verify hub account is delegated admin for CloudFormation StackSets |
-| Portfolio not visible to users | Complete the post-deployment access grant steps above |
+| Portfolio not visible to users | Check `access_principals` in your portfolio TOML — see [Granting Portfolio Access](#granting-portfolio-access) |
 | Portfolio not visible in spoke accounts | Ensure OU IDs are uncommented in `share_target_ous` in your portfolio TOML and redeploy |

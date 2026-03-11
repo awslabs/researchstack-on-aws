@@ -11,11 +11,21 @@ provider_name = "ARC Toolkit"
 # Support metadata (applied to all products in this portfolio)
 support_email = "cloud-support@university.edu"
 support_url = "https://university.edu/cloud-support"
+support_description = "Contact the Cloud Team for help with provisioning or troubleshooting"
 distributor = "University Cloud Team"
 
 # OUs to share this portfolio with (must be listed in framework_config.yaml available_ous)
 share_target_ous = [
     # "ou-xxxx-xxxxxxxx",
+]
+
+# IAM principal ARN patterns to grant portfolio access (propagated to spoke accounts via principal sharing).
+# Supports wildcards — useful for IDC roles where the suffix varies.
+# IDC roles live under the path aws-reserved/sso.amazonaws.com/.
+# Example: "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSServiceCatalogEndUserAccess*"
+access_principals = [
+    # "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess*",
+    # "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSServiceCatalogEndUserAccess*",
 ]
 
 # Share settings
@@ -31,7 +41,7 @@ share_principals = true
 
 [[portfolio.products]]
 name = "s3-research-bucket"
-display_name = "Research Bucket"
+display_name = "Storage Bucket"
 description = "Secure S3 bucket with versioning and intelligent tiering for research data"
 template = "../templates/storage/s3-research-bucket.yaml"
 launch_role_policies = ["AmazonS3FullAccess"]
@@ -52,14 +62,14 @@ launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-compute-optimized"
-display_name = "Compute Optimized (EC2)"
+display_name = "CPU-Optimized Compute (EC2)"
 description = "C-series instances for compute-intensive tasks like simulations and modeling"
 template = "../templates/compute/ec2-compute-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-memory-optimized"
-display_name = "Memory Optimized (EC2)"
+display_name = "Memory-Optimized Compute (EC2)"
 description = "R-series instances for memory-intensive workloads like genomics and large datasets"
 template = "../templates/compute/ec2-memory-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
@@ -73,14 +83,14 @@ launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-hpc-optimized"
-display_name = "HPC Optimized (EC2)"
+display_name = "HPC-Optimized Compute (EC2)"
 description = "HPC-optimized instances for tightly coupled parallel workloads"
 template = "../templates/compute/ec2-hpc-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
-name = "parallelcluster-hpc"
-display_name = "HPC Cluster (ParallelCluster)"
+name = "parallelcluster-slurm"
+display_name = "Slurm Cluster (ParallelCluster)"
 description = "Full HPC cluster with Slurm scheduler, shared storage, and DCV remote desktop"
 template = "../templates/compute/parallelcluster-hpc.yaml"
 launch_role_policies = [
@@ -102,7 +112,7 @@ launch_role_policies = ["AmazonSageMakerFullAccess"]
 
 [[portfolio.products]]
 name = "research-vpc"
-display_name = "Research VPC"
+display_name = "Research Networking (VPC)"
 description = "Reusable VPC with public/private subnets, NAT gateway, and VPC endpoints"
 template = "../templates/networking/research-vpc.yaml"
 launch_role_policies = ["AmazonVPCFullAccess"]

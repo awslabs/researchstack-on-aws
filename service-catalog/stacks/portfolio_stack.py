@@ -61,6 +61,17 @@ class PortfolioStack(Stack):
                 share_principals=portfolio_config.share_principals,
             )
 
+        # Associate access principals (supports wildcard ARNs via IAM_PATTERN)
+        for i, principal_arn in enumerate(portfolio_config.access_principals):
+            sc.CfnPortfolioPrincipalAssociation(
+                self,
+                f"PrincipalAccess-{i}",
+                portfolio_id=self.portfolio.portfolio_id,
+                principal_arn=principal_arn,
+                principal_type="IAM_PATTERN",
+            )
+            logger.info("Associated principal pattern '%s' with portfolio", principal_arn)
+
         # StackSet factory for deploying launch roles to target accounts
         self.stackset_factory = StacksetFactory(self, "StacksetFactory")
 
@@ -84,6 +95,7 @@ class PortfolioStack(Stack):
             owner=self.config.provider_name,
             description=product_cfg.description or None,
             distributor=self.config.distributor or None,
+            support_description=self.config.support_description or None,
             support_email=self.config.support_email or None,
             support_url=self.config.support_url or None,
             product_versions=[
