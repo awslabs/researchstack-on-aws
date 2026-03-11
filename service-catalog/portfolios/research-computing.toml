@@ -8,6 +8,11 @@ display_name = "Research Computing"
 description = "Standard research computing resources for researchers and IT staff"
 provider_name = "ARC Toolkit"
 
+# Support metadata (applied to all products in this portfolio)
+support_email = "cloud-support@university.edu"
+support_url = "https://university.edu/cloud-support"
+distributor = "University Cloud Team"
+
 # OUs to share this portfolio with (must be listed in framework_config.yaml available_ous)
 share_target_ous = [
     # "ou-xxxx-xxxxxxxx",
@@ -20,53 +25,84 @@ share_principals = true
 # --- Products ---
 # Each product points at a CloudFormation template and declares the managed policies
 # its launch role needs. One IAM role is created per product (least privilege).
+# "name" is the machine identifier (used for IAM roles, StackSets — no spaces).
+# "display_name" is what researchers see in the Service Catalog console.
+# "description" is shown on the product detail page.
 
 [[portfolio.products]]
 name = "s3-research-bucket"
+display_name = "Research Bucket"
+description = "Secure S3 bucket with versioning and intelligent tiering for research data"
 template = "../templates/storage/s3-research-bucket.yaml"
 launch_role_policies = ["AmazonS3FullAccess"]
 
 [[portfolio.products]]
 name = "efs-shared-storage"
+display_name = "Shared File Storage (EFS)"
+description = "Network file system for shared access across multiple instances"
 template = "../templates/storage/efs-shared-storage.yaml"
 launch_role_policies = ["AmazonElasticFileSystemFullAccess", "AmazonEC2FullAccess"]
 
 [[portfolio.products]]
 name = "ec2-general-purpose"
+display_name = "General Purpose Compute (EC2)"
+description = "M-series instances for balanced CPU, memory, and networking workloads"
 template = "../templates/compute/ec2-general-purpose.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-compute-optimized"
+display_name = "Compute Optimized (EC2)"
+description = "C-series instances for compute-intensive tasks like simulations and modeling"
 template = "../templates/compute/ec2-compute-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-memory-optimized"
+display_name = "Memory Optimized (EC2)"
+description = "R-series instances for memory-intensive workloads like genomics and large datasets"
 template = "../templates/compute/ec2-memory-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-accelerated-gpu"
+display_name = "GPU & Accelerated Compute (EC2)"
+description = "GPU (G/P-series) and Trainium/Inferentia instances for ML training and inference"
 template = "../templates/compute/ec2-accelerated-gpu.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "ec2-hpc-optimized"
+display_name = "HPC Optimized (EC2)"
+description = "HPC-optimized instances for tightly coupled parallel workloads"
 template = "../templates/compute/ec2-hpc-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore"]
 
 [[portfolio.products]]
 name = "parallelcluster-hpc"
+display_name = "HPC Cluster (ParallelCluster)"
+description = "Full HPC cluster with Slurm scheduler, shared storage, and DCV remote desktop"
 template = "../templates/compute/parallelcluster-hpc.yaml"
-launch_role_policies = ["AmazonEC2FullAccess", "AmazonS3FullAccess", "AmazonSSMManagedInstanceCore"]
+launch_role_policies = [
+    "AmazonEC2FullAccess",
+    "AmazonS3FullAccess",
+    "AmazonSSMManagedInstanceCore",
+    "AWSLambda_FullAccess",
+    "AmazonElasticFileSystemFullAccess",
+    "IAMFullAccess",
+    "AWSCloudFormationFullAccess",
+]
 
 [[portfolio.products]]
 name = "sagemaker-studio"
+display_name = "SageMaker Studio"
+description = "Managed Jupyter environment with GPU support for ML development"
 template = "../templates/ml/sagemaker-studio.yaml"
 launch_role_policies = ["AmazonSageMakerFullAccess"]
 
 [[portfolio.products]]
 name = "research-vpc"
+display_name = "Research VPC"
+description = "Reusable VPC with public/private subnets, NAT gateway, and VPC endpoints"
 template = "../templates/networking/research-vpc.yaml"
 launch_role_policies = ["AmazonVPCFullAccess"]

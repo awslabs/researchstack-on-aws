@@ -85,8 +85,7 @@ python3 --version            # 3.11+
 node --version               # 18+
 cdk --version                # 2.x
 aws --version                # 2.x
-aws sts get-caller-identity  # should show your hub account ID
-# If using named profiles: aws sts get-caller-identity --profile your-profile-name
+aws sts get-caller-identity [--profile your-profile-name]  # should show your hub account ID (use --profile only when explicitly naming your profile for login)
 ```
 
 ## Configuration
@@ -119,24 +118,24 @@ To create additional portfolios (e.g., admin vs. user), create a new TOML file i
 
 ## Deployment
 
-Once config files are set, deploy from the `service-catalog/` directory. CDK will create the assets bucket, portfolio, products, launch roles, and StackSets.
+Once config files are set, deploy from the `service-catalog/` directory. CDK will create the assets bucket, portfolio, products, launch roles, and StackSets. Add `--profile your-profile-name` to CDK commands if you're using named AWS CLI profiles.
 
 ```bash
 cd service-catalog
 
 # Set up Python environment (isolates CDK library + project dependencies from your global Python)
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .  # installs aws-cdk-lib, constructs, and project dependencies from pyproject.toml
 
 # Bootstrap CDK (first time only, per account/region)
-cdk bootstrap aws://ACCOUNT_ID/REGION
+cdk bootstrap aws://ACCOUNT_ID/REGION [--profile your-profile-name]
 
 # Optional: validate before deploying
-cdk synth
+cdk synth [--profile your-profile-name]
 
 # Deploy all stacks (assets bucket + portfolio stacks)
-cdk deploy --all
+cdk deploy --all [--profile your-profile-name]
 ```
 
 `cdk deploy --all` runs synthesis automatically, so `cdk synth` is optional — useful for catching config errors before hitting AWS.
@@ -146,7 +145,7 @@ cdk deploy --all
 After deployment, researchers need access to the portfolio before they can launch products. This is currently a manual step in the AWS Console.
 
 1. Open **AWS Service Catalog** console in the hub account
-2. Go to **Portfolios** → click your portfolio
+2. Go to **Portfolios** → **Imported** → click your portfolio
 3. Click the **Access** tab → **Grant access**
 4. Select **Role** as the type
 5. Enter the IAM Identity Center role pattern:
@@ -181,3 +180,4 @@ Common issues and how to resolve them.
 | `Template not found` | Check that product `template` paths in TOML are correct relative to `service-catalog/` |
 | StackSet deployment fails | Verify hub account is delegated admin for CloudFormation StackSets |
 | Portfolio not visible to users | Complete the post-deployment access grant steps above |
+| Portfolio not visible in spoke accounts | Ensure OU IDs are uncommented in `share_target_ous` in your portfolio TOML and redeploy |

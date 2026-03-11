@@ -19,8 +19,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ProductConfig:
     """A product within a portfolio."""
-    name: str
+    name: str  # machine-friendly identifier (used for IAM roles, StackSets)
     template: str  # relative path to CloudFormation template
+    display_name: str = ""  # human-friendly name shown in Service Catalog console
+    description: str = ""  # product description shown in Service Catalog console
     launch_role_policies: List[str] = field(default_factory=list)
 
 
@@ -31,6 +33,9 @@ class PortfolioConfig:
     display_name: str
     description: str
     provider_name: str = "ARC Toolkit"
+    support_email: str = ""
+    support_url: str = ""
+    distributor: str = ""
     products: List[ProductConfig] = field(default_factory=list)
     target_ous: List[str] = field(default_factory=list)
     share_tag_options: bool = True
@@ -93,6 +98,8 @@ class PortfolioConfigLoader:
             products.append(ProductConfig(
                 name=p["name"],
                 template=p["template"],
+                display_name=p.get("display_name", p["name"].replace("-", " ").title()),
+                description=p.get("description", ""),
                 launch_role_policies=p.get("launch_role_policies", []),
             ))
 
@@ -101,6 +108,9 @@ class PortfolioConfigLoader:
             display_name=ps.get("display_name", portfolio_name.replace("-", " ").title()),
             description=ps.get("description", ""),
             provider_name=ps.get("provider_name", "ARC Toolkit"),
+            support_email=ps.get("support_email", ""),
+            support_url=ps.get("support_url", ""),
+            distributor=ps.get("distributor", ""),
             products=products,
             target_ous=ps.get("share_target_ous", []),
             share_tag_options=ps.get("share_tag_options", True),

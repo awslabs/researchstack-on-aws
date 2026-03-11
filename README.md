@@ -97,7 +97,7 @@ Prerequisites: Python 3.11+, AWS CLI, CDK CLI (`npm install -g aws-cdk`), AWS Or
 
 ```bash
 cd service-catalog
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -e .
 
 # Edit framework_config.yaml with your account, region, org ID

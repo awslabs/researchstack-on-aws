@@ -80,8 +80,12 @@ class PortfolioStack(Stack):
         product = sc.CloudFormationProduct(
             self,
             f"Product-{product_cfg.name}",
-            product_name=product_cfg.name,
+            product_name=product_cfg.display_name,
             owner=self.config.provider_name,
+            description=product_cfg.description or None,
+            distributor=self.config.distributor or None,
+            support_email=self.config.support_email or None,
+            support_url=self.config.support_url or None,
             product_versions=[
                 sc.CloudFormationProductVersion(
                     product_version_name="v1",
