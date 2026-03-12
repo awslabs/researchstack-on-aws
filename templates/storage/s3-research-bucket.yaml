@@ -27,7 +27,7 @@ Metadata:
 Parameters:
   ProjectName:
     Type: String
-    Description: 'Research project name (used for cost tracking tags and resource naming)'
+    Description: 'Research project name (used for cost tracking tags)'
     AllowedPattern: '^[a-zA-Z0-9-]+$'
     ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
@@ -41,12 +41,12 @@ Parameters:
   Owner:
     Type: String
     Default: ''
-    Description: 'PI or researcher email for cost tracking — helps FinOps trace resources back to a person (optional)'
+    Description: 'PI or researcher email for cost tracking - helps FinOps trace resources back to a person (optional)'
 
   BucketBaseName:
     Type: String
     Default: research-data
-    Description: 'Base name for the S3 bucket (suffixed with account ID and region for uniqueness)'
+    Description: 'Base name for the S3 bucket (final name: {base}-{account-id}-{region}, e.g., research-data-123456789012-us-east-1)'
     AllowedPattern: '^[a-z0-9][a-z0-9-]*[a-z0-9]$'
     ConstraintDescription: 'Must be lowercase letters, numbers, and hyphens only'
     MinLength: 3

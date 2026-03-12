@@ -5,7 +5,7 @@ CloudFormation templates optimized for research workloads. Each template can be 
 ## Available Templates
 
 ### Networking (`networking/`)
-- **research-vpc.yaml** — Reusable VPC with public/private subnets, NAT gateway, and VPC endpoints
+- **research-vpc.yaml** — Reusable VPC with public/private subnets, NAT gateway, S3 gateway endpoint, and configurable AZs. Note: the NAT gateway has a base cost (~$32/mo) plus data processing charges — delete the stack when not in use to avoid idle costs.
 
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy

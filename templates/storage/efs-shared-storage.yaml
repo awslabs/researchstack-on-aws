@@ -39,7 +39,7 @@ Metadata:
 Parameters:
   ProjectName:
     Type: String
-    Description: 'Research project name (used for cost tracking tags and resource naming)'
+    Description: 'Research project name (used for cost tracking tags)'
     AllowedPattern: '^[a-zA-Z0-9-]+$'
     ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
@@ -61,12 +61,12 @@ Parameters:
 
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: 'Private subnets for EFS mount targets (select 2-3 subnets in different AZs for high availability)'
+    Description: 'Private subnets for EFS mount targets - use the same subnets where your EC2 instances run (select 2-3 in different AZs for high availability)'
 
   FileSystemName:
     Type: String
     Default: shared-storage
-    Description: 'Name for the EFS filesystem (must be unique in your account)'
+    Description: 'Name for the EFS filesystem (also used for the security group name, e.g., shared-storage, shared-storage-sg)'
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-]*$'
     ConstraintDescription: 'Must start with a letter and contain only alphanumeric characters and hyphens'
     MinLength: 3

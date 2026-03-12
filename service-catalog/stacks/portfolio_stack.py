@@ -120,8 +120,8 @@ class PortfolioStack(Stack):
             managed_policy_names=product_cfg.launch_role_policies,
         )
 
-        # Add launch constraint so SC uses this role
-        self.portfolio.set_launch_role(product, launch_role_construct.role)
+        # Add launch constraint using local role name (works cross-account for shared portfolios)
+        self.portfolio.set_local_launch_role(product, launch_role_construct.role)
 
         # Deploy launch role to target accounts via StackSet
         if self.config.target_ous:
