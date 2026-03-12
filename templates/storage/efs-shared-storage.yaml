@@ -143,12 +143,7 @@ Resources:
       GroupDescription: !Sub 'Security group for EFS filesystem ${FileSystemName}'
       GroupName: !Sub '${AWS::StackName}-efs-sg'
       VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          SourceSecurityGroupId: !Ref EfsSecurityGroup
-          Description: 'Allow NFS access from instances with this security group attached'
+      SecurityGroupIngress: []
       Tags:
         - Key: Name
           Value: !Sub '${FileSystemName}-sg'
@@ -165,6 +160,16 @@ Resources:
           Value: ARC-Toolkit
         - Key: Environment
           Value: Research
+
+  EfsSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref EfsSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref EfsSecurityGroup
+      Description: 'Allow NFS access from instances with this security group attached'
 
   EfsMountTarget1:
     Type: AWS::EFS::MountTarget
