@@ -9,7 +9,7 @@ CloudFormation templates optimized for research workloads. Each template can be 
 
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
-- **efs-shared-storage.yaml** — Network file system for shared access across multiple instances
+- **efs-shared-storage.yaml** — Network file system for shared access across multiple instances. EC2 instances must have the EFS security group (from stack outputs) attached to mount the filesystem.
 
 ### Compute (`compute/`)
 - **ec2-general-purpose.yaml** — M-series instances for balanced workloads

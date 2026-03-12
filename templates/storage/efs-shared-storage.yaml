@@ -24,9 +24,9 @@ Metadata:
       ProjectName:
         default: 'Project Name'
       CostCenter:
-        default: 'Cost Center / Grant Number'
+        default: 'Cost Center'
       Owner:
-        default: 'Owner Email'
+        default: 'Owner Email (optional)'
       VpcId:
         default: 'VPC ID'
       SubnetIds:
@@ -35,55 +35,34 @@ Metadata:
         default: 'Filesystem Name'
       AutomaticBackups:
         default: 'Enable Automatic Backups'
-  
-  ResearchLifecycle:
-    Phases:
-      - Phase2B  # Exploration
-      - Phase2C  # Production
-    Description: 'Suitable for active computation phases requiring shared file access'
-  
-  QuickSuite:
-    Keywords:
-      - storage
-      - efs
-      - shared-storage
-      - network-filesystem
-      - nfs
-      - collaboration
-    UseCases:
-      - Shared home directories for HPC clusters
-      - Collaborative data analysis
-      - Shared datasets across multiple instances
-      - Application data requiring POSIX filesystem
 
 Parameters:
   ProjectName:
     Type: String
-    Description: 'Research project name (for cost tracking and resource naming)'
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
     AllowedPattern: '^[a-zA-Z0-9-]+$'
     ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
     MaxLength: 40
-  
+
   CostCenter:
     Type: String
     Description: 'Department or grant number for cost allocation'
     MinLength: 1
-  
+
   Owner:
     Type: String
-    Description: 'PI or researcher email address'
-    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    ConstraintDescription: 'Must be a valid email address'
-  
+    Default: ''
+    Description: 'PI or researcher email for cost tracking - helps FinOps trace resources back to a person (optional)'
+
   VpcId:
     Type: AWS::EC2::VPC::Id
     Description: 'VPC where the EFS filesystem will be deployed (ask your IT admin)'
-  
+
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
     Description: 'Private subnets for EFS mount targets (select 2-3 subnets in different AZs for high availability)'
-  
+
   FileSystemName:
     Type: String
     Default: shared-storage
@@ -92,7 +71,7 @@ Parameters:
     ConstraintDescription: 'Must start with a letter and contain only alphanumeric characters and hyphens'
     MinLength: 3
     MaxLength: 40
-  
+
   AutomaticBackups:
     Type: String
     Default: DISABLED
@@ -102,6 +81,7 @@ Parameters:
     Description: 'Enable automatic daily backups (adds cost but recommended for production)'
 
 Conditions:
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
   HasSecondSubnet: !Not [!Equals [!Join [',', !Ref SubnetIds], !Select [0, !Ref SubnetIds]]]
   HasThirdSubnet: !And
     - !Condition HasSecondSubnet
@@ -147,8 +127,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ARC-Toolkit
         - Key: Environment
@@ -164,18 +147,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: 2049
           ToPort: 2049
-          CidrIp: 10.0.0.0/8
-          Description: 'Allow NFS access from private networks (10.0.0.0/8)'
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: 172.16.0.0/12
-          Description: 'Allow NFS access from private networks (172.16.0.0/12)'
-        - IpProtocol: tcp
-          FromPort: 2049
-          ToPort: 2049
-          CidrIp: 192.168.0.0/16
-          Description: 'Allow NFS access from private networks (192.168.0.0/16)'
+          SourceSecurityGroupId: !Ref EfsSecurityGroup
+          Description: 'Allow NFS access from instances with this security group attached'
       Tags:
         - Key: Name
           Value: !Sub '${FileSystemName}-sg'
@@ -183,8 +156,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ARC-Toolkit
         - Key: Environment
@@ -222,19 +198,19 @@ Outputs:
     Value: !Ref EfsFilesystem
     Export:
       Name: !Sub '${AWS::StackName}-FilesystemId'
-  
+
   FileSystemArn:
     Description: 'ARN of the EFS filesystem'
     Value: !Sub 'arn:${AWS::Partition}:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/${EfsFilesystem}'
     Export:
       Name: !Sub '${AWS::StackName}-FileSystemArn'
-  
+
   SecurityGroupId:
     Description: 'ID of the EFS security group (add this to EC2 instances that need access)'
     Value: !Ref EfsSecurityGroup
     Export:
       Name: !Sub '${AWS::StackName}-SecurityGroupId'
-  
+
   MountCommand:
     Description: 'Command to mount the EFS filesystem on Linux'
     Value: !Sub 'sudo mount -t efs -o tls ${EfsFilesystem}:/ /mnt/efs'
