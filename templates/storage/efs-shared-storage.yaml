@@ -61,7 +61,7 @@ Parameters:
 
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: 'Private subnets for EFS mount targets - use the same subnets where your EC2 instances run (select 2-3 in different AZs for high availability)'
+    Description: 'Subnets for EFS mount targets - use the same subnets where your EC2 instances run (select 2-3 in different AZs for high availability)'
 
   FileSystemName:
     Type: String

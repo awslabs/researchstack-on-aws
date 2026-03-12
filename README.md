@@ -174,7 +174,6 @@ aws cloudformation create-stack \
 - **ec2-compute-optimized.yaml**: C-series instances for compute-intensive tasks
 - **ec2-memory-optimized.yaml**: R-series instances for memory-intensive workloads
 - **ec2-accelerated-gpu.yaml**: GPU (G/P-series) and Trainium/Inferentia for ML
-- **ec2-hpc-optimized.yaml**: HPC-optimized instances for parallel workloads
 - **parallelcluster-hpc.yaml**: Full HPC cluster with Slurm scheduler
 
 ### Machine Learning

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'EC2 Accelerated Computing - GPU instances (G/P-series) and AWS Trainium/Inferentia for ML workloads'
+Description: 'EC2 GPU Compute (G-series) - NVIDIA GPU instances with Deep Learning Base AMI for ML training, inference, and GPU-accelerated research'
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -13,189 +13,151 @@ Metadata:
       - Label:
           default: 'Instance Configuration'
         Parameters:
+          - InstanceName
           - InstanceType
+          - OperatingSystem
           - AMI
           - VolumeSize
       - Label:
-          default: 'Network Configuration (Optional)'
+          default: 'Network Configuration'
         Parameters:
           - VpcId
           - SubnetId
-  
-  ResearchLifecycle:
-    Phases:
-      - Phase2B
-      - Phase2C
-    Description: 'ML training/inference, graphics rendering, and GPU-accelerated computing'
-  
-  QuickSuite:
-    Keywords:
-      - ec2
-      - gpu
-      - accelerated
-      - ml
-      - training
-      - inference
-      - trainium
-      - inferentia
-    UseCases:
-      - ML model training
-      - ML inference
-      - Graphics rendering
-      - Scientific simulations
+      - Label:
+          default: 'Storage Integration (optional)'
+        Parameters:
+          - EfsFileSystemId
+          - EfsSecurityGroupId
+          - S3BucketName
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
+      InstanceName:
+        default: 'Instance Name'
+      InstanceType:
+        default: 'Instance Type'
+      OperatingSystem:
+        default: 'Operating System'
+      AMI:
+        default: 'AMI'
+      VolumeSize:
+        default: 'Root Volume Size (GB)'
+      VpcId:
+        default: 'VPC ID'
+      SubnetId:
+        default: 'Subnet ID'
+      EfsFileSystemId:
+        default: 'EFS Filesystem ID (optional)'
+      EfsSecurityGroupId:
+        default: 'EFS Security Group ID (optional)'
+      S3BucketName:
+        default: 'S3 Bucket Name (optional)'
 
 Parameters:
   ProjectName:
     Type: String
-    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    Description: 'Research project name (used for cost tracking tags and resource naming, e.g., my-project-instance, my-project-sg)'
+    AllowedPattern: '^[a-zA-Z0-9-]+'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
     MaxLength: 40
-  
+
   CostCenter:
     Type: String
+    Description: 'Department or grant number for cost allocation'
     MinLength: 1
-  
+
   Owner:
     Type: String
-    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-  
+    Default: ''
+    Description: 'PI or researcher email for cost tracking - helps FinOps trace resources back to a person (optional)'
+
+  InstanceName:
+    Type: String
+    Default: ''
+    Description: 'Display name for this instance in the AWS console (optional - defaults to {ProjectName}-instance). Useful when deploying multiple instances for the same project.'
+
   InstanceType:
     Type: String
     Default: g6.xlarge
+    Description: 'G-series GPU instance type. g6 = NVIDIA L4, g6e = NVIDIA L40S, g5 = NVIDIA A10G. See the templates README for help choosing a size.'
+    AllowedPattern: '^g[0-9]+[a-z]*\.(xlarge|[0-9]*xlarge)'
+    ConstraintDescription: 'Must be a G-series instance type (e.g., g6.xlarge, g6e.2xlarge, g5.4xlarge)'
+
+  OperatingSystem:
+    Type: String
+    Default: amazon-linux-2023
     AllowedValues:
-      - g6.xlarge
-      - g6.2xlarge
-      - g6.4xlarge
-      - g6.8xlarge
-      - g6.12xlarge
-      - g6.16xlarge
-      - g5.xlarge
-      - g5.2xlarge
-      - g5.4xlarge
-      - g5.8xlarge
-      - p5.48xlarge
-      - p4d.24xlarge
-      - trn1.2xlarge
-      - trn1.32xlarge
-      - trn2.48xlarge
-      - inf2.xlarge
-      - inf2.8xlarge
-      - inf2.24xlarge
-      - inf2.48xlarge
-  
+      - amazon-linux-2023
+      - ubuntu-2204
+    Description: 'Base OS for the Deep Learning AMI. Both include NVIDIA drivers + CUDA pre-installed. Pick the AMI below to match.'
+
   AMI:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
-  
+    Default: /aws/service/deeplearning/ami/x86_64/base-with-single-cuda-amazon-linux-2023/latest/ami-id
+    AllowedValues:
+      - /aws/service/deeplearning/ami/x86_64/base-with-single-cuda-amazon-linux-2023/latest/ami-id
+      - /aws/service/deeplearning/ami/x86_64/base-with-single-cuda-ubuntu-22.04/latest/ami-id
+    Description: 'Deep Learning Base AMI with NVIDIA drivers + CUDA pre-installed (no framework pinned). Pick the row matching your OS choice above. x86_64 only (G-series does not support Graviton).'
+
   VolumeSize:
     Type: Number
-    Default: 100
-    MinValue: 30
+    Default: 200
+    MinValue: 50
     MaxValue: 16384
-  
+    Description: 'Root EBS volume size in GB (gp3, encrypted). DLAMIs are larger than standard AMIs - 200 GB recommended minimum. Scale up for large datasets or model checkpoints.'
+
   VpcId:
-    Type: String
-    Default: ''
-  
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC to launch the instance in (deploy the Research VPC template first if you do not have one)'
+
   SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: 'Subnet to launch the instance in - must be in the same VPC/subnets as your EFS mount targets if using shared storage. Use a private subnet for production workloads, public for quick experiments.'
+
+  EfsFileSystemId:
     Type: String
     Default: ''
+    Description: 'EFS filesystem ID to mount at /mnt/efs (from the EFS template stack outputs). Auto-mounts with TLS on both AL2023 and Ubuntu - Ubuntu takes 3-5 min longer at boot to build efs-utils. Leave blank if not using shared storage.'
+
+  EfsSecurityGroupId:
+    Type: String
+    Default: ''
+    Description: 'Security group ID from the EFS template (required if mounting EFS - allows NFS traffic between this instance and the filesystem)'
+
+  S3BucketName:
+    Type: String
+    Default: ''
+    Description: 'S3 bucket name to grant this instance read/write access (from the S3 template stack outputs). Leave blank if not needed.'
 
 Conditions:
-  CreateVpc: !Equals [!Ref VpcId, '']
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasInstanceName: !Not [!Equals [!Ref InstanceName, '']]
+  HasEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
+  HasEfsSG: !Not [!Equals [!Ref EfsSecurityGroupId, '']]
+  HasS3: !Not [!Equals [!Ref S3BucketName, '']]
+  IsUbuntu: !Equals [!Ref OperatingSystem, 'ubuntu-2204']
+  IsAL2023: !Not [!Condition IsUbuntu]
+  MountEfsAL2023: !And [!Condition HasEfs, !Condition IsAL2023]
 
 Resources:
-  VPC:
-    Type: AWS::EC2::VPC
-    Condition: CreateVpc
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
-      EnableDnsSupport: true
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-vpc'
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: CostCenter
-          Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
-        - Key: ManagedBy
-          Value: ARC-Toolkit
-        - Key: Environment
-          Value: Research
-
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Condition: CreateVpc
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-igw'
-
-  AttachGateway:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Condition: CreateVpc
-    Properties:
-      VpcId: !Ref VPC
-      InternetGatewayId: !Ref InternetGateway
-
-  PublicSubnet:
-    Type: AWS::EC2::Subnet
-    Condition: CreateVpc
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: !Select [0, !GetAZs '']
-      Tags:
-        - Key: Name
-          Value: !Sub '${ProjectName}-public-subnet'
-
-  PublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Condition: CreateVpc
-    Properties:
-      VpcId: !Ref VPC
-
-  PublicRoute:
-    Type: AWS::EC2::Route
-    Condition: CreateVpc
-    DependsOn: AttachGateway
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-  SubnetRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Condition: CreateVpc
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref PublicRouteTable
-
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: !Sub 'Security group for ${ProjectName}'
-      VpcId: !If [CreateVpc, !Ref VPC, !Ref VpcId]
+      GroupDescription: !Sub 'Security group for ${ProjectName} EC2 instance'
+      GroupName: !Sub '${AWS::StackName}-sg'
+      VpcId: !Ref VpcId
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
+          Description: 'Allow all outbound traffic'
       Tags:
         - Key: Name
           Value: !Sub '${ProjectName}-sg'
-        - Key: Project
-          Value: !Ref ProjectName
-        - Key: CostCenter
-          Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
-        - Key: ManagedBy
-          Value: ARC-Toolkit
-        - Key: Environment
-          Value: Research
 
   InstanceRole:
     Type: AWS::IAM::Role
@@ -214,12 +176,35 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ARC-Toolkit
         - Key: Environment
           Value: Research
+
+  S3AccessPolicy:
+    Type: AWS::IAM::Policy
+    Condition: HasS3
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-s3-access'
+      Roles:
+        - !Ref InstanceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
 
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -233,25 +218,80 @@ Resources:
       InstanceType: !Ref InstanceType
       ImageId: !Ref AMI
       IamInstanceProfile: !Ref InstanceProfile
-      SubnetId: !If [CreateVpc, !Ref PublicSubnet, !Ref SubnetId]
-      SecurityGroupIds:
-        - !Ref SecurityGroup
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds: !If
+        - HasEfsSG
+        - - !Ref SecurityGroup
+          - !Ref EfsSecurityGroupId
+        - - !Ref SecurityGroup
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: !If [IsUbuntu, /dev/sda1, /dev/xvda]
           Ebs:
             VolumeSize: !Ref VolumeSize
             VolumeType: gp3
             Encrypted: true
             DeleteOnTermination: true
+      UserData: !If
+        - IsUbuntu
+        - Fn::Base64: !Sub |
+            #!/bin/bash -xe
+            export DEBIAN_FRONTEND=noninteractive
+
+            # DLAMIs run NVIDIA repo setup at boot which holds apt locks.
+            # apt-get update uses /var/lib/apt/lists/lock (no built-in wait option),
+            # so we retry. apt-get install uses /var/lib/dpkg/lock-frontend, which
+            # DPkg::Lock::Timeout handles natively.
+            for i in $(seq 1 30); do
+              apt-get update -y && break
+              echo "apt-get update failed (attempt $i/30), retrying in 10s..."
+              sleep 10
+            done
+            APT_OPTS="-o DPkg::Lock::Timeout=300"
+
+            # Install/update AWS CLI v2 (may already be on DLAMIs)
+            apt-get $APT_OPTS -y install unzip curl
+            ARCH=$(uname -m)
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-$ARCH.zip" -o /tmp/awscliv2.zip
+            unzip -q /tmp/awscliv2.zip -d /tmp
+            /tmp/aws/install --update
+            rm -rf /tmp/aws /tmp/awscliv2.zip
+
+            # Mount EFS if requested (requires building amazon-efs-utils from source)
+            EFS_ID="${EfsFileSystemId}"
+            if [ -n "$EFS_ID" ]; then
+              # Build deps: rustc/cargo for efs-proxy, Go/cmake for aws-lc-fips-sys
+              apt-get $APT_OPTS -y install git binutils rustc cargo pkg-config libssl-dev cmake golang-go
+              cd /tmp
+              git clone https://github.com/aws/efs-utils.git
+              cd efs-utils
+              ./build-deb.sh
+              apt-get $APT_OPTS -y install ./build/amazon-efs-utils*deb
+              mkdir -p /mnt/efs
+              mount -t efs -o tls $EFS_ID:/ /mnt/efs
+              echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+            fi
+        - !If
+          - MountEfsAL2023
+          - Fn::Base64: !Sub |
+              #!/bin/bash -xe
+              # AL2023: Mount EFS with TLS via amazon-efs-utils (pre-packaged)
+              yum install -y amazon-efs-utils
+              mkdir -p /mnt/efs
+              mount -t efs -o tls ${EfsFileSystemId}:/ /mnt/efs
+              echo "${EfsFileSystemId}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+          - !Ref 'AWS::NoValue'
       Tags:
         - Key: Name
-          Value: !Sub '${ProjectName}-instance'
+          Value: !If [HasInstanceName, !Ref InstanceName, !Sub '${ProjectName}-instance']
         - Key: Project
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ARC-Toolkit
         - Key: Environment
@@ -259,10 +299,23 @@ Resources:
 
 Outputs:
   InstanceId:
+    Description: 'EC2 instance ID (use this with SSM Session Manager to connect)'
     Value: !Ref Instance
-  
-  PublicIp:
-    Value: !GetAtt Instance.PublicIp
-  
+    Export:
+      Name: !Sub '${AWS::StackName}-InstanceId'
+
   PrivateIp:
+    Description: 'Private IP address (for connecting to this instance from within the VPC)'
     Value: !GetAtt Instance.PrivateIp
+    Export:
+      Name: !Sub '${AWS::StackName}-PrivateIp'
+
+  SecurityGroupId:
+    Description: 'Security group ID (add inbound rules as needed, or attach to EFS for shared storage)'
+    Value: !Ref SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
+
+  SSMConnectCommand:
+    Description: 'Connect to the instance via SSM Session Manager (no SSH key needed)'
+    Value: !Sub 'aws ssm start-session --target ${Instance} [--profile your-profile-name]'

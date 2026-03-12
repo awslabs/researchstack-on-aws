@@ -12,12 +12,14 @@ CloudFormation templates optimized for research workloads. Each template can be 
 - **efs-shared-storage.yaml** — Network file system for shared access across multiple instances. EC2 instances must have the EFS security group (from stack outputs) attached to mount the filesystem.
 
 ### Compute (`compute/`)
-- **ec2-general-purpose.yaml** — M-series instances for balanced workloads
-- **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks
-- **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads
-- **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML
-- **ec2-hpc-optimized.yaml** — HPC-optimized instances for parallel workloads
+- **ec2-general-purpose.yaml** — M-series instances for balanced workloads (data processing, web apps, dev environments)
+- **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks (simulations, batch processing, modeling)
+- **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads (genomics, large datasets, in-memory DBs)
+- **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML training and inference
+- **ec2-hpc-optimized.yaml** — HPC-optimized instances for tightly coupled parallel workloads (CFD, molecular dynamics)
 - **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and DCV remote desktop
+
+All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
 
 ### Machine Learning (`ml/`)
 - **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support
@@ -30,6 +32,40 @@ All templates follow these conventions:
 - **Required tags**: Project, CostCenter, ManagedBy (ARC-Toolkit), Environment (Research)
 - **Security defaults**: Encryption enabled, public access blocked, least privilege where applicable
 - **Naming**: Resources include account ID and region for uniqueness
+
+## Choosing an Instance Type
+
+Not sure which instance size to pick? Each EC2 template constrains you to the right family (M for general purpose, C for compute, etc.) but leaves the size up to you. These resources can help:
+
+- [AWS EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/) — official specs and family descriptions
+- [Vantage Instance Comparison](https://instances.vantage.sh/) — community tool for comparing specs, pricing, and availability side-by-side (filter by family, sort by price)
+
+When in doubt, start small (e.g., `m7i.xlarge`) and scale up. You can always stop the instance, change the type, and restart.
+
+For Graviton (arm64) instances (e.g., `m7g`, `c7g`, `r7g`), select the arm64 AMI variant from the dropdown — typically ~20% better price-performance than x86.
+
+### Available Operating Systems
+
+Each EC2 template offers these AMIs via SSM parameter lookup (always resolves to the latest version):
+
+| Dropdown value | OS | Architecture |
+|---|---|---|
+| `al2023-ami-kernel-default-x86_64` | Amazon Linux 2023 | x86_64 (Intel/AMD) |
+| `al2023-ami-kernel-default-arm64` | Amazon Linux 2023 | arm64 (Graviton) |
+| `ubuntu/server/noble/.../amd64` | Ubuntu 24.04 LTS | x86_64 (Intel/AMD) |
+| `ubuntu/server/noble/.../arm64` | Ubuntu 24.04 LTS | arm64 (Graviton) |
+
+Amazon Linux 2023 is the default and recommended for most workloads — EFS auto-mounts with TLS encryption and SSM works out of the box. Ubuntu 24.04 is supported for teams that prefer it, but EFS must be mounted manually post-boot because `amazon-efs-utils` now requires a Rust toolchain to build on Ubuntu. See the [efs-utils GitHub repo](https://github.com/aws/efs-utils) for manual install instructions.
+
+## Connecting to Instances
+
+All EC2 templates use [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) for access — no SSH keys, no inbound ports, no public IP required. Connect via:
+
+```bash
+aws ssm start-session --target i-0123456789abcdef0 [--profile your-profile-name]
+```
+
+The instance ID and connect command are in the stack outputs after deployment. Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the AWS CLI.
 
 ## Deploying
 

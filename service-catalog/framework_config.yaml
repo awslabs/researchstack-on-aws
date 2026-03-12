@@ -4,7 +4,7 @@
 deployment:
   hub_account: "123456789012"       # Your SC hub account ID (12 digits)
   hub_region: "us-east-1"           # Region to deploy SC resources
-  organization_id: "o-exampleorgid" # Your AWS Organization ID
+  organization_id: "o-xxxxxxxxxx" # Your AWS Organization ID
   default_env_name: "dev"
 
 # OUs that portfolios can share to (validated against portfolio configs)
