@@ -1,4 +1,4 @@
-"""Framework configuration loader for ARC Service Catalog.
+"""Framework configuration loader for Research Cloud Toolkit Service Catalog.
 
 Loads deployment settings, available OUs, and tagging config from framework_config.yaml.
 Validates required fields and formats before CDK synthesis.

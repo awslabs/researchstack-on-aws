@@ -1,14 +1,14 @@
-# AWS Research Cloud (ARC) Toolkit
+# Research Cloud Toolkit on AWS
 
-A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The ARC Toolkit provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
+A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The Research Cloud Toolkit on AWS provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
 
-## Why ARC?
+## Why Research Cloud Toolkit?
 
 Research institutions have three personas that all need something different from AWS:
 
-- **Researchers** want to jump into their work at whatever phase of the research lifecycle they're in — not learn networking, security groups, and IAM. ARC gives them pre-built templates that handle the infrastructure so they can focus on research.
-- **IT admins** want researchers to self-serve compute and storage, but using best practices and in a standardized way so that troubleshooting is repeatable. ARC templates enforce security defaults, consistent architecture, and known-good configurations across the institution.
-- **FinOps teams** need cost visibility across grants and an easy path to chargeback. Every ARC-deployed resource is automatically tagged with project, cost center, and owner — ready for Cost and Usage Reports without manual tagging.
+- **Researchers** want to jump into their work at whatever phase of the research lifecycle they're in — not learn networking, security groups, and IAM. The toolkit gives them pre-built templates that handle the infrastructure so they can focus on research.
+- **IT admins** want researchers to self-serve compute and storage, but using best practices and in a standardized way so that troubleshooting is repeatable. The templates enforce security defaults, consistent architecture, and known-good configurations across the institution.
+- **FinOps teams** need cost visibility across grants and an easy path to chargeback. Every deployed resource is automatically tagged with project, cost center, and owner — ready for Cost and Usage Reports without manual tagging.
 
 Browse the available templates in [`templates/`](templates/) or jump to the [template list](#templates) below.
 
@@ -31,7 +31,7 @@ Browse the available templates in [`templates/`](templates/) or jump to the [tem
 
 ## Overview
 
-The ARC Toolkit helps research institutions:
+The Research Cloud Toolkit on AWS helps research institutions:
 - **Deploy quickly**: Pre-built CloudFormation templates for common research workloads
 - **Track costs**: Built-in tagging for grant chargeback
 - **Scale governance**: Optional Service Catalog for multi-account template governance and deployment
@@ -40,7 +40,7 @@ The ARC Toolkit helps research institutions:
 ## Repository Structure
 
 ```
-aws-research-cloud/
+research-cloud-toolkit/
 ├── templates/                # CloudFormation templates
 │   ├── compute/             # EC2, ParallelCluster
 │   ├── storage/             # S3, EFS
@@ -190,7 +190,7 @@ All templates include required tags for cost allocation:
 
 Use these tags in AWS Cost Explorer for chargeback reporting. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for enabling cost allocation tags, setting up Cost and Usage Reports, and grant budgeting tips.
 
-These tags also serve as the foundation for [attribute-based access control (ABAC)](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html). Institutions using IAM Identity Center can write permission set policies that condition on resource tags (e.g., allow S3 access only when `s3:ResourceTag/Project` matches the user's `aws:PrincipalTag/Project`). ARC doesn't ship IAM policies — access control is institution-specific — but the consistent tagging makes ABAC straightforward to implement.
+These tags also serve as the foundation for [attribute-based access control (ABAC)](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html). Institutions using IAM Identity Center can write permission set policies that condition on resource tags (e.g., allow S3 access only when `s3:ResourceTag/Project` matches the user's `aws:PrincipalTag/Project`). The toolkit doesn't ship IAM policies — access control is institution-specific — but the consistent tagging makes ABAC straightforward to implement.
 
 ## Documentation
 
@@ -202,8 +202,8 @@ These tags also serve as the foundation for [attribute-based access control (ABA
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/aws-research-cloud/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/aws-research-cloud/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-org/research-cloud-toolkit/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/research-cloud-toolkit/discussions)
 - **AWS Support**: Contact your AWS account team
 
 ## Roadmap

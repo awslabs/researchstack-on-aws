@@ -1,4 +1,4 @@
-# ARC Toolkit Templates
+# Research Cloud Toolkit on AWS Templates
 
 CloudFormation templates optimized for research workloads. Each template can be deployed standalone via the AWS Console or CLI, or governed via [Service Catalog](../docs/service-catalog-guide.md).
 

@@ -1,11 +1,11 @@
-# ARC Toolkit Scripts
+# Research Cloud Toolkit on AWS Scripts
 
 Utility scripts for template validation and deployment.
 
 ## Available Scripts
 
 ### validate-template.py
-Validates CloudFormation templates against ARC Toolkit standards.
+Validates CloudFormation templates against Research Cloud Toolkit on AWS standards.
 
 **Usage:**
 ```bash

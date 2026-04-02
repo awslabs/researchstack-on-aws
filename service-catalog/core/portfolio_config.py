@@ -1,4 +1,4 @@
-"""Portfolio configuration loader for ARC Service Catalog.
+"""Portfolio configuration loader for Research Cloud Toolkit Service Catalog.
 
 Loads portfolio TOML configs with inline product definitions.
 Each product declares a template path and the managed policies its launch role needs.
@@ -32,7 +32,7 @@ class PortfolioConfig:
     name: str
     display_name: str
     description: str
-    provider_name: str = "ARC Toolkit"
+    provider_name: str = "Research Cloud Toolkit on AWS"
     support_email: str = ""
     support_url: str = ""
     support_description: str = ""
@@ -109,7 +109,7 @@ class PortfolioConfigLoader:
             name=ps.get("name", portfolio_name),
             display_name=ps.get("display_name", portfolio_name.replace("-", " ").title()),
             description=ps.get("description", ""),
-            provider_name=ps.get("provider_name", "ARC Toolkit"),
+            provider_name=ps.get("provider_name", "Research Cloud Toolkit on AWS"),
             support_email=ps.get("support_email", ""),
             support_url=ps.get("support_url", ""),
             support_description=ps.get("support_description", ""),

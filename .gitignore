@@ -29,4 +29,6 @@ logs/
 
 # Kiro workspace config
 .kiro/
+# ASH scan results
 .ash/
+scan-results*/

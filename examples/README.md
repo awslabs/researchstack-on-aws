@@ -1,4 +1,4 @@
-# ARC Toolkit Examples
+# Research Cloud Toolkit on AWS Examples
 
 Example deployments and use cases.
 

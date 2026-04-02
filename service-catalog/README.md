@@ -1,4 +1,4 @@
-# ARC Toolkit — Service Catalog (CDK)
+# Research Cloud Toolkit on AWS — Service Catalog (CDK)
 
 CDK project that deploys Service Catalog portfolios, products, launch roles, and OU sharing on top of the [CloudFormation templates](../templates/).
 

@@ -1,4 +1,4 @@
-# Contributing to AWS Research Cloud (ARC) Toolkit
+# Contributing to Research Cloud Toolkit on AWS
 
 ## Template Standards
 

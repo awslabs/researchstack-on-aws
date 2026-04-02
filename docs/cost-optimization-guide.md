@@ -18,7 +18,7 @@ AWS costs vary by region, usage patterns, and pricing changes. Instead of static
 - Moves data between access tiers automatically
 - No retrieval fees
 - Saves 70-95% on infrequently accessed data
-- **All ARC templates use this by default**
+- **All templates use this by default**
 
 **EFS Lifecycle Management**
 - Moves files to Infrequent Access tier after 30 days
@@ -93,7 +93,7 @@ AWS costs vary by region, usage patterns, and pricing changes. Instead of static
 ## Cost Tracking
 
 ### Required Tags (All Templates)
-All ARC templates enforce these tags for cost allocation:
+All templates enforce these tags for cost allocation:
 - **Project**: Research project name
 - **CostCenter**: Department or grant number
 - **Owner**: PI or researcher email
@@ -137,7 +137,7 @@ aws budgets create-budget \
 ## Common Cost Pitfalls
 
 1. **Leaving instances running 24/7** - Stop when not in use
-2. **Not using S3 Intelligent Tiering** - All ARC templates use this
+2. **Not using S3 Intelligent Tiering** - All templates use this
 3. **Ignoring data transfer costs** - Keep data and compute in same region
 4. **Not deleting failed experiments** - Clean up regularly
 5. **Over-provisioning** - Start small, scale up as needed
