@@ -17,7 +17,7 @@ CloudFormation templates optimized for research workloads. Each template can be 
 - **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads (genomics, large datasets, in-memory DBs)
 - **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML training and inference
 - **ec2-hpc-optimized.yaml** — HPC-optimized instances for tightly coupled parallel workloads (CFD, molecular dynamics)
-- **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and DCV remote desktop
+- **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and optional DCV remote desktop. See the [ParallelCluster Guide](../docs/parallelcluster-guide.md) for deployment, job submission, and post-deploy customization (adding queues, multi-user, login nodes).
 
 All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
 

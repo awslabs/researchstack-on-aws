@@ -27,7 +27,6 @@ Metadata:
           default: 'Storage Integration (optional)'
         Parameters:
           - EfsFileSystemId
-          - EfsSecurityGroupId
           - S3BucketName
     ParameterLabels:
       ProjectName:
@@ -52,8 +51,6 @@ Metadata:
         default: 'Subnet ID'
       EfsFileSystemId:
         default: 'EFS Filesystem ID (optional)'
-      EfsSecurityGroupId:
-        default: 'EFS Security Group ID (optional)'
       S3BucketName:
         default: 'S3 Bucket Name (optional)'
 
@@ -126,11 +123,6 @@ Parameters:
     Default: ''
     Description: 'EFS filesystem ID to mount at /mnt/efs (from the EFS template stack outputs). Auto-mounts with TLS on both AL2023 and Ubuntu - Ubuntu takes 3-5 min longer at boot to build efs-utils. Leave blank if not using shared storage.'
 
-  EfsSecurityGroupId:
-    Type: String
-    Default: ''
-    Description: 'Security group ID from the EFS template (required if mounting EFS - allows NFS traffic between this instance and the filesystem)'
-
   S3BucketName:
     Type: String
     Default: ''
@@ -140,7 +132,6 @@ Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]
   HasInstanceName: !Not [!Equals [!Ref InstanceName, '']]
   HasEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
-  HasEfsSG: !Not [!Equals [!Ref EfsSecurityGroupId, '']]
   HasS3: !Not [!Equals [!Ref S3BucketName, '']]
   IsUbuntu: !Equals [!Ref OperatingSystem, 'ubuntu-2404']
   IsAL2023: !Not [!Condition IsUbuntu]
@@ -221,11 +212,8 @@ Resources:
       ImageId: !Ref AMI
       IamInstanceProfile: !Ref InstanceProfile
       SubnetId: !Ref SubnetId
-      SecurityGroupIds: !If
-        - HasEfsSG
-        - - !Ref SecurityGroup
-          - !Ref EfsSecurityGroupId
-        - - !Ref SecurityGroup
+      SecurityGroupIds:
+        - !Ref SecurityGroup
       BlockDeviceMappings:
         - DeviceName: !If [IsUbuntu, /dev/sda1, /dev/xvda]
           Ebs:

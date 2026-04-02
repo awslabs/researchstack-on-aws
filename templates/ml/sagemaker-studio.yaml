@@ -185,6 +185,7 @@ Resources:
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
+          Description: 'Allow all outbound traffic for SageMaker Studio'
       Tags:
         - Key: Project
           Value: !Ref ProjectName
@@ -205,6 +206,7 @@ Resources:
       FromPort: 2049
       ToPort: 2049
       SourceSecurityGroupId: !Ref SageMakerSecurityGroup
+      Description: 'Allow NFS traffic between SageMaker Studio instances for EFS access'
 
   SageMakerSecurityGroupIngressInternal:
     Type: AWS::EC2::SecurityGroupIngress
@@ -214,6 +216,7 @@ Resources:
       FromPort: 8192
       ToPort: 65535
       SourceSecurityGroupId: !Ref SageMakerSecurityGroup
+      Description: 'Allow internal SageMaker Studio traffic for kernel and app communication'
 
   SageMakerStudioDomain:
     Type: AWS::SageMaker::Domain

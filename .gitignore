@@ -26,3 +26,7 @@ logs/
 
 # Environment
 .env
+
+# Kiro workspace config
+.kiro/
+.ash/

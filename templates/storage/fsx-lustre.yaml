@@ -1,0 +1,290 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'FSx for Lustre - High-performance filesystem for compute-intensive research workloads, with optional S3 data repository linking'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
+      - Label:
+          default: 'Network Configuration'
+        Parameters:
+          - VpcId
+          - SubnetId
+      - Label:
+          default: 'Filesystem Configuration'
+        Parameters:
+          - StorageCapacity
+          - S3BucketArn
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
+      VpcId:
+        default: 'VPC ID'
+      SubnetId:
+        default: 'Subnet ID'
+      StorageCapacity:
+        default: 'Storage Capacity (GiB)'
+      S3BucketArn:
+        default: 'S3 Bucket ARN (optional)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Research project name (used for cost tracking tags)'
+    AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
+    MinLength: 3
+    MaxLength: 40
+
+  CostCenter:
+    Type: String
+    Description: 'Department or grant number for cost allocation'
+    MinLength: 1
+
+  Owner:
+    Type: String
+    Default: ''
+    Description: 'PI or researcher email for cost tracking (optional)'
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC where the filesystem will be deployed'
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: 'Subnet for the filesystem. Use the same subnet as your compute nodes.'
+
+  StorageCapacity:
+    Type: Number
+    Default: 1200
+    Description: 'Storage in GiB (minimum 1200, increments of 2400). Durable storage with replication. With S3: files sync automatically.'
+    MinValue: 1200
+
+  S3BucketArn:
+    Type: String
+    Default: ''
+    Description: 'ARN of S3 bucket to link (e.g., arn:aws:s3:::my-research-data). Files are lazy-loaded on first access and changes sync automatically. Leave blank for standalone scratch storage.'
+
+Conditions:
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasS3: !Not [!Equals [!Ref S3BucketArn, '']]
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'FSx Lustre security group for ${ProjectName}'
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-fsx-sg'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  SecurityGroupIngressVpc988:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 988
+      ToPort: 988
+      CidrIp: !GetAtt VpcCidrLookup.CidrBlock
+      Description: 'Lustre traffic from VPC'
+
+  SecurityGroupIngressVpc1021:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 1021
+      ToPort: 1023
+      CidrIp: !GetAtt VpcCidrLookup.CidrBlock
+      Description: 'Lustre traffic from VPC'
+
+  # Self-referencing rules required for Lustre internal communication
+  SecurityGroupIngressSelf988:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 988
+      ToPort: 988
+      SourceSecurityGroupId: !Ref SecurityGroup
+      Description: 'Lustre internal traffic'
+
+  SecurityGroupIngressSelf1021:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 1021
+      ToPort: 1023
+      SourceSecurityGroupId: !Ref SecurityGroup
+      Description: 'Lustre internal traffic'
+
+  VpcCidrLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: DescribeVpcs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'ec2:DescribeVpcs'
+                Resource: '*'
+
+  VpcCidrLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt VpcCidrLookupRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: |
+          import boto3, json, urllib.request
+          def send(event, context, status, data=None, reason=''):
+              body = json.dumps({'Status': status, 'Reason': reason or f'See CloudWatch Log Stream: {context.log_stream_name}',
+                  'PhysicalResourceId': context.log_stream_name, 'StackId': event['StackId'],
+                  'RequestId': event['RequestId'], 'LogicalResourceId': event['LogicalResourceId'],
+                  'Data': data or {}}).encode()
+              urllib.request.urlopen(urllib.request.Request(event['ResponseURL'], data=body, method='PUT'))
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      return send(event, context, 'SUCCESS')
+                  cidr = boto3.client('ec2').describe_vpcs(VpcIds=[event['ResourceProperties']['VpcId']])['Vpcs'][0]['CidrBlock']
+                  send(event, context, 'SUCCESS', {'CidrBlock': cidr})
+              except Exception as e:
+                  send(event, context, 'FAILED', reason=str(e))
+
+  VpcCidrLookup:
+    Type: Custom::VpcCidrLookup
+    Properties:
+      ServiceToken: !GetAtt VpcCidrLookupFunction.Arn
+      VpcId: !Ref VpcId
+
+  # Without S3: SCRATCH_2 (temporary, high burst throughput, cheaper)
+  # With S3: PERSISTENT_2 (durable, required for data repository associations)
+  LustreFilesystem:
+    Type: AWS::FSx::FileSystem
+    DependsOn:
+      - SecurityGroupIngressVpc988
+      - SecurityGroupIngressVpc1021
+    Properties:
+      FileSystemType: LUSTRE
+      StorageCapacity: !Ref StorageCapacity
+      SubnetIds:
+        - !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      LustreConfiguration:
+        # PERSISTENT_2 used for all deployments — SCRATCH_2 runs Lustre 2.10.x which is
+        # incompatible with the 2.15.x client on Amazon Linux 2023 and recent Ubuntu AMIs.
+        DeploymentType: PERSISTENT_2
+        DataCompressionType: LZ4
+        PerUnitStorageThroughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-lustre'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  S3DataRepositoryAssociation:
+    Type: AWS::FSx::DataRepositoryAssociation
+    Condition: HasS3
+    Properties:
+      FileSystemId: !Ref LustreFilesystem
+      FileSystemPath: /s3data
+      DataRepositoryPath: !Sub
+        - 's3://${BucketName}/'
+        - BucketName: !Select [5, !Split [':', !Ref S3BucketArn]]
+      BatchImportMetaDataOnCreate: true
+      S3:
+        AutoImportPolicy:
+          Events: ['NEW', 'CHANGED', 'DELETED']
+        AutoExportPolicy:
+          Events: ['NEW', 'CHANGED', 'DELETED']
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+
+Outputs:
+  FileSystemId:
+    Description: 'FSx Lustre filesystem ID (use this to mount or pass to ParallelCluster)'
+    Value: !Ref LustreFilesystem
+    Export:
+      Name: !Sub '${AWS::StackName}-FileSystemId'
+
+  FileSystemDnsName:
+    Description: 'DNS name for mounting the filesystem'
+    Value: !GetAtt LustreFilesystem.DNSName
+
+  MountName:
+    Description: 'Mount name for the filesystem'
+    Value: !GetAtt LustreFilesystem.LustreMountName
+
+  MountCommand:
+    Description: 'Command to mount the filesystem on Linux (requires lustre client installed)'
+    Value: !Sub
+      - 'sudo mount -t lustre ${DNS}@tcp:/${MountName} /mnt/lustre'
+      - DNS: !GetAtt LustreFilesystem.DNSName
+        MountName: !GetAtt LustreFilesystem.LustreMountName
+
+  SecurityGroupId:
+    Description: 'Security group ID (for advanced use)'
+    Value: !Ref SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
+
+  S3DataPath:
+    Condition: HasS3
+    Description: 'S3 data is available at /s3data on the filesystem'
+    Value: !Sub
+      - 's3://${BucketName}/ → /s3data'
+      - BucketName: !Select [5, !Split [':', !Ref S3BucketArn]]

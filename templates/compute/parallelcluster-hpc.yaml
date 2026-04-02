@@ -1,35 +1,56 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'AWS ParallelCluster deployment using native CloudFormation custom resource'
+Description: 'AWS ParallelCluster deployment with Slurm scheduler, optional DCV remote desktop, and shared EFS storage'
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
       - Label:
           default: 'Cluster Configuration'
         Parameters:
           - ClusterName
           - OperatingSystem
       - Label:
-          default: 'Head Node Resources'
+          default: 'Head Node'
         Parameters:
           - HeadNodeInstanceType
       - Label:
-          default: 'Compute Resources'
+          default: 'Compute Nodes'
         Parameters:
           - ComputeInstanceType
           - ComputePricingModel
           - MaxComputeNodes
+          - CapacityBlockId
       - Label:
-          default: 'Network Configuration'
+          default: 'Networking'
         Parameters:
           - HeadNodeSubnetId
           - ComputeSubnetId
       - Label:
-          default: 'Access Configuration'
+          default: 'Storage (optional)'
+        Parameters:
+          - EfsFileSystemId
+          - S3BucketName
+          - FsxLustreFileSystemId
+      - Label:
+          default: 'Access'
         Parameters:
           - KeyPairName
+          - EnableDCV
+          - DCVAllowedIps
           - DCVPassword
     ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
       ClusterName:
         default: 'Cluster Name'
       OperatingSystem:
@@ -42,41 +63,76 @@ Metadata:
         default: 'Compute Pricing Model'
       MaxComputeNodes:
         default: 'Maximum Compute Nodes'
+      CapacityBlockId:
+        default: 'Capacity Block Reservation ID (optional)'
       HeadNodeSubnetId:
-        default: 'Public Head Node Subnet'
+        default: 'Head Node Subnet (public)'
       ComputeSubnetId:
-        default: 'Private Compute Node Subnet'
+        default: 'Compute Node Subnet (private recommended)'
+      EfsFileSystemId:
+        default: 'Existing EFS Filesystem ID (optional)'
+      S3BucketName:
+        default: 'S3 Bucket Name (optional)'
+      FsxLustreFileSystemId:
+        default: 'Existing FSx for Lustre ID (optional)'
       KeyPairName:
-        default: 'Key Pair Name'
+        default: 'SSH Key Pair (optional)'
+      EnableDCV:
+        default: 'Enable DCV Remote Desktop'
+      DCVAllowedIps:
+        default: 'DCV Allowed IP Range'
       DCVPassword:
         default: 'DCV Desktop Password'
 
 Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
+    AllowedPattern: '^[a-zA-Z0-9-]+'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
+    MinLength: 3
+    MaxLength: 40
+
+  CostCenter:
+    Type: String
+    Description: 'Department or grant number for cost allocation'
+    MinLength: 1
+
+  Owner:
+    Type: String
+    Default: ''
+    Description: 'PI or researcher email for cost tracking (optional)'
+
   ClusterName:
     Type: String
-    Description: 'Name for the ParallelCluster'
+    Description: 'Name for the cluster'
     Default: 'research-cluster'
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-]{0,59}$'
+    ConstraintDescription: 'Must start with a letter, up to 60 characters, alphanumeric and hyphens only'
 
   OperatingSystem:
     Type: String
-    Description: 'Operating system for cluster nodes'
-    AllowedValues: ['alinux2023', 'alinux2', 'ubuntu2204', 'ubuntu2404', 'rhel8', 'rhel9']
+    Description: 'Operating system for cluster nodes. Amazon Linux 2023 recommended for broadest compatibility.'
+    AllowedValues: ['alinux2023', 'ubuntu2204', 'ubuntu2404']
     Default: 'alinux2023'
 
   HeadNodeInstanceType:
     Type: String
-    Description: 'EC2 instance type for head node (e.g., m7i.2xlarge for basic desktop use)'
+    Description: 'Instance type for head node (runs Slurm controller + optional DCV desktop). m7i.2xlarge is a good default for DCV; m7i.large is sufficient for CLI-only clusters. Graviton (e.g., m7g) supported.'
     Default: 'm7i.2xlarge'
+    AllowedPattern: '^(m[5-9]|c[5-9])[a-z0-9]*\.(medium|x?large|[2-9]?xlarge|[1-9][0-9]*xlarge)$'
+    ConstraintDescription: 'Must be an M-series or C-series instance type (e.g., m7i.2xlarge, c7g.4xlarge)'
 
   ComputeInstanceType:
     Type: String
-    Description: 'EC2 instance type for compute nodes (e.g., c7i.8xlarge for CPU, g6.48xlarge for GPU workloads)'
+    Description: 'Instance type for compute nodes. C-series for CPU, R-series for memory, G-series for GPU, P-series for ML training (requires Capacity Block), Hpc-series for tightly-coupled. Graviton supported.'
     Default: 'c7i.8xlarge'
+    AllowedPattern: '^(c[5-9]|m[5-9]|r[5-9]|g[4-6]|p[4-6]|hpc[6-8])[a-z0-9]*\.(medium|x?large|[2-9]?xlarge|[1-9][0-9]*xlarge|metal)$'
+    ConstraintDescription: 'Must be a C, M, R, G, P, or Hpc-series instance type (e.g., c7i.8xlarge, g6.12xlarge, p5.48xlarge)'
 
   ComputePricingModel:
     Type: String
-    Description: 'Pricing model for compute nodes'
+    Description: 'Pricing model for compute nodes. Spot saves up to 70% but instances can be interrupted. Use On-Demand for critical workloads.'
     AllowedValues: ['SPOT', 'ONDEMAND']
     Default: 'ONDEMAND'
 
@@ -85,34 +141,66 @@ Parameters:
     Default: 10
     MinValue: 1
     MaxValue: 100
+    Description: 'Maximum number of compute nodes that Slurm can scale to. Nodes launch on job submission and terminate after idle timeout.'
+
+  CapacityBlockId:
+    Type: String
+    Default: ''
+    Description: 'EC2 Capacity Block reservation ID for P-series GPU instances (required for p4/p5/p6 since they cannot be launched on-demand). Leave blank for all other instance types.'
 
   HeadNodeSubnetId:
     Type: AWS::EC2::Subnet::Id
-    Description: 'Must have internet access for DCV remote desktop and software downloads'
+    Description: 'Subnet for the head node. Use a public subnet (has internet gateway) so DCV and SSH are reachable from outside the VPC.'
 
   ComputeSubnetId:
     Type: AWS::EC2::Subnet::Id
-    Description: 'Recommended to use private subnet with NAT Gateway for security and cost optimization'
+    Description: 'Subnet for compute nodes. A private subnet with NAT Gateway is recommended (better security, lower data transfer costs). Must be in the same VPC as the head node subnet.'
+
+  EfsFileSystemId:
+    Type: String
+    Default: ''
+    Description: 'Existing EFS filesystem ID to mount at /shared (e.g., fs-0123456789abcdef0). If blank, a new EFS is created and deleted with the cluster. If provided, the EFS persists independently of the cluster lifecycle.'
+
+  S3BucketName:
+    Type: String
+    Default: ''
+    Description: 'S3 bucket name to grant the head node read/write access (e.g., my-research-data). Leave blank if not needed.'
+
+  FsxLustreFileSystemId:
+    Type: String
+    Default: ''
+    Description: 'Existing FSx for Lustre filesystem ID to mount at /lustre (e.g., fs-0123456789abcdef0). The filesystem security group must allow ports 988, 1021-1023 from the cluster subnets. Leave blank if not using Lustre.'
 
   KeyPairName:
-    Type: AWS::EC2::KeyPair::KeyName
-    Description: 'EC2 key pair for SSH access'
+    Type: String
+    Default: ''
+    Description: 'EC2 key pair name for SSH access (optional). If blank, use Session Manager or DCV to connect. Create a key pair in the EC2 console if you need SSH.'
+
+  EnableDCV:
+    Type: String
+    Description: 'Enable NICE DCV remote desktop on the head node. Provides a full GUI desktop accessible via web browser. Set to no if you only need CLI access.'
+    AllowedValues: ['yes', 'no']
+    Default: 'yes'
+
+  DCVAllowedIps:
+    Type: String
+    Default: ''
+    Description: 'CIDR block allowed to connect to DCV (e.g., 203.0.113.0/24 for your office, 0.0.0.0/0 for anywhere). Required when DCV is enabled.'
 
   DCVPassword:
     Type: String
     NoEcho: true
-    Description: 'Password for DCV desktop login (username: ec2-user for Amazon Linux/RHEL, ubuntu for Ubuntu)'
-    MinLength: 8
-    ConstraintDescription: Password must be at least 8 characters long
+    Default: ''
+    Description: 'Password for DCV desktop login (username: ec2-user for Amazon Linux, ubuntu for Ubuntu). Required when DCV is enabled. Min 8 characters.'
 
 Conditions:
-  UseSpotInstances: !Equals [!Ref ComputePricingModel, 'SPOT']
-  IsAmazonLinux: !Or
-    - !Equals [!Ref OperatingSystem, 'alinux2023']
-    - !Equals [!Ref OperatingSystem, 'alinux2']
-  IsRHEL: !Or
-    - !Equals [!Ref OperatingSystem, 'rhel8']
-    - !Equals [!Ref OperatingSystem, 'rhel9']
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
+  HasCapacityBlock: !Not [!Equals [!Ref CapacityBlockId, '']]
+  HasExistingEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
+  HasFsxLustre: !Not [!Equals [!Ref FsxLustreFileSystemId, '']]
+  HasS3Bucket: !Not [!Equals [!Ref S3BucketName, '']]
+  DCVEnabled: !Equals [!Ref EnableDCV, 'yes']
   IsUbuntu: !Or
     - !Equals [!Ref OperatingSystem, 'ubuntu2204']
     - !Equals [!Ref OperatingSystem, 'ubuntu2404']
@@ -126,8 +214,19 @@ Resources:
         - 'https://${AWS::Region}-aws-parallelcluster.s3.${AWS::Region}.${AWS::URLSuffix}/parallelcluster/3.14.0/templates/custom_resource/cluster.yaml'
         - {}
       Tags:
-        - Key: Product
-          Value: !Ref ClusterName
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
 
   # S3 bucket for bootstrap scripts
   BootstrapBucket:
@@ -139,9 +238,76 @@ Resources:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
       Tags:
-        - Key: Product
-          Value: !Ref ClusterName
-  
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
+  BootstrapBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BootstrapBucket
+      PolicyDocument:
+        Statement:
+          - Sid: AllowParallelClusterAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root'
+            Action:
+              - 's3:GetObject'
+              - 's3:ListBucket'
+            Resource:
+              - !GetAtt BootstrapBucket.Arn
+              - !Sub '${BootstrapBucket.Arn}/*'
+
+  # Scoped IAM policy for head node to read DCV password from Secrets Manager.
+  # Named with 'parallelcluster' prefix so the ParallelCluster Lambda's IAM admin
+  # policy allows attaching it (the provider allowlists arn:...:policy/parallelcluster*).
+  DCVSecretsPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: DCVEnabled
+    Properties:
+      ManagedPolicyName: !Sub 'parallelcluster-${AWS::StackName}-dcv-secrets'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'secretsmanager:GetSecretValue'
+            Resource: !Ref DCVPasswordSecret
+
+  # Secrets Manager for DCV password (only when DCV is enabled)
+  DCVPasswordSecret:
+    Type: AWS::SecretsManager::Secret
+    Condition: DCVEnabled
+    Properties:
+      Name: !Sub '${AWS::StackName}-dcv-password'
+      Description: !Sub 'DCV desktop password for ${ClusterName}'
+      SecretString: !Ref DCVPassword
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
+
   # IAM role for bootstrap upload Lambda
   BootstrapUploadRole:
     Type: AWS::IAM::Role
@@ -154,7 +320,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         - PolicyName: S3Access
           PolicyDocument:
@@ -163,25 +329,7 @@ Resources:
               - Effect: Allow
                 Action: ['s3:PutObject', 's3:DeleteObject', 's3:GetObject']
                 Resource: !Sub '${BootstrapBucket.Arn}/*'
-  
-  # Policy to allow ParallelCluster resources to access bootstrap bucket
-  BootstrapBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref BootstrapBucket
-      PolicyDocument:
-        Statement:
-          - Sid: AllowParallelClusterAccess
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action:
-              - 's3:GetObject'
-              - 's3:ListBucket'
-            Resource:
-              - !GetAtt BootstrapBucket.Arn
-              - !Sub '${BootstrapBucket.Arn}/*'
-  
+
   # Lambda function to upload bootstrap script
   BootstrapUploadFunction:
     Type: AWS::Lambda::Function
@@ -194,22 +342,30 @@ Resources:
         ZipFile: |
           import boto3
           import cfnresponse
+          import logging
+
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
           s3 = boto3.client('s3')
           
           BOOTSTRAP_SCRIPT = '''#!/bin/bash
-          # Bootstrap script with local logging
-          
           LOG_FILE="/var/log/bootstrap.log"
           
-          # Function to log messages
           log() {
               echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
           }
           
-          DCV_PASSWORD="${1}"
+          ENABLE_DCV="${1:-no}"
+          SECRET_ARN="${2:-}"
           
           log "=== Bootstrap Script Started ==="
-          log "Hostname: $(hostname)"
+          log "Hostname: $(hostname), DCV: $ENABLE_DCV"
+          
+          if [[ "$ENABLE_DCV" != "yes" ]]; then
+              log "DCV not enabled, nothing to do"
+              log "=== Bootstrap Script Completed ==="
+              exit 0
+          fi
           
           # Detect OS
           if [ -f /etc/os-release ]; then
@@ -223,145 +379,114 @@ Resources:
           
           # Set package manager
           if [[ "$OS_ID" == "ubuntu" ]]; then
-              log "Using apt-get package manager"
               PKG_INSTALL="apt-get install -y"
               PKG_GROUP=""
-              log "Running apt-get update..."
               apt-get update -y >> "$LOG_FILE" 2>&1 || log "WARNING: apt-get update had issues"
           else
               if command -v dnf &> /dev/null; then
-                  log "Using dnf package manager"
                   PKG_INSTALL="dnf install -y"
                   PKG_GROUP="dnf groupinstall -y"
-                  log "Running dnf update..."
-                  dnf update -y >> "$LOG_FILE" 2>&1 || log "WARNING: dnf update had issues"
               else
-                  log "Using yum package manager"
                   PKG_INSTALL="yum install -y"
                   PKG_GROUP="yum groupinstall -y"
-                  log "Running yum update..."
-                  yum update -y >> "$LOG_FILE" 2>&1 || log "WARNING: yum update had issues"
               fi
           fi
           
-          # Install software stack
-          log "Installing software stack..."
-          
+          log "Installing desktop environment for DCV..."
           if [[ "$OS_ID" == "ubuntu" ]]; then
-              log "Installing development tools..."
-              $PKG_INSTALL build-essential emacs git python3 python3-pip vim nano wget curl >> "$LOG_FILE" 2>&1
-              
-              log "Installing GUI desktop for DCV..."
               DEBIAN_FRONTEND=noninteractive $PKG_INSTALL ubuntu-desktop >> "$LOG_FILE" 2>&1
-              systemctl set-default graphical.target
+          elif [[ "$OS_ID" == "amzn" ]]; then
+              $PKG_GROUP "Desktop" >> "$LOG_FILE" 2>&1 || log "WARNING: Desktop had issues"
           else
-              log "Installing Development Tools group..."
-              $PKG_GROUP "Development Tools" >> "$LOG_FILE" 2>&1 || log "WARNING: Development Tools installation had issues"
-              
-              log "Installing additional packages..."
-              $PKG_INSTALL emacs git python3 python3-pip vim nano wget >> "$LOG_FILE" 2>&1
-              
-              log "Installing desktop environment for DCV..."
-              if [[ "$OS_ID" == "amzn" ]]; then
-                  # Amazon Linux 2023
-                  $PKG_GROUP "Desktop" >> "$LOG_FILE" 2>&1 || log "WARNING: Desktop installation had issues"
-              else
-                  # RHEL/Rocky Linux
-                  $PKG_GROUP "Server with GUI" >> "$LOG_FILE" 2>&1 || log "WARNING: GUI installation had issues"
-              fi
-              systemctl set-default graphical.target
-              log "Desktop environment installed"
+              $PKG_GROUP "Server with GUI" >> "$LOG_FILE" 2>&1 || log "WARNING: GUI had issues"
+          fi
+          systemctl set-default graphical.target
+          
+          # Set DCV user
+          if [[ "$OS_ID" == "ubuntu" ]]; then
+              DCV_USER="ubuntu"
+          else
+              DCV_USER="ec2-user"
           fi
           
-          # Configure DCV
-          log "Configuring DCV..."
-              
-              # Set password for ec2-user or ubuntu
-              if [[ "$OS_ID" == "ubuntu" ]]; then
-                  DCV_USER="ubuntu"
-              else
-                  DCV_USER="ec2-user"
+          # Retrieve password from Secrets Manager
+          if [ -n "$SECRET_ARN" ]; then
+              REGION=$(TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") && curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region 2>/dev/null || echo "")
+              if [ -n "$REGION" ]; then
+                  DCV_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --region "$REGION" --query SecretString --output text 2>/dev/null || echo "")
+                  if [ -n "$DCV_PASSWORD" ]; then
+                      echo "$DCV_USER:$DCV_PASSWORD" | chpasswd
+                      log "Set DCV password for $DCV_USER"
+                  else
+                      log "WARNING: Could not retrieve DCV password from Secrets Manager"
+                  fi
               fi
-              
-              if [ -n "$DCV_PASSWORD" ]; then
-                  echo "$DCV_USER:$DCV_PASSWORD" | chpasswd
-                  log "Set password for $DCV_USER"
-              else
-                  log "WARNING: No DCV password provided"
-              fi
-              
-              # Configure DCV for high resolution virtual sessions
-              log "Configuring DCV display settings..."
-              
-              # Enable system authentication for DCV (override ParallelCluster token-based auth)
-              sed -i 's/^#*authentication=.*/authentication="system"/' /etc/dcv/dcv.conf
-              sed -i 's/^auth-token-verifier=/#auth-token-verifier=/' /etc/dcv/dcv.conf
-              sed -i 's/^ca-file=/#ca-file=/' /etc/dcv/dcv.conf
-              
-              # Configure display settings for virtual sessions
-              echo "" >> /etc/dcv/dcv.conf
-              echo "[display]" >> /etc/dcv/dcv.conf
-              echo "max-head-resolution=(4096, 2160)" >> /etc/dcv/dcv.conf
-              echo "" >> /etc/dcv/dcv.conf
-              echo "[clipboard]" >> /etc/dcv/dcv.conf
-              echo "primary-selection-copy=true" >> /etc/dcv/dcv.conf
-              echo "primary-selection-paste=true" >> /etc/dcv/dcv.conf
-              
-              log "DCV display configuration added"
-              
-              # Create systemd service to manage DCV session on boot
-              echo "[Unit]" > /etc/systemd/system/dcv-session.service
-              echo "Description=Create DCV Session" >> /etc/systemd/system/dcv-session.service
-              echo "After=dcvserver.service" >> /etc/systemd/system/dcv-session.service
-              echo "Requires=dcvserver.service" >> /etc/systemd/system/dcv-session.service
-              echo "" >> /etc/systemd/system/dcv-session.service
-              echo "[Service]" >> /etc/systemd/system/dcv-session.service
-              echo "Type=oneshot" >> /etc/systemd/system/dcv-session.service
-              echo "RemainAfterExit=yes" >> /etc/systemd/system/dcv-session.service
-              echo "ExecStartPre=/bin/sleep 10" >> /etc/systemd/system/dcv-session.service
-              echo "ExecStart=/bin/bash -c 'dcv close-session my-session 2>/dev/null || true; dcv create-session --type=virtual --owner \${DCV_USER} my-session'" >> /etc/systemd/system/dcv-session.service
-              echo "ExecStop=/usr/bin/dcv close-session my-session" >> /etc/systemd/system/dcv-session.service
-              echo "User=root" >> /etc/systemd/system/dcv-session.service
-              echo "" >> /etc/systemd/system/dcv-session.service
-              echo "[Install]" >> /etc/systemd/system/dcv-session.service
-              echo "WantedBy=multi-user.target" >> /etc/systemd/system/dcv-session.service
-              
-              # Replace DCV_USER placeholder in service file
-              sed -i "s/\${DCV_USER}/$DCV_USER/g" /etc/systemd/system/dcv-session.service
-              
-              # Enable and start the service
-              systemctl daemon-reload
-              systemctl enable dcv-session.service
-              systemctl start dcv-session.service
-              
-              log "DCV session service created and enabled"
-              log "DCV configured successfully with system authentication"
+          fi
           
-          log "=== Bootstrap Script Completed Successfully ==="
+          # Enable system authentication for DCV
+          sed -i 's/^#*authentication=.*/authentication="system"/' /etc/dcv/dcv.conf
+          sed -i 's/^auth-token-verifier=/#auth-token-verifier=/' /etc/dcv/dcv.conf
+          sed -i 's/^ca-file=/#ca-file=/' /etc/dcv/dcv.conf
+          
+          cat >> /etc/dcv/dcv.conf << DCVEOF
+          
+          [display]
+          max-head-resolution=(4096, 2160)
+          
+          [clipboard]
+          primary-selection-copy=true
+          primary-selection-paste=true
+          DCVEOF
+          
+          # DCV session service
+          cat > /etc/systemd/system/dcv-session.service << EOF
+          [Unit]
+          Description=Create DCV Session
+          After=dcvserver.service
+          Requires=dcvserver.service
+          
+          [Service]
+          Type=oneshot
+          RemainAfterExit=yes
+          ExecStartPre=/bin/sleep 10
+          ExecStart=/bin/bash -c 'dcv close-session my-session 2>/dev/null || true; dcv create-session --type=virtual --owner ${DCV_USER} my-session'
+          ExecStop=/usr/bin/dcv close-session my-session
+          User=root
+          
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          systemctl daemon-reload
+          systemctl enable dcv-session.service
+          systemctl start dcv-session.service
+          log "DCV configured with system authentication"
+          
+          log "=== Bootstrap Script Completed ==="
           '''
           
           def handler(event, context):
               try:
+                  bucket = event['ResourceProperties']['Bucket']
+                  key = event['ResourceProperties']['Key']
+                  
                   if event['RequestType'] == 'Delete':
                       try:
-                          s3.delete_object(Bucket=event['ResourceProperties']['Bucket'], Key=event['ResourceProperties']['Key'])
-                      except: pass
+                          s3.delete_object(Bucket=bucket, Key=key)
+                      except Exception as e:
+                          logger.warning("Cleanup error (non-fatal): %s", e)
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, {})
                       return
                   
                   s3.put_object(
-                      Bucket=event['ResourceProperties']['Bucket'],
-                      Key=event['ResourceProperties']['Key'],
+                      Bucket=bucket, Key=key,
                       Body=BOOTSTRAP_SCRIPT,
                       ContentType='text/x-shellscript'
                   )
-                  bucket = event['ResourceProperties']['Bucket']
-                  key = event['ResourceProperties']['Key']
-                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, "s3://" + bucket + "/" + key)
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, f"s3://{bucket}/{key}")
               except Exception as e:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {}, reason=str(e))
-  
-  # Upload bootstrap script
+
   BootstrapScriptUpload:
     Type: Custom::S3Object
     Properties:
@@ -377,8 +502,19 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${ClusterName}-head-node-eip'
-        - Key: Product
-          Value: !Ref ClusterName
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ARC-Toolkit
+        - Key: Environment
+          Value: Research
 
   # IAM role for EIP association Lambda
   EIPAssociationRole:
@@ -392,7 +528,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
         - PolicyName: EC2EIPAccess
           PolicyDocument:
@@ -402,23 +538,24 @@ Resources:
                 Action:
                   - 'ec2:AssociateAddress'
                   - 'ec2:DisassociateAddress'
+                Resource: !Sub 'arn:${AWS::Partition}:ec2:${AWS::Region}:${AWS::AccountId}:*'
+              - Effect: Allow
+                Action:
                   - 'ec2:DescribeAddresses'
                   - 'ec2:DescribeInstances'
                 Resource: '*'
 
-  # Lambda function to associate EIP with head node
   EIPAssociationFunction:
     Type: AWS::Lambda::Function
     Properties:
       Runtime: python3.11
       Handler: index.handler
       Role: !GetAtt EIPAssociationRole.Arn
-      Timeout: 900
+      Timeout: 500
       Code:
         ZipFile: |
           import boto3
           import cfnresponse
-          import time
           
           ec2 = boto3.client('ec2')
           
@@ -431,11 +568,9 @@ Resources:
                   instance_id = event['ResourceProperties']['InstanceId']
                   allocation_id = event['ResourceProperties']['AllocationId']
                   
-                  # Wait for instance to be running
                   waiter = ec2.get_waiter('instance_running')
                   waiter.wait(InstanceIds=[instance_id])
                   
-                  # Associate EIP
                   response = ec2.associate_address(
                       InstanceId=instance_id,
                       AllocationId=allocation_id
@@ -446,7 +581,7 @@ Resources:
               except Exception as e:
                   cfnresponse.send(event, context, cfnresponse.FAILED, {}, reason=str(e))
 
-  # ParallelCluster using AWS native custom resource
+  # ParallelCluster
   PclusterCluster:
     Type: Custom::PclusterCluster
     DependsOn: BootstrapScriptUpload
@@ -457,37 +592,60 @@ Resources:
         Image:
           Os: !Ref OperatingSystem
         Tags:
-          - Key: Product
-            Value: !Ref ClusterName
+          - Key: Project
+            Value: !Ref ProjectName
+          - Key: CostCenter
+            Value: !Ref CostCenter
+          - Key: ManagedBy
+            Value: ARC-Toolkit
+          - Key: Environment
+            Value: Research
         HeadNode:
           InstanceType: !Ref HeadNodeInstanceType
           Networking:
             SubnetId: !Ref HeadNodeSubnetId
-          Ssh:
-            KeyName: !Ref KeyPairName
+          Ssh: !If
+            - HasKeyPair
+            - KeyName: !Ref KeyPairName
+            - !Ref 'AWS::NoValue'
           LocalStorage:
             RootVolume:
               Size: 100
               VolumeType: gp3
           Iam:
             AdditionalIamPolicies:
-              - Policy: 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
+              - Policy: !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore'
+              - !If
+                - DCVEnabled
+                - Policy: !Ref DCVSecretsPolicy
+                - !Ref 'AWS::NoValue'
             S3Access:
               - BucketName: !Ref BootstrapBucket
                 EnableWriteAccess: false
-          Dcv:
-            Enabled: true
-            AllowedIps: '0.0.0.0/0'
+              - !If
+                - HasS3Bucket
+                - BucketName: !Ref S3BucketName
+                  EnableWriteAccess: true
+                - !Ref 'AWS::NoValue'
+          Dcv: !If
+            - DCVEnabled
+            - Enabled: true
+              AllowedIps: !Ref DCVAllowedIps
+            - !Ref 'AWS::NoValue'
           CustomActions:
             OnNodeConfigured:
               Script: !Sub 's3://${BootstrapBucket}/bootstrap.sh'
               Args:
-                - !Ref DCVPassword
+                - !Ref EnableDCV
+                - !If [DCVEnabled, !Ref DCVPasswordSecret, '']
         Scheduling:
           Scheduler: slurm
           SlurmQueues:
             - Name: compute
-              CapacityType: !Ref ComputePricingModel
+              CapacityType: !If
+                - HasCapacityBlock
+                - CAPACITY_BLOCK
+                - !Ref ComputePricingModel
               ComputeSettings:
                 LocalStorage:
                   RootVolume:
@@ -498,6 +656,10 @@ Resources:
                   InstanceType: !Ref ComputeInstanceType
                   MinCount: 0
                   MaxCount: !Ref MaxComputeNodes
+                  CapacityReservationTarget: !If
+                    - HasCapacityBlock
+                    - CapacityReservationId: !Ref CapacityBlockId
+                    - !Ref 'AWS::NoValue'
               Networking:
                 SubnetIds:
                   - !Ref ComputeSubnetId
@@ -507,15 +669,25 @@ Resources:
           - MountDir: /shared
             Name: shared-efs
             StorageType: Efs
-            EfsSettings:
-              ThroughputMode: bursting
-              PerformanceMode: generalPurpose
-              Encrypted: true
+            EfsSettings: !If
+              - HasExistingEfs
+              - FileSystemId: !Ref EfsFileSystemId
+                EncryptionInTransit: true
+              - ThroughputMode: bursting
+                PerformanceMode: generalPurpose
+                Encrypted: true
+          - !If
+            - HasFsxLustre
+            - MountDir: /lustre
+              Name: lustre-storage
+              StorageType: FsxLustre
+              FsxLustreSettings:
+                FileSystemId: !Ref FsxLustreFileSystemId
+            - !Ref 'AWS::NoValue'
 
-  # Associate EIP with head node after cluster creation
+  # Associate EIP with head node
   EIPAssociation:
     Type: Custom::EIPAssociation
-    DependsOn: PclusterCluster
     Properties:
       ServiceToken: !GetAtt EIPAssociationFunction.Arn
       InstanceId: !GetAtt [PclusterCluster, headNode.instanceId]
@@ -525,30 +697,44 @@ Outputs:
   ClusterName:
     Description: 'Name of the ParallelCluster'
     Value: !Ref ClusterName
-  
+
   HeadNodeInstanceId:
-    Description: 'Head node EC2 instance ID (use to stop/start instance via AWS console or CLI to save costs)'
+    Description: 'Head node EC2 instance ID (use to stop/start via console or CLI to save costs)'
     Value: !GetAtt [PclusterCluster, headNode.instanceId]
-  
+
   HeadNodeIP:
-    Description: 'Head node static IP address (Elastic IP - remains the same after stop/start)'
+    Description: 'Head node Elastic IP (stable across stop/start cycles)'
     Value: !Ref HeadNodeElasticIP
-  
+
+  SessionManagerCommand:
+    Description: 'Connect to head node via Session Manager (no SSH key needed, requires AWS CLI)'
+    Value: !Sub
+      - 'aws ssm start-session --target ${InstanceId} --region ${AWS::Region}'
+      - InstanceId: !GetAtt [PclusterCluster, headNode.instanceId]
+
   SSHCommand:
-    Description: 'SSH command to connect to head node (ec2-user for Amazon Linux/RHEL, ubuntu for Ubuntu)'
-    Value: !If 
+    Condition: HasKeyPair
+    Description: 'SSH command to connect to head node'
+    Value: !If
       - IsUbuntu
-      - !Join ['', ['ssh -i ~/.ssh/', !Ref KeyPairName, '.pem ubuntu@', !Ref HeadNodeElasticIP]]
-      - !Join ['', ['ssh -i ~/.ssh/', !Ref KeyPairName, '.pem ec2-user@', !Ref HeadNodeElasticIP]]
-  
+      - !Sub
+        - 'ssh -i ~/.ssh/${KeyPairName}.pem ubuntu@${IP}'
+        - IP: !Ref HeadNodeElasticIP
+      - !Sub
+        - 'ssh -i ~/.ssh/${KeyPairName}.pem ec2-user@${IP}'
+        - IP: !Ref HeadNodeElasticIP
+
   DCVConnectionURL:
-    Description: 'NICE DCV connection URL (use ec2-user for Amazon Linux/RHEL, ubuntu for Ubuntu) - bookmark this URL, it never changes'
-    Value: !Join ['', ['https://', !Ref HeadNodeElasticIP, ':8443']]
-  
+    Condition: DCVEnabled
+    Description: 'DCV remote desktop URL (login as ec2-user for Amazon Linux, ubuntu for Ubuntu). Bookmark this - the IP never changes.'
+    Value: !Sub
+      - 'https://${IP}:8443'
+      - IP: !Ref HeadNodeElasticIP
+
   ClusterStatus:
     Description: 'Current cluster status'
     Value: !GetAtt [PclusterCluster, clusterStatus]
-  
+
   BootstrapLogLocation:
-    Description: 'Bootstrap logs are stored on the head node at /var/log/bootstrap.log'
-    Value: 'SSH to head node and run: cat /var/log/bootstrap.log'
+    Description: 'Bootstrap log location on head node'
+    Value: 'Connect to head node and run: cat /var/log/bootstrap.log'

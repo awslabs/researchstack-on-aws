@@ -174,7 +174,7 @@ aws cloudformation create-stack \
 - **ec2-compute-optimized.yaml**: C-series instances for compute-intensive tasks
 - **ec2-memory-optimized.yaml**: R-series instances for memory-intensive workloads
 - **ec2-accelerated-gpu.yaml**: GPU (G/P-series) and Trainium/Inferentia for ML
-- **parallelcluster-hpc.yaml**: Full HPC cluster with Slurm scheduler
+- **parallelcluster-hpc.yaml**: Full HPC cluster with Slurm scheduler — see the [ParallelCluster Guide](docs/parallelcluster-guide.md)
 
 ### Machine Learning
 - **sagemaker-studio.yaml**: Managed Jupyter environment with GPU support
@@ -195,6 +195,7 @@ These tags also serve as the foundation for [attribute-based access control (ABA
 ## Documentation
 
 - [Service Catalog Deployment Guide](docs/service-catalog-guide.md) - Full walkthrough for multi-account governance deployment
+- [ParallelCluster Guide](docs/parallelcluster-guide.md) - Deploy, connect, run jobs, and customize HPC clusters
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) - Map your research phase to appropriate templates
 - [Cost Optimization Guide](docs/cost-optimization-guide.md) - Strategies to minimize AWS costs
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute templates

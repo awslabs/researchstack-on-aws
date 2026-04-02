@@ -161,15 +161,67 @@ Resources:
         - Key: Environment
           Value: Research
 
-  EfsSecurityGroupIngress:
+  EfsSecurityGroupIngressVpc:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       GroupId: !Ref EfsSecurityGroup
       IpProtocol: tcp
       FromPort: 2049
       ToPort: 2049
-      SourceSecurityGroupId: !Ref EfsSecurityGroup
-      Description: 'Allow NFS access from instances with this security group attached'
+      CidrIp: !GetAtt VpcCidrLookup.CidrBlock
+      Description: 'Allow NFS access from any instance in the VPC'
+
+  VpcCidrLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: DescribeVpcs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 'ec2:DescribeVpcs'
+                Resource: '*'
+
+  VpcCidrLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt VpcCidrLookupRole.Arn
+      Timeout: 30
+      Code:
+        ZipFile: |
+          import boto3, json, urllib.request
+          def send(event, context, status, data=None, reason=''):
+              body = json.dumps({'Status': status, 'Reason': reason or f'See CloudWatch Log Stream: {context.log_stream_name}',
+                  'PhysicalResourceId': context.log_stream_name, 'StackId': event['StackId'],
+                  'RequestId': event['RequestId'], 'LogicalResourceId': event['LogicalResourceId'],
+                  'Data': data or {}}).encode()
+              urllib.request.urlopen(urllib.request.Request(event['ResponseURL'], data=body, method='PUT'))
+          def handler(event, context):
+              try:
+                  if event['RequestType'] == 'Delete':
+                      return send(event, context, 'SUCCESS')
+                  cidr = boto3.client('ec2').describe_vpcs(VpcIds=[event['ResourceProperties']['VpcId']])['Vpcs'][0]['CidrBlock']
+                  send(event, context, 'SUCCESS', {'CidrBlock': cidr})
+              except Exception as e:
+                  send(event, context, 'FAILED', reason=str(e))
+
+  VpcCidrLookup:
+    Type: Custom::VpcCidrLookup
+    Properties:
+      ServiceToken: !GetAtt VpcCidrLookupFunction.Arn
+      VpcId: !Ref VpcId
 
   EfsMountTarget1:
     Type: AWS::EFS::MountTarget
@@ -211,7 +263,7 @@ Outputs:
       Name: !Sub '${AWS::StackName}-FileSystemArn'
 
   SecurityGroupId:
-    Description: 'ID of the EFS security group (add this to EC2 instances that need access)'
+    Description: 'ID of the EFS security group (for advanced use - most consumers do not need this since VPC CIDR access is enabled by default)'
     Value: !Ref EfsSecurityGroup
     Export:
       Name: !Sub '${AWS::StackName}-SecurityGroupId'
