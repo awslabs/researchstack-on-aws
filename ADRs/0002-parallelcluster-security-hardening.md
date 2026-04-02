@@ -1,4 +1,4 @@
-# ADR 0002: ParallelCluster Template Security Hardening and ARC Alignment
+# ADR 0002: ParallelCluster Template Security Hardening and Research Cloud Toolkit Alignment
 
 ## Metadata
 - **Status:** accepted
@@ -8,12 +8,12 @@
 
 ## Context
 
-The ParallelCluster HPC template (`templates/compute/parallelcluster-hpc.yaml`) was originally developed for a specific MIT use case. Before generalizing it for broader institutional use, it needed a security review and alignment with ARC Toolkit conventions established in Phase 1 (EC2, S3, EFS templates).
+The ParallelCluster HPC template (`templates/compute/parallelcluster-hpc.yaml`) was originally developed for a specific MIT use case. Before generalizing it for broader institutional use, it needed a security review and alignment with Research Cloud Toolkit conventions established in Phase 1 (EC2, S3, EFS templates).
 
 Key issues identified:
 - DCV password passed as a shell argument to the bootstrap script (visible in `/proc`, ParallelCluster logs, CloudFormation events)
 - DCV remote desktop open to `0.0.0.0/0` by default
-- Missing standard ARC cost-tracking tags (Project, CostCenter, Owner, ManagedBy, Environment)
+- Missing standard Research Cloud Toolkit cost-tracking tags (Project, CostCenter, Owner, ManagedBy, Environment)
 - Lambda IAM policies using `Resource: '*'` where narrower scoping was feasible
 - Bootstrap script had inconsistent indentation in the DCV configuration section
 - Lambda delete handler used bare `except: pass` (swallowed errors silently)
@@ -28,8 +28,8 @@ Store the DCV password as a separate encrypted file in the bootstrap S3 bucket (
 ### DCV Network Access
 Replace hardcoded `AllowedIps: '0.0.0.0/0'` with a required `DCVAllowedIps` parameter (CIDR format, no default). Forces deployers to explicitly choose their access scope.
 
-### ARC Tag Alignment
-Added `ProjectName`, `CostCenter`, and `Owner` parameters matching the EC2 template pattern. All taggable resources now carry the 5 standard ARC tags (Project, CostCenter, Owner, ManagedBy, Environment). Owner is optional with conditional inclusion.
+### Tag Alignment
+Added `ProjectName`, `CostCenter`, and `Owner` parameters matching the EC2 template pattern. All taggable resources now carry the 5 standard Research Cloud Toolkit tags (Project, CostCenter, Owner, ManagedBy, Environment). Owner is optional with conditional inclusion.
 
 ### IAM Scoping
 - EIP association Lambda: split `ec2:AssociateAddress`/`ec2:DisassociateAddress` (scoped to account/region) from `ec2:Describe*` actions (require `Resource: '*'` per AWS API design)
@@ -60,12 +60,12 @@ Considered defaulting to `0.0.0.0/0` for ease of use. Rejected because a permiss
 
 ### Positive
 - DCV password no longer visible in process listings, logs, or CloudFormation events
-- All resources tagged consistently for cost tracking across the ARC portfolio
+- All resources tagged consistently for cost tracking across the Research Cloud Toolkit portfolio
 - IAM follows least-privilege more closely
 - cfn-lint passes clean (zero warnings)
 - Template is partition-aware (works in GovCloud/China)
 
 ### Negative
-- Deployers must now provide 3 additional parameters (ProjectName, CostCenter, DCVAllowedIps) — minor friction, but consistent with all other ARC templates
+- Deployers must now provide 3 additional parameters (ProjectName, CostCenter, DCVAllowedIps) — minor friction, but consistent with all other Research Cloud Toolkit templates
 - Bootstrap script now depends on AWS CLI being available on the head node to read from S3 (it is — ParallelCluster pre-installs it)
 - Existing MIT deployments will need to add the new required parameters on stack update

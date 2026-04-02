@@ -14,5 +14,5 @@ available_ous:
 # Tags applied to all CDK-managed stacks
 tagging:
   required_tags:
-    Project: "ARC-Toolkit"
+    Project: "ResearchCloudToolkit"
     ManagedBy: "ServiceCatalog"

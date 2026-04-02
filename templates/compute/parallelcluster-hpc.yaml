@@ -224,7 +224,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 
@@ -248,7 +248,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 
@@ -304,7 +304,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 
@@ -512,7 +512,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 
@@ -597,7 +597,7 @@ Resources:
           - Key: CostCenter
             Value: !Ref CostCenter
           - Key: ManagedBy
-            Value: ARC-Toolkit
+            Value: ResearchCloudToolkit
           - Key: Environment
             Value: Research
         HeadNode:

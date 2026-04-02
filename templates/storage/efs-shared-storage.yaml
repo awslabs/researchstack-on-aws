@@ -133,7 +133,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 
@@ -157,7 +157,7 @@ Resources:
             Value: !Ref Owner
           - !Ref 'AWS::NoValue'
         - Key: ManagedBy
-          Value: ARC-Toolkit
+          Value: ResearchCloudToolkit
         - Key: Environment
           Value: Research
 

@@ -185,7 +185,7 @@ All templates include required tags for cost allocation:
 - **Project**: Research project name
 - **CostCenter**: Department or grant number
 - **Owner**: PI or researcher email
-- **ManagedBy**: Always "ARC-Toolkit"
+- **ManagedBy**: Always "ResearchCloudToolkit"
 - **Environment**: Always "Research"
 
 Use these tags in AWS Cost Explorer for chargeback reporting. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for enabling cost allocation tags, setting up Cost and Usage Reports, and grant budgeting tips.

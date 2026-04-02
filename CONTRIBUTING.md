@@ -66,7 +66,7 @@ Tags:
   - Key: Owner
     Value: !Ref Owner
   - Key: ManagedBy
-    Value: ARC-Toolkit
+    Value: ResearchCloudToolkit
   - Key: Environment
     Value: Research
 ```

@@ -29,7 +29,7 @@ All EC2 templates require a VPC and subnet — deploy the Research VPC template 
 All templates follow these conventions:
 
 - **Required parameters**: ProjectName, CostCenter (Owner is optional)
-- **Required tags**: Project, CostCenter, ManagedBy (ARC-Toolkit), Environment (Research)
+- **Required tags**: Project, CostCenter, ManagedBy (ResearchCloudToolkit), Environment (Research)
 - **Security defaults**: Encryption enabled, public access blocked, least privilege where applicable
 - **Naming**: Resources include account ID and region for uniqueness
 

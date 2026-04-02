@@ -31,7 +31,7 @@ Consequently, the `EfsSecurityGroupId` parameter was removed from all four EC2 t
 
 ## Consequences
 
-- **Broader access**: Any instance in the VPC can reach the EFS on port 2049. In a shared VPC with multiple teams, this means cross-team NFS access is possible. ARC's model assumes one VPC per research group/project, so the VPC is the trust boundary.
+- **Broader access**: Any instance in the VPC can reach the EFS on port 2049. In a shared VPC with multiple teams, this means cross-team NFS access is possible. The toolkit's model assumes one VPC per research group/project, so the VPC is the trust boundary.
 - **TLS enforcement**: The EFS filesystem policy still enforces TLS (`aws:SecureTransport`), so connections are encrypted in transit regardless of the security group rule.
 - **Simpler consumer templates**: EC2 templates dropped from 1 parameter to 0 for EFS connectivity. ParallelCluster works without any special configuration.
 - **Lambda dependency**: The VPC CIDR lookup adds a Lambda function, IAM role, and custom resource to the EFS stack. These are lightweight (runs once at create, ~30s) but add resources to the stack.
