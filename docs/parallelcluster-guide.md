@@ -203,7 +203,7 @@ You need an AD endpoint reachable from the cluster VPC. Two options:
 
 | Option | Best for | Cost | Requires |
 |--------|----------|------|----------|
-| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting a fully managed, highly available directory in AWS | ~$288/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
+| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting a fully managed, highly available directory in AWS | ~$86/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
 | [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD wanting to extend it to AWS (availability depends on your on-prem AD) | ~$36/month (Small). See [pricing](https://aws.amazon.com/directoryservice/other-directories-pricing/). | VPN or Direct Connect to campus network |
 
 For most research institutions, **AWS Managed Microsoft AD** is the simpler path — no VPN dependency, works standalone, and can also serve as the identity source for [IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) (giving researchers SSO to the AWS console). See the [ParallelCluster multi-user tutorial](https://docs.aws.amazon.com/parallelcluster/latest/ug/tutorials_05_multi-user-ad.html) for a full walkthrough.
