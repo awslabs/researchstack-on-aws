@@ -64,11 +64,11 @@ Deployment takes 15-25 minutes.
 
 ### 3. Connect
 
-There are three options for connecting to your cluster, depending on what you enabled. All connection details (Head Node IP address / Instance ID, Session Manager command, DCV URL, SSH command) are in the CloudFormation stack **Outputs** tab after deployment.
+There are three options for connecting to your cluster, depending on what you enabled. All connection details (Head Node / Elastic IP address, Head Node Instance ID, Session Manager command, DCV URL, SSH command) are in the CloudFormation stack **Outputs** tab after deployment.
 
 **Session Manager (default — no key pair needed):**
 
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed locally with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (`aws configure sso` for IAM Identity Center, or `aws configure` for [IAM access keys](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html)), plus the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed locally with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (`aws configure sso` for IAM Identity Center, or `aws configure` for [IAM access keys](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html)), plus the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
 
 ```bash
 # Log in to AWS first (if using IAM Identity Center)
@@ -203,7 +203,7 @@ You need an AD endpoint reachable from the cluster VPC. Two options:
 
 | Option | Best for | Cost | Requires |
 |--------|----------|------|----------|
-| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting to replicate on-prem AD to AWS for high availability | ~$86/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
+| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting to replicate on-prem AD to AWS for high availability | ~$86/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing other than a VPC — fully managed, multi-AZ, runs in your VPC |
 | [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD wanting to proxy requests to AWS without replicating the directory (availability depends on your on-prem AD and network link) | ~$36/month (Small). See [pricing](https://aws.amazon.com/directoryservice/other-directories-pricing/). | VPN or Direct Connect to campus network |
 
 For most research institutions, **AWS Managed Microsoft AD** is the simpler path — no VPN dependency, works standalone, and can also serve as the identity source for [IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) (giving researchers SSO to the AWS console). See the [ParallelCluster multi-user tutorial](https://docs.aws.amazon.com/parallelcluster/latest/ug/tutorials_05_multi-user-ad.html) for a full walkthrough.
