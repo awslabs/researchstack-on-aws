@@ -27,6 +27,7 @@ After deployment, you can expand the cluster with additional compute queues, mul
 Deploy via the CloudFormation console, CLI, or Service Catalog.
 
 **Required parameters:**
+
 | Parameter | What to enter |
 |-----------|---------------|
 | ProjectName | Your research project name (e.g., `genomics-lab`) |
@@ -35,12 +36,14 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 | ComputeSubnetId | A private subnet with NAT Gateway (in the same VPC). If unsure, use the same public subnet as the head node — it works, but a private subnet is more secure. |
 
 **DCV parameters (when EnableDCV = yes):**
+
 | Parameter | What to enter |
 |-----------|---------------|
 | DCVAllowedIps | Your office/campus CIDR (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow access from anywhere. |
 | DCVPassword | Password for the DCV desktop login. Min 8 characters. |
 
 **Optional configuration — safe to leave as defaults:**
+
 | Parameter | Default | When to change |
 |-----------|---------|----------------|
 | ClusterName | research-cluster | When running multiple clusters in the same account |
@@ -82,9 +85,11 @@ Open `https://ELASTIC_IP:8443` in a browser. Your browser will show a certificat
 Bookmark the URL — the Elastic IP never changes, even after stopping and starting the head node.
 
 **SSH (when key pair provided):**
+
 ```bash
 ssh -i ~/.ssh/your-key.pem ec2-user@ELASTIC_IP
 ```
+
 If AD is configured, you can SSH as your AD username directly.
 
 ### 4. Submit a Job
@@ -157,6 +162,7 @@ SlurmQueues:
 ```
 
 Apply:
+
 ```bash
 pcluster update-cluster --cluster-name CLUSTER_NAME --region REGION \
   --cluster-configuration cluster-config.yaml
@@ -183,7 +189,7 @@ Researchers target the GPU queue with `sbatch -p gpu job.sh`.
 
 By default, the cluster has a single OS user (`ec2-user` on Amazon Linux, `ubuntu` on Ubuntu). For multiple researchers sharing a cluster, connect to an Active Directory via LDAP — this is the only multi-user method ParallelCluster supports. Identity providers like Okta or IAM Identity Center don't integrate directly, but if your institution's Okta is backed by AD (common at universities), ParallelCluster connects to that underlying AD.
 
-**Recommended: Active Directory / LDAP Integration**
+#### Recommended: Active Directory / LDAP Integration
 
 You need an AD endpoint reachable from the cluster VPC. Two options:
 
@@ -206,6 +212,7 @@ DirectoryService:
 ```
 
 This requires:
+
 - An Active Directory reachable from the cluster VPC (AWS Managed Microsoft AD or on-prem AD via AD Connector)
 - A Secrets Manager secret containing the bind user password
 - LDAPS (port 636) open between the cluster and the AD endpoint
@@ -214,7 +221,7 @@ Once configured, users log in with their institutional credentials. ParallelClus
 
 **Slurm accounting (optional but recommended for chargeback):** By default, Slurm tracks jobs in the current session but doesn't persist historical data. For per-user job reporting, grant chargeback, and fair-share scheduling, configure [Slurm accounting](https://docs.aws.amazon.com/parallelcluster/latest/ug/slurm-accounting-v3.html) with an external database (e.g., Amazon RDS MySQL). This enables `sacct` queries like "how many CPU-hours did each researcher use this month" — essential for institutions that charge compute costs back to grants. DCV and SSH authenticate against AD directly. Session Manager still lands as `ssm-user` (IAM-authenticated), so users need to `su - username` after connecting.
 
-**Not recommended: Manual user creation**
+#### Not recommended: Manual user creation
 
 For quick testing or very small teams (2-3 people), you can create users manually on the head node:
 
@@ -230,11 +237,13 @@ This doesn't scale, has no central identity management, and creates a password m
 Login nodes are dedicated instances that handle user SSH/DCV sessions, keeping the head node focused on running the Slurm controller. They're optional and most clusters don't need them initially.
 
 **When to consider login nodes:**
+
 - Multiple users running DCV desktop sessions (GUI apps consume significant CPU/memory on the head node)
 - Users running GPU-accelerated desktop applications (visualization, rendering) — use G-series login nodes instead of burning compute queue hours
 - Head node showing high CPU/memory usage from user sessions (check the [CloudWatch dashboard](#monitoring))
 
 **When you don't need them:**
+
 - Single user or small team primarily submitting batch jobs via SSH
 - DCV is disabled (CLI-only access is lightweight)
 - Head node metrics show plenty of headroom
