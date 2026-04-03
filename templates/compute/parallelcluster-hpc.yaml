@@ -757,3 +757,12 @@ Outputs:
   BootstrapLogLocation:
     Description: 'Bootstrap log location on head node'
     Value: 'Connect to head node and run: cat /var/log/bootstrap.log'
+
+  BootstrapBucketName:
+    Description: 'S3 bucket containing the bootstrap script (needed if adding DCV to login nodes)'
+    Value: !Ref BootstrapBucket
+
+  DCVPasswordSecretArn:
+    Condition: DCVEnabled
+    Description: 'Secrets Manager ARN for the DCV password (needed if adding DCV to login nodes)'
+    Value: !Ref DCVPasswordSecret

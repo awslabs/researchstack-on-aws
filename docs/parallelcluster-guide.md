@@ -13,7 +13,7 @@ The template deploys a production-ready HPC cluster with one CloudFormation stac
 - **Session Manager access** (no SSH keys required)
 - **Cost tracking tags** on all resources (Project, CostCenter, Owner)
 
-The cluster has two OS users: `ec2-user` (Amazon Linux) or `ubuntu` (Ubuntu) is the default user for SSH and DCV login, and `ssm-user` is the user you land as when connecting via Session Manager (it has sudo access and Slurm commands in its PATH). Both can run Slurm commands. When AD is configured for multi-user, each researcher logs in with their own credentials.
+The cluster has two OS users: `ec2-user` (Amazon Linux) or `ubuntu` (Ubuntu) is the default user for SSH and DCV login, and `ssm-user` is the user you land as when connecting via Session Manager (it has sudo access and Slurm commands in its PATH). Both users can run Slurm commands and are fine for day-to-day use. When AD is configured for multi-user, each researcher logs in with their own credentials.
 
 After deployment, you can expand the cluster with additional compute queues, multi-user access via Active Directory, login nodes, and more — see [Updating and Customizing the Cluster](#updating-and-customizing-the-cluster).
 
@@ -52,7 +52,7 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 | OperatingSystem | alinux2023 | Ubuntu 22.04/24.04 if your software requires it |
 | HeadNodeInstanceType | m7i.2xlarge | Larger if running DCV with heavy GUI apps, smaller (e.g., m7i.large) if CLI-only |
 | ComputeInstanceType | c7i.8xlarge | Match to your workload: R-series for memory, G-series for GPU, Hpc-series for tightly-coupled MPI. See the [EC2 Instance Type Explorer](https://aws.amazon.com/ec2/instance-explorer/) for family overviews, or [Vantage](https://instances.vantage.sh/?id=421e512ec7fc071920ffc00ca2bc7141ef1c98aa) to compare specs and pricing side-by-side. |
-| ComputePricingModel | ONDEMAND | SPOT for up to ~70% savings on fault-tolerant batch jobs |
+| ComputePricingModel | ONDEMAND | [SPOT](https://aws.amazon.com/ec2/spot/) for up to ~70% savings — uses spare EC2 capacity at a discount but instances can be interrupted with 2 min notice. Use On-Demand for critical workloads. |
 | MaxComputeNodes | 10 | Increase or decrease as needed |
 | CapacityBlockId | (blank) | Required if using P-series GPU instances (p4/p5/p6) — [obtain a Capacity Block reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/capacity-blocks-purchase.html) in the EC2 console first |
 | EfsFileSystemId | (blank) | Provide an existing EFS ID to persist data across cluster lifecycles. Otherwise, an EFS volume is auto-created |
@@ -121,7 +121,7 @@ For changes to template parameters (instance types, max nodes, DCV settings, sto
 
 ### ParallelCluster CLI
 
-For changes beyond what the template exposes — adding queues, AD integration, login nodes — use the [ParallelCluster CLI](https://docs.aws.amazon.com/parallelcluster/latest/ug/install-v3-parallelcluster.html). All cluster configuration changes are made by editing a YAML config file and applying it with `pcluster update-cluster`.
+For changes beyond what the template exposes — adding queues, AD integration, login nodes — use the [ParallelCluster CLI](https://docs.aws.amazon.com/parallelcluster/latest/ug/install-v3-parallelcluster.html). All cluster configuration changes are made by editing a [YAML config file](https://docs.aws.amazon.com/parallelcluster/latest/ug/cluster-configuration-file-v3.html) and applying it with `pcluster update-cluster`.
 
 Install the CLI:
 
@@ -195,7 +195,7 @@ Researchers target the GPU queue with `sbatch -p gpu job.sh`.
 
 ### Multi-User Access
 
-By default, the cluster has a single OS user (`ec2-user` on Amazon Linux, `ubuntu` on Ubuntu). For multiple researchers sharing a cluster, connect to an Active Directory via LDAP — this is the only multi-user method ParallelCluster supports. Identity providers like Okta or IAM Identity Center don't integrate directly, but if your institution's Okta is backed by AD, ParallelCluster connects to that underlying AD.
+By default, the cluster has two OS users — `ec2-user` (or `ubuntu` on Ubuntu) for SSH/DCV and `ssm-user` for Session Manager — but no multi-user support. For multiple researchers sharing a cluster, connect to an Active Directory via LDAP — this is the only multi-user method ParallelCluster supports. Identity providers like Okta or IAM Identity Center don't integrate directly, but if your institution's Okta is backed by AD, ParallelCluster connects to that underlying AD.
 
 #### Recommended: Active Directory / LDAP Integration
 
@@ -203,8 +203,8 @@ You need an AD endpoint reachable from the cluster VPC. Two options:
 
 | Option | Best for | Cost | Requires |
 |--------|----------|------|----------|
-| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting a fully managed, highly available directory in AWS | ~$86/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
-| [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD wanting to extend it to AWS (availability depends on your on-prem AD) | ~$36/month (Small). See [pricing](https://aws.amazon.com/directoryservice/other-directories-pricing/). | VPN or Direct Connect to campus network |
+| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting to replicate on-prem AD to AWS for high availability | ~$86/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
+| [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD wanting to proxy requests to AWS without replicating the directory (availability depends on your on-prem AD and network link) | ~$36/month (Small). See [pricing](https://aws.amazon.com/directoryservice/other-directories-pricing/). | VPN or Direct Connect to campus network |
 
 For most research institutions, **AWS Managed Microsoft AD** is the simpler path — no VPN dependency, works standalone, and can also serve as the identity source for [IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) (giving researchers SSO to the AWS console). See the [ParallelCluster multi-user tutorial](https://docs.aws.amazon.com/parallelcluster/latest/ug/tutorials_05_multi-user-ad.html) for a full walkthrough.
 
@@ -267,7 +267,7 @@ Most clusters start without login nodes — the head node handles everything. Ad
 | 4+ users with DCV, or head node showing resource pressure | Yes | m7i.xlarge login nodes — offloads desktop sessions from the head node |
 | Users running GPU desktop apps (visualization, rendering) | Yes | g6.xlarge login nodes — GPU-accelerated desktop without using the compute queue |
 
-Start with 1 login node per pool. ParallelCluster load-balances users across nodes in a pool, so add more nodes as user count grows or if the first shows resource pressure.
+Start with 1 login node. ParallelCluster load-balances users across login nodes automatically, so add more as user count grows or if the first shows resource pressure.
 
 To add login nodes without DCV:
 
@@ -311,9 +311,7 @@ LoginNodes:
             - 'SECRET_ARN'  # from Secrets Manager console
 ```
 
-Find `BOOTSTRAP_BUCKET` in the CloudFormation stack Resources tab (look for the `BootstrapBucket` resource) and `SECRET_ARN` in the Secrets Manager console (look for a secret named `STACK_NAME-dcv-password`).
-
-Users connect to login nodes via a load-balanced DNS endpoint that ParallelCluster creates and manages automatically.
+Find `BOOTSTRAP_BUCKET` and `SECRET_ARN` in the CloudFormation stack **Outputs** tab (`BootstrapBucketName` and `DCVPasswordSecretArn`).
 
 ## Cost Management
 
@@ -339,7 +337,7 @@ Compute nodes only run when jobs are queued. They terminate automatically after 
 
 ### Spot Instances
 
-Set `ComputePricingModel` to `SPOT` for up to 70% savings on compute nodes. [Spot Instances](https://aws.amazon.com/ec2/spot/) use spare EC2 capacity at a discount, but AWS can reclaim them with 2 minutes notice. Slurm automatically requeues interrupted jobs. Good for fault-tolerant batch workloads, not for long-running interactive sessions.
+Set `ComputePricingModel` to `SPOT` for up to 70% savings on compute nodes. Slurm automatically requeues interrupted jobs. Good for fault-tolerant batch workloads, not for long-running interactive sessions. See [Spot pricing](https://aws.amazon.com/ec2/spot/pricing/).
 
 ### EFS Costs
 
