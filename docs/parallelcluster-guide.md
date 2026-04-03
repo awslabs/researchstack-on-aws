@@ -13,6 +13,8 @@ The template deploys a production-ready HPC cluster with one CloudFormation stac
 - **Session Manager access** (no SSH keys required)
 - **Cost tracking tags** on all resources (Project, CostCenter, Owner)
 
+The cluster has two OS users: `ec2-user` (Amazon Linux) or `ubuntu` (Ubuntu) is the default user for SSH and DCV login, and `ssm-user` is the user you land as when connecting via Session Manager (it has sudo access and Slurm commands in its PATH). Both can run Slurm commands. When AD is configured for multi-user, each researcher logs in with their own credentials.
+
 After deployment, you can expand the cluster with additional compute queues, multi-user access via Active Directory, login nodes, and more — see [Updating and Customizing the Cluster](#updating-and-customizing-the-cluster).
 
 ## Quick Start
@@ -62,7 +64,7 @@ Deployment takes 15-25 minutes.
 
 ### 3. Connect
 
-There are three options for connecting to your cluster, depending on what you enabled. All connection details (IP address, Session Manager command, DCV URL, SSH command) are in the CloudFormation stack **Outputs** tab after deployment.
+There are three options for connecting to your cluster, depending on what you enabled. All connection details (Head Node IP address / Instance ID, Session Manager command, DCV URL, SSH command) are in the CloudFormation stack **Outputs** tab after deployment.
 
 **Session Manager (default — no key pair needed):**
 
@@ -73,7 +75,7 @@ Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-
 aws sso login --profile your-profile
 
 # Connect (copy the full command from stack Outputs tab)
-aws ssm start-session --target INSTANCE_ID --region REGION
+aws ssm start-session --target HEAD_NODE_INSTANCE_ID --region REGION
 ```
 
 You'll land as `ssm-user` with sudo access. Slurm commands (`sinfo`, `sbatch`, etc.) are available. If AD is configured for [multi-user access](#multi-user-access), switch to your identity with `su - yourusername`.
@@ -193,7 +195,7 @@ Researchers target the GPU queue with `sbatch -p gpu job.sh`.
 
 ### Multi-User Access
 
-By default, the cluster has a single OS user (`ec2-user` on Amazon Linux, `ubuntu` on Ubuntu). For multiple researchers sharing a cluster, connect to an Active Directory via LDAP — this is the only multi-user method ParallelCluster supports. Identity providers like Okta or IAM Identity Center don't integrate directly, but if your institution's Okta is backed by AD (common at universities), ParallelCluster connects to that underlying AD.
+By default, the cluster has a single OS user (`ec2-user` on Amazon Linux, `ubuntu` on Ubuntu). For multiple researchers sharing a cluster, connect to an Active Directory via LDAP — this is the only multi-user method ParallelCluster supports. Identity providers like Okta or IAM Identity Center don't integrate directly, but if your institution's Okta is backed by AD, ParallelCluster connects to that underlying AD.
 
 #### Recommended: Active Directory / LDAP Integration
 
@@ -201,8 +203,8 @@ You need an AD endpoint reachable from the cluster VPC. Two options:
 
 | Option | Best for | Cost | Requires |
 |--------|----------|------|----------|
-| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting a standalone directory in AWS | ~$146/month (Standard) | Nothing — fully managed, runs in your VPC |
-| [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD | ~$48/month (Small) | VPN or Direct Connect to campus network |
+| [AWS Managed Microsoft AD](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_microsoft_ad.html) | Institutions without existing AD, or wanting a fully managed, highly available directory in AWS | ~$288/month (Standard, 2 DCs). See [pricing](https://aws.amazon.com/directoryservice/pricing/). | Nothing — fully managed, multi-AZ, runs in your VPC |
+| [AD Connector](https://docs.aws.amazon.com/directoryservice/latest/admin-guide/directory_ad_connector.html) | Institutions with existing on-prem AD wanting to extend it to AWS (availability depends on your on-prem AD) | ~$36/month (Small). See [pricing](https://aws.amazon.com/directoryservice/other-directories-pricing/). | VPN or Direct Connect to campus network |
 
 For most research institutions, **AWS Managed Microsoft AD** is the simpler path — no VPN dependency, works standalone, and can also serve as the identity source for [IAM Identity Center](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) (giving researchers SSO to the AWS console). See the [ParallelCluster multi-user tutorial](https://docs.aws.amazon.com/parallelcluster/latest/ug/tutorials_05_multi-user-ad.html) for a full walkthrough.
 
@@ -225,7 +227,7 @@ This requires:
 
 Once configured, users log in with their institutional credentials. ParallelCluster creates home directories automatically and Slurm associates jobs with the authenticated user.
 
-**Slurm accounting (optional but recommended for chargeback):** By default, Slurm tracks jobs in the current session but doesn't persist historical data. For per-user job reporting, grant chargeback, and fair-share scheduling, configure [Slurm accounting](https://docs.aws.amazon.com/parallelcluster/latest/ug/slurm-accounting-v3.html) with an external database (e.g., Amazon RDS MySQL). This enables `sacct` queries like "how many CPU-hours did each researcher use this month" — essential for institutions that charge compute costs back to grants. DCV and SSH authenticate against AD directly. Session Manager still lands as `ssm-user` (IAM-authenticated), so users need to `su - username` after connecting.
+**Slurm accounting (optional but recommended for chargeback):** By default, Slurm tracks jobs in the current session but doesn't persist historical data. For per-user job reporting, grant chargeback, and fair-share scheduling, configure [Slurm accounting](https://docs.aws.amazon.com/parallelcluster/latest/ug/slurm-accounting-v3.html) with an external database (e.g., Amazon RDS MySQL). This enables `sacct` queries like "how many CPU-hours did each researcher use this month" — essential for institutions that charge compute costs back to grants.
 
 #### Not recommended: Manual user creation
 
@@ -245,7 +247,7 @@ Login nodes are dedicated instances that handle user SSH/DCV sessions, keeping t
 **When to consider login nodes:**
 
 - Multiple users running DCV desktop sessions (GUI apps consume significant CPU/memory on the head node)
-- Users running GPU-accelerated desktop applications (visualization, rendering) — use G-series login nodes instead of burning compute queue hours
+- Users running GPU-accelerated desktop applications (visualization, rendering) — G-series login nodes provide a GPU desktop for interactive work without submitting jobs to the compute queue
 - Head node showing high CPU/memory usage from user sessions (check the [CloudWatch dashboard](#monitoring))
 
 **When you don't need them:**
@@ -265,7 +267,7 @@ Most clusters start without login nodes — the head node handles everything. Ad
 | 4+ users with DCV, or head node showing resource pressure | Yes | m7i.xlarge login nodes — offloads desktop sessions from the head node |
 | Users running GPU desktop apps (visualization, rendering) | Yes | g6.xlarge login nodes — GPU-accelerated desktop without using the compute queue |
 
-Start with 1 login node. Add a second for redundancy or if the first shows resource pressure.
+Start with 1 login node per pool. ParallelCluster load-balances users across nodes in a pool, so add more nodes as user count grows or if the first shows resource pressure.
 
 To add login nodes without DCV:
 
@@ -297,7 +299,7 @@ LoginNodes:
           - subnet-xxxxxxxx
       Dcv:
         Enabled: true
-        AllowedIps: 203.0.113.0/24  # your office CIDR
+        AllowedIps: 0.0.0.0/0  # restrict to your office CIDR for security
       Iam:
         AdditionalIamPolicies:
           - Policy: arn:aws:iam::aws:policy/SecretsManagerReadWrite
@@ -309,9 +311,9 @@ LoginNodes:
             - 'SECRET_ARN'  # from Secrets Manager console
 ```
 
-Replace `BOOTSTRAP_BUCKET` and `SECRET_ARN` with the values from your CloudFormation stack resources.
+Find `BOOTSTRAP_BUCKET` in the CloudFormation stack Resources tab (look for the `BootstrapBucket` resource) and `SECRET_ARN` in the Secrets Manager console (look for a secret named `STACK_NAME-dcv-password`).
 
-Users connect to login nodes via a load-balanced DNS endpoint that ParallelCluster creates automatically.
+Users connect to login nodes via a load-balanced DNS endpoint that ParallelCluster creates and manages automatically.
 
 ## Cost Management
 
@@ -321,29 +323,31 @@ The head node runs 24/7. When the cluster isn't in use, stop it to save costs:
 
 ```bash
 # Stop
-aws ec2 stop-instances --instance-ids INSTANCE_ID
+aws ec2 stop-instances --instance-ids HEAD_NODE_INSTANCE_ID
 
 # Start
-aws ec2 start-instances --instance-ids INSTANCE_ID
+aws ec2 start-instances --instance-ids HEAD_NODE_INSTANCE_ID
 ```
 
 The Elastic IP stays assigned — your DCV URL and SSH command don't change after restart.
 
+Note: the head node instance ID also remains the same across stop/start cycles. It only changes if the instance is terminated and replaced.
+
 ### Compute Node Costs
 
-Compute nodes only run when jobs are queued. They terminate automatically after 10 minutes idle (`ScaledownIdletime: 10`). No jobs = no compute cost.
+Compute nodes only run when jobs are queued. They terminate automatically after 10 minutes idle (`ScaledownIdletime: 10`). No jobs = no compute cost. See [EC2 pricing](https://aws.amazon.com/ec2/pricing/) for per-instance rates.
 
 ### Spot Instances
 
-Set `ComputePricingModel` to `SPOT` for up to 70% savings on compute nodes. Spot instances can be interrupted — Slurm automatically requeues affected jobs. Good for fault-tolerant batch workloads, not for long-running interactive sessions.
+Set `ComputePricingModel` to `SPOT` for up to 70% savings on compute nodes. [Spot Instances](https://aws.amazon.com/ec2/spot/) use spare EC2 capacity at a discount, but AWS can reclaim them with 2 minutes notice. Slurm automatically requeues interrupted jobs. Good for fault-tolerant batch workloads, not for long-running interactive sessions.
 
 ### EFS Costs
 
-If the template creates a new EFS (no `EfsFileSystemId` provided), it's billed at ~$0.30/GB/month with bursting throughput. Data is deleted when the cluster is deleted. For persistent data, use an existing EFS or S3.
+If the template creates a new EFS (no `EfsFileSystemId` provided), it's billed at ~$0.30/GB/month for data stored, with bursting throughput. An empty EFS costs nothing. Data is deleted when the cluster is deleted. For persistent data, use an existing EFS or S3. See [EFS pricing](https://aws.amazon.com/efs/pricing/).
 
 ### Cluster Overhead
 
-ParallelCluster creates supporting resources (CloudWatch dashboard, Route 53 hosted zone, DynamoDB table, Lambda functions) that cost roughly $4-5/month regardless of usage. These are managed by ParallelCluster and cleaned up when the cluster is deleted.
+ParallelCluster creates supporting resources (CloudWatch dashboard, Route 53 hosted zone, DynamoDB table, Lambda functions, S3 bucket for bootstrap scripts) that cost roughly $4-5/month regardless of usage. These are managed by ParallelCluster and cleaned up when the cluster is deleted.
 
 ## Monitoring
 
