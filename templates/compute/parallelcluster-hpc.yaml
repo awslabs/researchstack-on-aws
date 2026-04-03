@@ -453,6 +453,10 @@ Resources:
           primary-selection-paste=true
           DCVEOF
           
+          # Restart DCV server to pick up config changes
+          systemctl restart dcvserver
+          sleep 5
+          
           # DCV session service
           cat > /etc/systemd/system/dcv-session.service << EOF
           [Unit]

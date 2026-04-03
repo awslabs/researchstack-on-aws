@@ -7,19 +7,19 @@ Deploy and operate a Slurm HPC cluster on AWS using the Research Cloud Toolkit's
 The template deploys a production-ready HPC cluster with one CloudFormation stack:
 
 - **Slurm scheduler** with one auto-scaling compute queue (nodes launch on job submission, terminate when idle)
-- **Shared EFS storage** at `/shared` (auto-created or bring your own)
+- **Shared EFS storage** at `/shared` — a managed network file system (NFS) accessible from all cluster nodes. Auto-created with the cluster, or bring an existing EFS.
 - **Optional DCV remote desktop** for GUI access via web browser
 - **Elastic IP** so the head node IP address never changes across stop/start cycles
 - **Session Manager access** (no SSH keys required)
 - **Cost tracking tags** on all resources (Project, CostCenter, Owner)
 
-After deployment, you can expand the cluster with additional compute queues, multi-user access via Active Directory, login nodes, and more — see [Post-Deploy Customization](#post-deploy-customization).
+After deployment, you can expand the cluster with additional compute queues, multi-user access via Active Directory, login nodes, and more — see [Updating and Customizing the Cluster](#updating-and-customizing-the-cluster).
 
 ## Quick Start
 
 ### 1. Prerequisites
 
-- A VPC with a public subnet (head node) and a private subnet with NAT Gateway (compute nodes). Deploy the `research-vpc.yaml` template first if you don't have one.
+- A VPC with a public subnet (head node) and a private subnet (compute nodes). The private subnet needs a NAT Gateway in the public subnet for internet access. Deploy the `research-vpc.yaml` template first if you don't have one.
 - An EC2 key pair — only if you want SSH access. [Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) and [DCV remote desktop](https://docs.aws.amazon.com/dcv/latest/userguide/what-is-dcv.html) work without one. Session Manager lets you connect to instances through the AWS CLI or console without opening inbound ports or managing SSH keys. DCV provides a full GUI desktop accessible via web browser.
 
 ### 2. Deploy
@@ -33,14 +33,14 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 | ProjectName | Your research project name (e.g., `genomics-lab`) |
 | CostCenter | Department or grant number for billing |
 | HeadNodeSubnetId | A public subnet (one with a route to an internet gateway) |
-| ComputeSubnetId | A private subnet with NAT Gateway (in the same VPC). If unsure, use the same public subnet as the head node — it works, but a private subnet is more secure. |
+| ComputeSubnetId | A private subnet (in the same VPC). It needs a route to a NAT Gateway in the public subnet for internet access. If unsure, use the same public subnet as the head node — it works, but a private subnet is more secure. |
 
 **DCV parameters (when EnableDCV = yes):**
 
 | Parameter | What to enter |
 |-----------|---------------|
 | DCVAllowedIps | Your office/campus CIDR (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow access from anywhere. |
-| DCVPassword | Password for the DCV desktop login. Min 8 characters. |
+| DCVPassword | Password for the DCV desktop login. Min 8 characters. You can change it later by connecting to the head node and running `sudo passwd ec2-user` (or `sudo passwd ubuntu` on Ubuntu). |
 
 **Optional configuration — safe to leave as defaults:**
 
@@ -48,49 +48,50 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 |-----------|---------|----------------|
 | ClusterName | research-cluster | When running multiple clusters in the same account |
 | OperatingSystem | alinux2023 | Ubuntu 22.04/24.04 if your software requires it |
-| HeadNodeInstanceType | m7i.2xlarge | Larger if running DCV with heavy GUI apps, smaller if CLI-only |
+| HeadNodeInstanceType | m7i.2xlarge | Larger if running DCV with heavy GUI apps, smaller (e.g., m7i.large) if CLI-only |
 | ComputeInstanceType | c7i.8xlarge | Match to your workload: R-series for memory, G-series for GPU, Hpc-series for tightly-coupled MPI. See the [EC2 Instance Type Explorer](https://aws.amazon.com/ec2/instance-explorer/) for family overviews, or [Vantage](https://instances.vantage.sh/?id=421e512ec7fc071920ffc00ca2bc7141ef1c98aa) to compare specs and pricing side-by-side. |
 | ComputePricingModel | ONDEMAND | SPOT for up to ~70% savings on fault-tolerant batch jobs |
 | MaxComputeNodes | 10 | Increase or decrease as needed |
-| CapacityBlockId | (blank) | Required if using P-series GPU instances (p4/p5/p6) — obtain a reservation in the EC2 console first |
+| CapacityBlockId | (blank) | Required if using P-series GPU instances (p4/p5/p6) — [obtain a Capacity Block reservation](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/capacity-blocks-purchase.html) in the EC2 console first |
 | EfsFileSystemId | (blank) | Provide an existing EFS ID to persist data across cluster lifecycles. Otherwise, an EFS volume is auto-created |
 | S3BucketName | (blank) | Grant the cluster read/write access to a specific S3 bucket |
 | FsxLustreFileSystemId | (blank) | Mount an existing FSx for Lustre filesystem for high-throughput I/O |
-| KeyPairName | (blank) | Provide if you want SSH access in addition to Session Manager |
+| KeyPairName | (blank) | Provide if you want SSH access in addition to Session Manager. [Create a key pair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html) in the EC2 console if you don't have one. |
 
 Deployment takes 15-25 minutes.
 
 ### 3. Connect
 
-Three options depending on what you enabled. All connection details are in the CloudFormation stack outputs after deployment.
+There are three options for connecting to your cluster, depending on what you enabled. All connection details (IP address, Session Manager command, DCV URL, SSH command) are in the CloudFormation stack **Outputs** tab after deployment.
 
 **Session Manager (default — no key pair needed):**
 
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed locally with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (`aws configure sso` for IAM Identity Center, or `aws configure` for access keys), plus the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed locally with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (`aws configure sso` for IAM Identity Center, or `aws configure` for [IAM access keys](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-key-pairs.html)), plus the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html).
 
 ```bash
 # Log in to AWS first (if using IAM Identity Center)
 aws sso login --profile your-profile
 
-# Connect to head node
+# Connect (copy the full command from stack Outputs tab)
 aws ssm start-session --target INSTANCE_ID --region REGION
 ```
 
-You'll land as `ssm-user`. If AD is configured for [multi-user access](#multi-user-access), switch to your identity with `su - yourusername`.
+You'll land as `ssm-user` with sudo access. Slurm commands (`sinfo`, `sbatch`, etc.) are available. If AD is configured for [multi-user access](#multi-user-access), switch to your identity with `su - yourusername`.
 
 **DCV Remote Desktop (when enabled):**
 
-Open `https://ELASTIC_IP:8443` in a browser. Your browser will show a certificate warning (DCV uses a self-signed certificate by default — this is expected and safe to accept). Log in as `ec2-user` (Amazon Linux) or `ubuntu` (Ubuntu) with the password you set during deployment. If AD is configured, log in with your AD credentials directly — no extra step.
+Open the DCV URL from the stack Outputs tab (e.g., `https://ELASTIC_IP:8443`) in a browser. Your browser will show a certificate warning — DCV uses a self-signed certificate, meaning the connection is encrypted (HTTPS) but the certificate isn't issued by a trusted CA (like Let's Encrypt or ACM), so your browser can't verify the server's identity. This is expected and safe to accept. Log in as `ec2-user` (Amazon Linux) or `ubuntu` (Ubuntu) with the password you set during deployment. If AD is configured, log in with your AD credentials directly.
 
 Bookmark the URL — the Elastic IP never changes, even after stopping and starting the head node.
 
 **SSH (when key pair provided):**
 
 ```bash
+# Copy the SSH command from stack Outputs tab
 ssh -i ~/.ssh/your-key.pem ec2-user@ELASTIC_IP
 ```
 
-If AD is configured, you can SSH as your AD username directly.
+If AD is configured, you can SSH as your AD username directly rather than ec2-user.
 
 ### 4. Submit a Job
 
@@ -110,36 +111,41 @@ cat slurm-*.out
 
 Compute nodes launch automatically on job submission and terminate after 10 minutes idle.
 
-## Updating the Cluster
+## Updating and Customizing the Cluster
 
-There are two ways to modify a running cluster, depending on what you're changing:
+### CloudFormation Stack Update
 
-**CloudFormation stack update** — for template parameters (instance types, max nodes, DCV settings, storage). Go to CloudFormation → select your stack → Update → use current template → change parameters. This updates the wrapper resources and triggers a ParallelCluster update for cluster config changes.
+For changes to template parameters (instance types, max nodes, DCV settings, storage): go to CloudFormation → select your stack → Update → use current template → change parameters.
 
-**`pcluster update-cluster`** — for cluster configuration changes that aren't exposed as template parameters (adding queues, AD integration, login nodes). Requires the [ParallelCluster CLI](#install-the-parallelcluster-cli). See [Post-Deploy Customization](#post-deploy-customization) below.
+### ParallelCluster CLI
 
-Some changes require the compute fleet to be stopped first (e.g., changing instance types). ParallelCluster will tell you if a stop is needed — run with `--dryrun` first to check:
+For changes beyond what the template exposes — adding queues, AD integration, login nodes — use the [ParallelCluster CLI](https://docs.aws.amazon.com/parallelcluster/latest/ug/install-v3-parallelcluster.html). All cluster configuration changes are made by editing a YAML config file and applying it with `pcluster update-cluster`.
 
-```bash
-pcluster update-cluster --cluster-name CLUSTER_NAME --region REGION \
-  --cluster-configuration cluster-config.yaml --dryrun true
-```
-
-## Post-Deploy Customization
-
-The template deploys a single compute queue. Use `pcluster update-cluster` to add queues, users, or login nodes after deployment.
-
-### Install the ParallelCluster CLI
+Install the CLI:
 
 ```bash
 pip install aws-parallelcluster
 ```
 
-### Export the current config
+Export your cluster's current config:
 
 ```bash
 pcluster export-cluster-config --cluster-name CLUSTER_NAME --region REGION > cluster-config.yaml
 ```
+
+Edit `cluster-config.yaml` with your changes (see examples below), then apply:
+
+```bash
+# Preview changes first (recommended)
+pcluster update-cluster --cluster-name CLUSTER_NAME --region REGION \
+  --cluster-configuration cluster-config.yaml --dryrun true
+
+# Apply changes
+pcluster update-cluster --cluster-name CLUSTER_NAME --region REGION \
+  --cluster-configuration cluster-config.yaml
+```
+
+Some changes require the compute fleet to be stopped first (e.g., changing instance types). The `--dryrun` output will tell you if a stop is needed.
 
 ### Adding a GPU Queue
 
