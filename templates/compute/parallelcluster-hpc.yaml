@@ -237,6 +237,11 @@ Resources:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
       Tags:
         - Key: Project
           Value: !Ref ProjectName
@@ -268,6 +273,16 @@ Resources:
             Resource:
               - !GetAtt BootstrapBucket.Arn
               - !Sub '${BootstrapBucket.Arn}/*'
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt BootstrapBucket.Arn
+              - !Sub '${BootstrapBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
 
   # Scoped IAM policy for head node to read DCV password from Secrets Manager.
   # Named with 'parallelcluster' prefix so the ParallelCluster Lambda's IAM admin
@@ -334,7 +349,7 @@ Resources:
   BootstrapUploadFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.14
       Handler: index.handler
       Role: !GetAtt BootstrapUploadRole.Arn
       Timeout: 60
@@ -548,7 +563,7 @@ Resources:
   EIPAssociationFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.14
       Handler: index.handler
       Role: !GetAtt EIPAssociationRole.Arn
       Timeout: 500
