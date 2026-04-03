@@ -1,6 +1,6 @@
 # Service Catalog Deployment Guide
 
-This guide walks through deploying the Research Cloud Toolkit's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates. It follows a hub-and-spoke model: one central account (the hub) manages portfolios and shares them out to researcher accounts (spokes) across your organization. It's intended for IT admins or cloud teams setting up governed self-service for researchers across multiple AWS accounts.
+This guide walks through deploying the ResearchStack's Service Catalog layer, which adds portfolio-based governance, OU sharing, and per-product launch roles on top of the CloudFormation templates. It follows a hub-and-spoke model: one central account (the hub) manages portfolios and shares them out to researcher accounts (spokes) across your organization. It's intended for IT admins or cloud teams setting up governed self-service for researchers across multiple AWS accounts.
 
 ## Architecture
 
@@ -76,7 +76,7 @@ Before deploying, you need three things set up in AWS and a few tools installed 
 
 ### Local Tools
 
-The Research Cloud Toolkit's Service Catalog layer is a CDK project written in Python. You'll need:
+The ResearchStack's Service Catalog layer is a CDK project written in Python. You'll need:
 
 - **Python 3.11+** — CDK dependency. Install via [python.org](https://www.python.org/downloads/) or your system package manager.
 - **Node.js 18+** — Required by the CDK CLI runtime. Install via [nodejs.org](https://nodejs.org/).

@@ -1,4 +1,4 @@
-# Research Cloud Toolkit on AWS Examples
+# ResearchStack on AWS Examples
 
 Example deployments and use cases.
 

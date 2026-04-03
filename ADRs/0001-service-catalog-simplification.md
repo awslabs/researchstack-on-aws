@@ -1,4 +1,4 @@
-# ADR 0001: Service Catalog Simplification for Research Cloud Toolkit
+# ADR 0001: Service Catalog Simplification for ResearchStack
 
 ## Metadata
 - **Status:** accepted
@@ -8,7 +8,7 @@
 
 ## Context
 
-The existing Service Catalog for Academic Research (SCAR) codebase provides a CDK-based deployment of AWS Service Catalog portfolios, products, and launch roles. It works, but carries complexity that isn't needed for the Research Cloud Toolkit's goals. Phase 2 of Research Cloud Toolkit integrates Service Catalog as an optional governance layer on top of the CloudFormation templates built in Phase 1.
+The existing Service Catalog for Academic Research (SCAR) codebase provides a CDK-based deployment of AWS Service Catalog portfolios, products, and launch roles. It works, but carries complexity that isn't needed for the ResearchStack's goals. Phase 2 of ResearchStack integrates Service Catalog as an optional governance layer on top of the CloudFormation templates built in Phase 1.
 
 SCAR currently includes:
 - Framework config system (YAML) + portfolio/product configs (TOML)
@@ -22,7 +22,7 @@ SCAR currently includes:
 
 ## Decision
 
-Simplify SCAR into a focused Service Catalog deployment tool within the Research Cloud Toolkit monorepo. Specifically:
+Simplify SCAR into a focused Service Catalog deployment tool within ResearchStack monorepo. Specifically:
 
 ### Keep (working, necessary)
 - **CDK framework** — handles state management, dependency ordering, and StackSet lifecycle
@@ -34,9 +34,9 @@ Simplify SCAR into a focused Service Catalog deployment tool within the Research
 - **Per-product launch roles** — one IAM role per product for least-privilege security
 
 ### Remove
-- **Hub VPC module** — Research Cloud Toolkit templates handle their own VPC (create or accept existing). Institutions with centralized networking (Control Tower, LZA) pass VPC IDs directly. Future: provide Control Tower/LZA guidance in documentation.
+- **Hub VPC module** — ResearchStack templates handle their own VPC (create or accept existing). Institutions with centralized networking (Control Tower, LZA) pass VPC IDs directly. Future: provide Control Tower/LZA guidance in documentation.
 - **Service actions** — not MVP. Can be added later if institutions request.
-- **CDK ProductStack support** — Research Cloud Toolkit templates are raw CloudFormation YAML. No need for CDK-synthesized product templates.
+- **CDK ProductStack support** — ResearchStack templates are raw CloudFormation YAML. No need for CDK-synthesized product templates.
 - **Product versioning system** — the versions/v1/v2/v3 directory structure with per-version TOML configs is overkill. Products point directly at a template file. Version management happens through template file updates.
 - **Persona system** — current admin/user persona mapping doesn't do anything functional. Portfolio access is configured manually via Identity Center. Future: document the manual process clearly.
 - **Separate product directories** — instead of products/ec2_instance/config.toml with nested version dirs, product definitions live inline in the portfolio config.
@@ -49,13 +49,13 @@ Simplify SCAR into a focused Service Catalog deployment tool within the Research
   template = "templates/storage/s3-research-bucket.yaml"
   launch_role_policies = ["AmazonS3FullAccess"]
   ```
-- **Code location** — SC code moves into `research-cloud-toolkit/service-catalog/` (monorepo with templates)
+- **Code location** — SC code moves into `researchstack/service-catalog/` (monorepo with templates)
 - **Config format** — keep TOML for portfolio configs (flat key-value, works well, Python 3.11+ built-in parser), keep YAML for framework config (nested structures, consistency with AWS tooling)
-- **Default example** — ship one example portfolio containing all Research Cloud Toolkit templates. Institutions customize/split as needed.
+- **Default example** — ship one example portfolio containing all ResearchStack templates. Institutions customize/split as needed.
 
 ### Repo structure
 ```
-research-cloud-toolkit/           # Monorepo: templates + service catalog
+researchstack/           # Monorepo: templates + service catalog
 ├── templates/                # CloudFormation templates (Phase 1, done)
 ├── service-catalog/          # CDK code for SC deployment (Phase 2)
 ├── docs/

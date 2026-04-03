@@ -1,4 +1,4 @@
-"""Research Cloud Toolkit on AWS - Service Catalog deployment entrypoint.
+"""ResearchStack on AWS - Service Catalog deployment entrypoint.
 
 Reads framework_config.yaml and portfolio TOML configs, then synthesizes:
   1. AssetsStack — S3 bucket for template artifacts

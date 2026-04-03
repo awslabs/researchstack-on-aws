@@ -1,4 +1,4 @@
-# Research Cloud Toolkit on AWS - Research Computing Portfolio
+# ResearchStack on AWS - Research Computing Portfolio
 # This portfolio contains all standard research computing templates.
 # Customize products and sharing targets for your institution.
 
@@ -6,7 +6,7 @@
 name = "research-computing"
 display_name = "Research Computing"
 description = "Standard research computing resources for researchers and IT staff"
-provider_name = "Research Cloud Toolkit on AWS"
+provider_name = "ResearchStack on AWS"
 
 # Support metadata (applied to all products in this portfolio)
 support_email = "cloud-support@university.edu"

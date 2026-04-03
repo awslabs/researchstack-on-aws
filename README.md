@@ -1,8 +1,8 @@
-# Research Cloud Toolkit on AWS
+# ResearchStack on AWS
 
-A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The Research Cloud Toolkit on AWS provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
+A template-first, maintainable solution for research institutions and research teams deploying AWS resources, including EC2 instances, S3 buckets, SageMaker Domains, and more. The ResearchStack on AWS provides CloudFormation templates optimized for research workloads, with optional Service Catalog governance and AI-powered deployment assistance.
 
-## Why Research Cloud Toolkit?
+## Why ResearchStack?
 
 Research institutions have three personas that all need something different from AWS:
 
@@ -31,7 +31,7 @@ Browse the available templates in [`templates/`](templates/) or jump to the [tem
 
 ## Overview
 
-The Research Cloud Toolkit on AWS helps research institutions:
+The ResearchStack on AWS helps research institutions:
 - **Deploy quickly**: Pre-built CloudFormation templates for common research workloads
 - **Track costs**: Built-in tagging for grant chargeback
 - **Scale governance**: Optional Service Catalog for multi-account template governance and deployment
@@ -40,7 +40,7 @@ The Research Cloud Toolkit on AWS helps research institutions:
 ## Repository Structure
 
 ```
-research-cloud-toolkit/
+researchstack/
 ├── templates/                # CloudFormation templates
 │   ├── compute/             # EC2, ParallelCluster
 │   ├── storage/             # S3, EFS
@@ -185,7 +185,7 @@ All templates include required tags for cost allocation:
 - **Project**: Research project name
 - **CostCenter**: Department or grant number
 - **Owner**: PI or researcher email
-- **ManagedBy**: Always "ResearchCloudToolkit"
+- **ManagedBy**: Always "ResearchStack"
 - **Environment**: Always "Research"
 
 Use these tags in AWS Cost Explorer for chargeback reporting. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for enabling cost allocation tags, setting up Cost and Usage Reports, and grant budgeting tips.
@@ -202,8 +202,8 @@ These tags also serve as the foundation for [attribute-based access control (ABA
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/research-cloud-toolkit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/research-cloud-toolkit/discussions)
+- **Issues**: [GitHub Issues](https://github.com/your-org/researchstack/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-org/researchstack/discussions)
 - **AWS Support**: Contact your AWS account team
 
 ## Roadmap

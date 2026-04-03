@@ -97,7 +97,7 @@ All templates enforce these tags for cost allocation:
 - **Project**: Research project name
 - **CostCenter**: Department or grant number
 - **Owner**: PI or researcher email
-- **ManagedBy**: ResearchCloudToolkit
+- **ManagedBy**: ResearchStack
 - **Environment**: Research
 
 ### Cost Allocation Reports

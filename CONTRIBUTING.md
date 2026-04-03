@@ -1,4 +1,4 @@
-# Contributing to Research Cloud Toolkit on AWS
+# Contributing to ResearchStack on AWS
 
 ## Template Standards
 
@@ -66,7 +66,7 @@ Tags:
   - Key: Owner
     Value: !Ref Owner
   - Key: ManagedBy
-    Value: ResearchCloudToolkit
+    Value: ResearchStack
   - Key: Environment
     Value: Research
 ```

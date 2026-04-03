@@ -1,11 +1,11 @@
-# Research Cloud Toolkit on AWS Scripts
+# ResearchStack on AWS Scripts
 
 Utility scripts for template validation and deployment.
 
 ## Available Scripts
 
 ### validate-template.py
-Validates CloudFormation templates against Research Cloud Toolkit on AWS standards.
+Validates CloudFormation templates against ResearchStack on AWS standards.
 
 **Usage:**
 ```bash

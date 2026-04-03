@@ -1,6 +1,6 @@
 # ParallelCluster HPC Guide
 
-Deploy and operate a Slurm HPC cluster on AWS using the Research Cloud Toolkit's ParallelCluster template.
+Deploy and operate a Slurm HPC cluster on AWS using the ResearchStack's ParallelCluster template.
 
 ## What the Template Provides
 

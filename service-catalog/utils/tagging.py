@@ -11,7 +11,7 @@ def apply_standard_tags(scope: Construct, env_name: str):
 
 def _apply_tags(construct: Construct, env_name: str):
     if isinstance(construct, Stack):
-        Tags.of(construct).add("Project", "ResearchCloudToolkit")
+        Tags.of(construct).add("Project", "ResearchStack")
         Tags.of(construct).add("Environment", env_name)
         Tags.of(construct).add("DeployedBy", "CDK")
     for child in construct.node.children:

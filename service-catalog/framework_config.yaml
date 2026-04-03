@@ -1,4 +1,4 @@
-# Research Cloud Toolkit on AWS - Service Catalog Framework Configuration
+# ResearchStack on AWS - Service Catalog Framework Configuration
 # Update these values for your organization before deploying.
 
 deployment:
@@ -14,5 +14,5 @@ available_ous:
 # Tags applied to all CDK-managed stacks
 tagging:
   required_tags:
-    Project: "ResearchCloudToolkit"
+    Project: "ResearchStack"
     ManagedBy: "ServiceCatalog"
