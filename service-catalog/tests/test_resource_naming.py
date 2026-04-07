@@ -64,19 +64,19 @@ class TestServiceCatalogRoleNaming:
         name = ServiceCatalogRoleNaming.get_launch_role_name(
             product_name="s3-bucket",
             portfolio_name="research",
-            project_slug="arc",
+            project_slug="rs",
             env_name="dev",
         )
-        assert name == "arc-dev-research-s3-bucket-lc"
+        assert name == "rs-dev-research-s3-bucket-lc"
 
     def test_stackset_name(self):
         name = ServiceCatalogRoleNaming.get_stackset_name(
             product_name="s3-bucket",
             portfolio_name="research",
-            project_slug="arc",
+            project_slug="rs",
             env_name="dev",
         )
-        assert name == "arc-dev-research-s3-bucket-lc"
+        assert name == "rs-dev-research-s3-bucket-lc"
 
     def test_validate_valid_components(self):
         ok, _ = ServiceCatalogRoleNaming.validate_name_components(
@@ -109,18 +109,47 @@ class TestCloudFormationStackNaming:
 
     def test_stack_name(self):
         name = CloudFormationStackNaming.get_stack_name(
-            component="assets", project_slug="arc", env_name="dev"
+            component="assets", project_slug="rs", env_name="dev"
         )
-        assert name == "arc-dev-assets-stack"
+        assert name == "rs-dev-assets-stack"
 
     def test_stack_name_with_underscores(self):
         name = CloudFormationStackNaming.get_stack_name(
-            component="my_component", project_slug="arc", env_name="dev"
+            component="my_component", project_slug="rs", env_name="dev"
         )
-        assert name == "arc-dev-my-component-stack"
+        assert name == "rs-dev-my-component-stack"
 
     def test_stack_name_uses_global_defaults(self):
         with patch("utils.resource_naming.GlobalConfig.get_project_slug", return_value="test"):
             with patch("utils.resource_naming.GlobalConfig.get_env_name", return_value="prod"):
                 name = CloudFormationStackNaming.get_stack_name("assets")
                 assert name == "test-prod-assets-stack"
+
+
+class TestLaunchRoleStacksetProps:
+    """Test LaunchRoleStacksetProps validation (lives in sc_constructs but uses naming)."""
+
+    def test_valid_props(self):
+        from sc_constructs.launch_role_stackset_template import LaunchRoleStacksetProps
+        props = LaunchRoleStacksetProps(
+            product_name="s3-bucket",
+            portfolio_name="research",
+            managed_policy_names=["AmazonS3FullAccess"],
+        )
+        assert props.product_name == "s3-bucket"
+
+    def test_invalid_product_name_raises(self):
+        from sc_constructs.launch_role_stackset_template import LaunchRoleStacksetProps
+        with pytest.raises(ValueError, match="Invalid stackset name"):
+            LaunchRoleStacksetProps(
+                product_name="bad name!",
+                portfolio_name="research",
+            )
+
+    def test_empty_product_name_raises(self):
+        from sc_constructs.launch_role_stackset_template import LaunchRoleStacksetProps
+        with pytest.raises(ValueError, match="Invalid stackset name"):
+            LaunchRoleStacksetProps(
+                product_name="",
+                portfolio_name="research",
+            )

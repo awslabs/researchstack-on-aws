@@ -109,3 +109,42 @@ class TestPortfolioConfigValidation:
         loader = PortfolioConfigLoader(tmp_path)
         with pytest.raises(FrameworkConfigError, match="Invalid target OUs"):
             loader.load_portfolio_config("bad-ou")
+
+
+class TestPortfolioConfigDefaults:
+    """Test default values and edge cases."""
+
+    def test_display_name_defaults_from_name(self, tmp_path, mock_framework_config):
+        (tmp_path / "minimal.toml").write_text(
+            '[portfolio]\nname = "my-portfolio"\ndisplay_name = "My Portfolio"\n'
+            "share_target_ous = []\n\n"
+            "[[portfolio.products]]\n"
+            'name = "test-prod"\n'
+            'template = "../templates/storage/s3-research-bucket.yaml"\n'
+        )
+        loader = PortfolioConfigLoader(tmp_path)
+        config = loader.load_portfolio_config("minimal")
+        # Product display_name should default from name
+        assert config.products[0].display_name == "Test Prod"
+
+    def test_empty_products_logs_warning(self, tmp_path, mock_framework_config, caplog):
+        (tmp_path / "no-products.toml").write_text(
+            '[portfolio]\nname = "empty"\ndisplay_name = "Empty"\n'
+            "share_target_ous = []\n"
+        )
+        loader = PortfolioConfigLoader(tmp_path)
+        import logging
+        with caplog.at_level(logging.WARNING):
+            config = loader.load_portfolio_config("no-products")
+        assert len(config.products) == 0
+        assert "no products" in caplog.text.lower()
+
+    def test_list_portfolios_skips_hidden_files(self, tmp_path, mock_framework_config):
+        (tmp_path / "visible.toml").write_text('[portfolio]\nname = "v"\n')
+        (tmp_path / "_hidden.toml").write_text('[portfolio]\nname = "h"\n')
+        (tmp_path / ".dotfile.toml").write_text('[portfolio]\nname = "d"\n')
+        loader = PortfolioConfigLoader(tmp_path)
+        portfolios = loader.list_portfolios()
+        assert "visible" in portfolios
+        assert "_hidden" not in portfolios
+        assert ".dotfile" not in portfolios

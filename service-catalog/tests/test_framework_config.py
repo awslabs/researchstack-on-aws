@@ -134,3 +134,23 @@ class TestFrameworkConfigValidation:
         with pytest.raises(FrameworkConfigError) as exc_info:
             loader.load_config()
         assert "12-digit" in exc_info.value.suggestion
+
+
+class TestGetFrameworkConfigSingleton:
+    """Test the module-level get_framework_config() function."""
+
+    def test_singleton_returns_config(self, valid_framework_config):
+        from core.framework_config import get_framework_config, _loader
+        # Reset the module singleton
+        import core.framework_config as mod
+        mod._loader = None
+
+        config = get_framework_config(valid_framework_config)
+        assert config.deployment.hub_account == "123456789012"
+
+        # Second call without path returns cached
+        config2 = get_framework_config()
+        assert config2 is config
+
+        # Cleanup
+        mod._loader = None

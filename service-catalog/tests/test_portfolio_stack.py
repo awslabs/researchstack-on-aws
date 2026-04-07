@@ -14,7 +14,7 @@ from utils.config import GlobalConfig
 @pytest.fixture(autouse=True)
 def reset_globals():
     GlobalConfig.env_name = "test"
-    GlobalConfig.project_slug = "arc"
+    GlobalConfig.project_slug = "rs"
 
 
 def _make_portfolio_config(products=None, target_ous=None, access_principals=None):
@@ -117,7 +117,7 @@ class TestLaunchRoles:
         portfolio_template.has_resource_properties(
             "AWS::IAM::Role",
             {
-                "RoleName": "arc-test-test-portfolio-s3-research-bucket-lc",
+                "RoleName": "rs-test-test-portfolio-s3-research-bucket-lc",
                 "AssumeRolePolicyDocument": Match.object_like({
                     "Statement": Match.array_with([
                         Match.object_like({
@@ -132,7 +132,7 @@ class TestLaunchRoles:
         portfolio_template.has_resource_properties(
             "AWS::IAM::Role",
             {
-                "RoleName": "arc-test-test-portfolio-s3-research-bucket-lc",
+                "RoleName": "rs-test-test-portfolio-s3-research-bucket-lc",
                 "ManagedPolicyArns": Match.array_with([
                     Match.object_like({}),  # At least one managed policy
                 ]),
@@ -242,3 +242,130 @@ class TestMultipleProducts:
             if "servicecatalog.amazonaws.com" in str(r)
         ]
         assert len(launch_roles) == 2
+
+
+class TestErrorHandling:
+
+    def test_missing_template_raises(self):
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        config = _make_portfolio_config(products=[
+            ProductConfig(
+                name="bad-product",
+                template="../templates/nonexistent.yaml",
+                display_name="Bad Product",
+                launch_role_policies=[],
+            ),
+        ])
+
+        with pytest.raises(FileNotFoundError, match="nonexistent"):
+            PortfolioStack(
+                app, "BadPortfolio",
+                portfolio_config=config,
+                asset_bucket=assets_stack.assets_bucket,
+                env=env,
+            )
+
+
+class TestTagging:
+
+    def test_standard_tags_applied(self):
+        from utils.tagging import apply_standard_tags
+
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        apply_standard_tags(app, "test")
+        template = Template.from_stack(assets_stack)
+
+        # CDK tags are applied at the stack level — they appear in the template
+        # as Tags on resources. Check that at least the bucket has the tags.
+        assets_template_json = template.to_json()
+        template_str = str(assets_template_json)
+        assert "ResearchStack" in template_str
+        assert "DeployedBy" in template_str or "CDK" in template_str
+
+
+class TestLaunchRoleDetails:
+
+    def test_cloudformation_full_access_always_included(self):
+        """Launch role should always have AWSCloudFormationFullAccess even if not declared."""
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        # Product only declares S3 access, not CloudFormation
+        config = _make_portfolio_config(products=[
+            ProductConfig(
+                name="s3-only",
+                template="../templates/storage/s3-research-bucket.yaml",
+                display_name="S3 Only",
+                launch_role_policies=["AmazonS3FullAccess"],
+            ),
+        ])
+
+        stack = PortfolioStack(
+            app, "CFNAccessTest",
+            portfolio_config=config,
+            asset_bucket=assets_stack.assets_bucket,
+            env=env,
+        )
+        template = Template.from_stack(stack)
+
+        # Find the launch role and check it has CloudFormation policy
+        roles = template.find_resources("AWS::IAM::Role")
+        launch_role = [
+            r for r in roles.values()
+            if "servicecatalog.amazonaws.com" in str(r)
+        ]
+        assert len(launch_role) == 1
+        role_str = str(launch_role[0])
+        assert "AWSCloudFormationFullAccess" in role_str
+
+    def test_launch_role_has_s3_inline_policy(self):
+        """Launch role should have inline S3 policy for reading SC template artifacts."""
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        config = _make_portfolio_config()
+        stack = PortfolioStack(
+            app, "InlinePolicyTest",
+            portfolio_config=config,
+            asset_bucket=assets_stack.assets_bucket,
+            env=env,
+        )
+        template = Template.from_stack(stack)
+
+        # The launch role should have an inline policy for S3 GetObject
+        roles = template.find_resources("AWS::IAM::Role")
+        launch_role = [
+            r for r in roles.values()
+            if "servicecatalog.amazonaws.com" in str(r)
+        ]
+        role_str = str(launch_role[0])
+        assert "s3:GetObject" in role_str
+        assert "servicecatalog:provisioning" in role_str
