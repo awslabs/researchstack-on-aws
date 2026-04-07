@@ -210,13 +210,6 @@ These tags also serve as the foundation for [attribute-based access control (ABA
 - **Discussions**: [GitHub Discussions](https://github.com/your-org/researchstack/discussions)
 - **AWS Support**: Contact your AWS account team
 
-## Roadmap
-
-- **Phase 1** (Complete): Repository structure + initial templates
-- **Phase 2** (Current): Service Catalog integration (simplified CDK)
-- **Phase 3**: Gen AI-powered deployment
-- **Phase 4**: Additional templates and community expansion
-
 ## License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
