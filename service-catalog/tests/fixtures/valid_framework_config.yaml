@@ -1,0 +1,13 @@
+deployment:
+  hub_account: "123456789012"
+  hub_region: "us-east-1"
+  organization_id: "o-abc123def456"
+  default_env_name: "test"
+
+available_ous:
+  - "ou-abcd-12345678"
+
+tagging:
+  required_tags:
+    Project: "TestProject"
+    ManagedBy: "TestSuite"

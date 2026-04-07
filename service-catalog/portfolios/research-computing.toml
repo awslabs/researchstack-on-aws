@@ -110,3 +110,10 @@ display_name = "Research Networking (VPC)"
 description = "Reusable VPC with public/private subnets, NAT gateway, and VPC endpoints"
 template = "../templates/networking/research-vpc.yaml"
 launch_role_policies = ["AmazonVPCFullAccess"]
+
+[[portfolio.products]]
+name = "budget-alert"
+display_name = "Budget Alert"
+description = "Monthly budget tracking by cost center with email alerts at 50%, 80%, and 100% thresholds. Optionally scoped to a specific project."
+template = "../templates/governance/budget-alert.yaml"
+launch_role_policies = ["AWSBudgetsActionsWithAWSResourceControlAccess", "AmazonSNSFullAccess"]

@@ -7,7 +7,7 @@ class GlobalConfig:
     """Holds project_slug and env_name used in stack/role naming."""
 
     env_name = "dev"
-    project_slug = "arc"
+    project_slug = "rs"
 
     @classmethod
     def set_env_name(cls, env_name: str):

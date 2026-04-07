@@ -1,0 +1,20 @@
+[portfolio]
+name = "test-portfolio"
+display_name = "Test Portfolio"
+description = "Portfolio for unit tests"
+provider_name = "Test Provider"
+
+share_target_ous = [
+    "ou-abcd-12345678",
+]
+
+access_principals = []
+share_tag_options = true
+share_principals = true
+
+[[portfolio.products]]
+name = "test-product"
+display_name = "Test Product"
+description = "A test product"
+template = "../templates/storage/s3-research-bucket.yaml"
+launch_role_policies = ["AmazonS3FullAccess"]

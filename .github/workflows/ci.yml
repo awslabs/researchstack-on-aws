@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint-templates:
+    name: Lint CloudFormation templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cfn-lint
+      - run: cfn-lint templates/**/*.yaml
+
+  test-service-catalog:
+    name: Test Service Catalog CDK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: service-catalog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install -g aws-cdk
+      - run: pip install -e ".[test]"
+      - run: python -m pytest tests/ -v

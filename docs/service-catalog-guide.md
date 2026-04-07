@@ -121,6 +121,50 @@ Each TOML file defines a portfolio with inline products. The example `research-c
 
 To create additional portfolios (e.g., admin vs. user), create a new TOML file in the same directory.
 
+## Configuration Reference
+
+Complete reference for every configurable field. Fields marked (required) must be set before deploying.
+
+### Framework Config Fields (`framework_config.yaml`)
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `deployment.hub_account` | String | Yes | — | 12-digit AWS account ID for the hub account where SC resources are deployed |
+| `deployment.hub_region` | String | Yes | — | AWS region for deployment (e.g., `us-east-1`) |
+| `deployment.organization_id` | String | Yes | — | AWS Organization ID (format: `o-xxxxxxxxxx`). Used for S3 bucket org-wide read policy |
+| `deployment.default_env_name` | String | No | `dev` | Environment name baked into resource names (e.g., `dev`, `staging`, `prod`) |
+| `available_ous` | List of strings | Yes | — | OU IDs that portfolios are allowed to share to. Portfolio TOML `share_target_ous` are validated against this list. Format: `ou-xxxx-xxxxxxxx` |
+| `tagging.required_tags` | Map | No | `{}` | Key-value pairs applied as tags to all CDK-managed stacks |
+
+### Portfolio Config Fields (`portfolios/*.toml`)
+
+**Portfolio section (`[portfolio]`):**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | String | Yes | — | Machine identifier for the portfolio (used in stack names, no spaces) |
+| `display_name` | String | Yes | — | Human-readable name shown in the SC console |
+| `description` | String | No | `""` | Portfolio description shown in the SC console |
+| `provider_name` | String | No | `"ResearchStack on AWS"` | Organization name shown as the portfolio provider |
+| `support_email` | String | No | `""` | Support email shown on all products in this portfolio |
+| `support_url` | String | No | `""` | Support URL shown on all products |
+| `support_description` | String | No | `""` | Support description text shown on all products |
+| `distributor` | String | No | `""` | Distributor name shown on all products |
+| `share_target_ous` | List of strings | Yes | — | OU IDs to share this portfolio with. Must be listed in `framework_config.yaml` `available_ous` |
+| `access_principals` | List of strings | No | `[]` | IAM principal ARN patterns for automated portfolio access. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
+| `share_tag_options` | Boolean | No | `true` | Whether to share TagOptions with spoke accounts when sharing the portfolio |
+| `share_principals` | Boolean | No | `true` | Whether to propagate `access_principals` to spoke accounts via principal sharing |
+
+**Product entries (`[[portfolio.products]]`):**
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | String | Yes | — | Machine identifier (used for IAM role names, StackSet names — no spaces, alphanumeric + hyphens) |
+| `display_name` | String | No | Derived from `name` | Human-readable name shown in the SC console |
+| `description` | String | No | `""` | Product description shown in the SC console |
+| `template` | String | Yes | — | Relative path to the CloudFormation template (relative to `service-catalog/`, e.g., `../templates/storage/s3-research-bucket.yaml`) |
+| `launch_role_policies` | List of strings | No | `[]` | AWS managed policy names for the launch role (e.g., `AmazonS3FullAccess`). `AWSCloudFormationFullAccess` is always added automatically |
+
 ## Deployment
 
 Once config files are set, deploy from the `service-catalog/` directory. CDK will create the assets bucket, portfolio, products, launch roles, and StackSets. Add `--profile your-profile-name` to CDK commands if you're using named AWS CLI profiles.

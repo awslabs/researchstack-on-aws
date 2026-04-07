@@ -1,0 +1,203 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Budget Alert — tracks monthly spend by CostCenter tag with email notifications
+  at 50%, 80%, and 100% thresholds. Optionally narrow to a specific Project.
+  Requires cost allocation tags to be activated in the Billing console first —
+  see the Cost Optimization Guide for setup instructions.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Budget Configuration'
+        Parameters:
+          - BudgetName
+          - BudgetAmountUSD
+          - NotificationEmail
+      - Label:
+          default: 'Cost Tracking Filters'
+        Parameters:
+          - CostCenter
+          - ProjectName
+      - Label:
+          default: 'Resource Tagging'
+        Parameters:
+          - Owner
+    ParameterLabels:
+      BudgetName:
+        default: 'Budget Name'
+      BudgetAmountUSD:
+        default: 'Monthly Budget (USD)'
+      NotificationEmail:
+        default: 'Notification Email'
+      CostCenter:
+        default: 'Cost Center'
+      ProjectName:
+        default: 'Project Name (optional)'
+      Owner:
+        default: 'Owner Email'
+
+Parameters:
+  BudgetName:
+    Type: String
+    Description: >-
+      Name for this budget (e.g., grant-12345-monthly).
+      Used in resource naming and the Budgets console.
+    AllowedPattern: '^[a-zA-Z0-9-]+'
+    ConstraintDescription: 'Alphanumeric characters and hyphens only'
+    MinLength: 3
+    MaxLength: 60
+
+  BudgetAmountUSD:
+    Type: Number
+    Description: 'Monthly budget limit in USD. Notifications fire at 50%, 80%, and 100% of this amount (plus a forecast alert when projected to exceed).'
+    MinValue: 1
+
+  NotificationEmail:
+    Type: String
+    Description: >-
+      Email address for budget alerts. You must confirm the SNS subscription
+      email to receive notifications.
+    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    ConstraintDescription: 'Must be a valid email address'
+
+  CostCenter:
+    Type: String
+    Description: >-
+      Cost center tag value to track (must match the CostCenter tag on your
+      resources). This is the primary budget filter.
+    MinLength: 1
+
+  ProjectName:
+    Type: String
+    Default: ''
+    Description: >-
+      Project tag value to narrow the budget to a specific project within the
+      cost center (AND filter). Leave blank to track all projects under the
+      cost center.
+
+  Owner:
+    Type: String
+    Default: ''
+    Description: 'PI or researcher email (for resource tagging — optional)'
+
+Conditions:
+  HasProject: !Not [!Equals [!Ref ProjectName, '']]
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+
+Resources:
+  BudgetSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'researchstack-budget-${BudgetName}-alerts'
+      Tags:
+        - Key: Project
+          Value: !If [HasProject, !Ref ProjectName, 'all-projects']
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ResearchStack
+        - Key: Environment
+          Value: Research
+
+  BudgetSNSTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      Topics:
+        - !Ref BudgetSNSTopic
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowBudgetsPublish
+            Effect: Allow
+            Principal:
+              Service: budgets.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref BudgetSNSTopic
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref 'AWS::AccountId'
+
+  BudgetEmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref BudgetSNSTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  Budget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: !Ref BudgetName
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref BudgetAmountUSD
+          Unit: USD
+        CostFilters: !If
+          - HasProject
+          - TagKeyValue:
+              - !Sub 'user:CostCenter$${CostCenter}'
+              - !Sub 'user:Project$${ProjectName}'
+          - TagKeyValue:
+              - !Sub 'user:CostCenter$${CostCenter}'
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 50
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetSNSTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetSNSTopic
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetSNSTopic
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: SNS
+              Address: !Ref BudgetSNSTopic
+
+Outputs:
+  BudgetName:
+    Description: 'Budget name in the AWS Budgets console'
+    Value: !Ref BudgetName
+
+  SNSTopicArn:
+    Description: 'SNS topic ARN for budget notifications'
+    Value: !Ref BudgetSNSTopic
+
+  BudgetDashboardURL:
+    Description: 'Direct link to AWS Budgets console'
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/billing/home#/budgets'
+
+  CostCenterFilter:
+    Description: 'Cost center tag value this budget tracks'
+    Value: !Ref CostCenter
+
+  ProjectFilter:
+    Description: 'Project tag value this budget tracks (blank = all projects)'
+    Value: !If [HasProject, !Ref ProjectName, '(all projects)']

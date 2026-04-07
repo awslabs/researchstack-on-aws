@@ -43,9 +43,10 @@ The ResearchStack on AWS helps research institutions:
 researchstack/
 ├── templates/                # CloudFormation templates
 │   ├── compute/             # EC2, ParallelCluster
-│   ├── storage/             # S3, EFS
+│   ├── storage/             # S3, EFS, FSx Lustre
 │   ├── ml/                  # SageMaker
 │   ├── networking/          # VPC
+│   ├── governance/          # Budget alerts
 │   └── data/                # (future: RDS, Athena)
 ├── service-catalog/          # CDK code for Service Catalog deployment
 │   ├── app.py               # CDK entrypoint
@@ -56,8 +57,6 @@ researchstack/
 │   ├── core/                # Config loaders (framework YAML, portfolio TOML)
 │   └── utils/               # Naming, tagging, global config
 ├── docs/                    # Documentation
-│   ├── research-lifecycle-guide.md
-│   └── cost-optimization-guide.md
 ├── ADRs/                    # Architecture Decision Records
 ├── CONTRIBUTING.md
 └── README.md
@@ -144,20 +143,20 @@ aws cloudformation create-stack \
     ParameterKey=Owner,ParameterValue=researcher@university.edu
 ```
 
-### Pattern 2: Standalone Resources (VPC created automatically)
+### Pattern 2: Standalone EC2 (Minimal Setup)
 
-EC2 templates create a VPC automatically if you don't provide one:
+Deploy an EC2 instance into an existing VPC:
 
 ```bash
-# Just deploy - VPC will be created
 aws cloudformation create-stack \
   --stack-name my-ec2 \
   --template-body file://templates/compute/ec2-general-purpose.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
   --parameters \
     ParameterKey=ProjectName,ParameterValue=my-project \
     ParameterKey=CostCenter,ParameterValue=grant-12345 \
-    ParameterKey=Owner,ParameterValue=researcher@university.edu \
-    ParameterKey=InstanceType,ParameterValue=m7i.xlarge
+    ParameterKey=VpcId,ParameterValue=vpc-xxxxxxxx \
+    ParameterKey=SubnetId,ParameterValue=subnet-xxxxxxxx
 ```
 
 ## Templates
@@ -168,6 +167,7 @@ aws cloudformation create-stack \
 ### Storage
 - **s3-research-bucket.yaml**: Secure S3 bucket with versioning and intelligent tiering
 - **efs-shared-storage.yaml**: Network file system for shared access
+- **fsx-lustre.yaml**: High-throughput parallel filesystem for compute-intensive workloads
 
 ### Compute
 - **ec2-general-purpose.yaml**: M-series instances for balanced workloads
@@ -178,6 +178,9 @@ aws cloudformation create-stack \
 
 ### Machine Learning
 - **sagemaker-studio.yaml**: Managed Jupyter environment with GPU support
+
+### Governance
+- **budget-alert.yaml**: Monthly budget tracking by cost center with email alerts
 
 ## Cost Tracking
 
@@ -195,6 +198,7 @@ These tags also serve as the foundation for [attribute-based access control (ABA
 ## Documentation
 
 - [Service Catalog Deployment Guide](docs/service-catalog-guide.md) - Full walkthrough for multi-account governance deployment
+- [Service Catalog Developer Guide](service-catalog/README.md) - Code architecture, call flow, and how to extend the CDK project
 - [ParallelCluster Guide](docs/parallelcluster-guide.md) - Deploy, connect, run jobs, and customize HPC clusters
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) - Map your research phase to appropriate templates
 - [Cost Optimization Guide](docs/cost-optimization-guide.md) - Strategies to minimize AWS costs

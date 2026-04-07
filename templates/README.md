@@ -10,19 +10,22 @@ CloudFormation templates optimized for research workloads. Each template can be 
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
 - **efs-shared-storage.yaml** — Network file system for shared access across multiple instances. EC2 instances must have the EFS security group (from stack outputs) attached to mount the filesystem.
+- **fsx-lustre.yaml** — High-throughput parallel filesystem for compute-intensive workloads. Supports S3 data repository associations for transparent access to S3 data.
 
 ### Compute (`compute/`)
 - **ec2-general-purpose.yaml** — M-series instances for balanced workloads (data processing, web apps, dev environments)
 - **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks (simulations, batch processing, modeling)
 - **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads (genomics, large datasets, in-memory DBs)
 - **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML training and inference
-- **ec2-hpc-optimized.yaml** — HPC-optimized instances for tightly coupled parallel workloads (CFD, molecular dynamics)
 - **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and optional DCV remote desktop. See the [ParallelCluster Guide](../docs/parallelcluster-guide.md) for deployment, job submission, and post-deploy customization (adding queues, multi-user, login nodes).
 
 All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
 
 ### Machine Learning (`ml/`)
 - **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support
+
+### Governance (`governance/`)
+- **budget-alert.yaml** — Monthly budget tracking by CostCenter tag with email alerts at 50%, 80%, and 100% thresholds. Optionally scoped to a specific project. Requires cost allocation tags to be activated first — see the [Cost Optimization Guide](../docs/cost-optimization-guide.md).
 
 ## Template Standards
 

@@ -100,20 +100,46 @@ All templates enforce these tags for cost allocation:
 - **ManagedBy**: ResearchStack
 - **Environment**: Research
 
+### Activating Cost Allocation Tags
+
+AWS resources are tagged automatically by ResearchStack templates, but tags don't appear in Cost Explorer or Budgets until you activate them as **cost allocation tags** in the Billing console. This is a one-time setup per account (or per management account if using AWS Organizations).
+
+1. Go to **Billing and Cost Management → Cost Allocation Tags** ([direct link](https://console.aws.amazon.com/billing/home#/tags))
+2. Find the tags: `Project`, `CostCenter`, `Owner`, `ManagedBy`, `Environment`
+3. Select them and click **Activate**
+4. Wait 24 hours — activated tags take up to 24 hours before cost data starts appearing in Cost Explorer and Budgets. Tags only apply to costs incurred *after* activation (not retroactive).
+
+If you're using AWS Organizations, activate tags in the **management account** — this enables them across all member accounts. Individual member accounts cannot activate cost allocation tags independently.
+
+Without this step, tag-based budget filtering and Cost Explorer breakdowns won't work, even though the tags exist on the resources.
+
 ### Cost Allocation Reports
-1. Enable cost allocation tags in AWS Billing Console
+1. Activate cost allocation tags (see above)
 2. Use AWS Cost Explorer to filter by tags
 3. Create monthly reports by Project/CostCenter
 4. Add F&A overhead for grant reporting
 
 ### Budget Alerts
-Set up AWS Budgets to alert when costs exceed thresholds:
+
+Use the **Budget Alert** template (`templates/governance/budget-alert.yaml`) to create automated budget tracking per cost center. The template:
+- Creates a monthly budget filtered by your `CostCenter` tag (optionally narrowed to a specific `Project`)
+- Sends email alerts at 50% (actual), 80% (actual), and 100% (forecasted) of your budget
+
+Deploy via Service Catalog or CloudFormation:
 ```bash
-aws budgets create-budget \
-  --account-id 123456789012 \
-  --budget file://budget.json \
-  --notifications-with-subscribers file://notifications.json
+aws cloudformation create-stack \
+  --stack-name grant-12345-budget \
+  --template-body file://templates/governance/budget-alert.yaml \
+  --parameters \
+    ParameterKey=BudgetName,ParameterValue=grant-12345-monthly \
+    ParameterKey=BudgetAmountUSD,ParameterValue=5000 \
+    ParameterKey=CostCenter,ParameterValue=grant-12345 \
+    ParameterKey=NotificationEmail,ParameterValue=pi@university.edu
 ```
+
+For per-instance cost enforcement (automatically stopping an EC2 instance when its budget is exceeded), this feature is planned for EC2 templates — see the project roadmap.
+
+Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and enforcement are safety nets, not real-time spending caps.
 
 ## Cost Estimation Tools
 

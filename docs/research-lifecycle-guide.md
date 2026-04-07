@@ -37,7 +37,6 @@ Map your research phase to appropriate AWS templates.
 - `parallelcluster-hpc.yaml` - HPC workloads
 - `ec2-compute-optimized.yaml` - Batch processing
 - `ec2-memory-optimized.yaml` - Memory-intensive analysis
-- `ec2-hpc-optimized.yaml` - Parallel workloads
 
 **Cost Optimization:** Reserved instances for predictable workloads
 
@@ -57,8 +56,10 @@ Map your research phase to appropriate AWS templates.
 |------|----------|
 | Object storage | s3-research-bucket.yaml |
 | Shared file system | efs-shared-storage.yaml |
+| High-throughput storage | fsx-lustre.yaml |
 | General computing | ec2-general-purpose.yaml |
 | ML development | sagemaker-studio.yaml |
 | GPU workloads | ec2-accelerated-gpu.yaml |
 | HPC cluster | parallelcluster-hpc.yaml |
 | Shared VPC | research-vpc.yaml |
+| Budget tracking | budget-alert.yaml |
