@@ -369,3 +369,41 @@ class TestLaunchRoleDetails:
         role_str = str(launch_role[0])
         assert "s3:GetObject" in role_str
         assert "servicecatalog:provisioning" in role_str
+
+
+class TestStackSetFactory:
+
+    def test_no_targets_raises_value_error(self):
+        """StacksetFactory should raise if neither OUs nor accounts provided."""
+        from sc_constructs.stackset_factory import StacksetFactory
+        from sc_constructs.launch_role_stackset_template import LaunchRoleStacksetProps
+
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        config = _make_portfolio_config()
+        stack = PortfolioStack(
+            app, "FactoryTest",
+            portfolio_config=config,
+            asset_bucket=assets_stack.assets_bucket,
+            env=env,
+        )
+
+        props = LaunchRoleStacksetProps(
+            product_name="test-product",
+            portfolio_name="test-portfolio",
+            managed_policy_names=["AmazonS3FullAccess"],
+        )
+
+        with pytest.raises(ValueError, match="Either target_accounts or target_ou_ids"):
+            stack.stackset_factory.create_launch_role_stackset(
+                stack_name="test-stackset",
+                props=props,
+                target_regions=["us-east-1"],
+                # Neither target_ou_ids nor target_accounts provided
+            )

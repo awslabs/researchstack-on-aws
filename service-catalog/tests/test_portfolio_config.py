@@ -148,3 +148,21 @@ class TestPortfolioConfigDefaults:
         assert "visible" in portfolios
         assert "_hidden" not in portfolios
         assert ".dotfile" not in portfolios
+
+    def test_empty_portfolio_name_raises(self, tmp_path, mock_framework_config):
+        (tmp_path / "no-name.toml").write_text(
+            '[portfolio]\nname = ""\ndisplay_name = "Has Display"\n'
+            "share_target_ous = []\n"
+        )
+        loader = PortfolioConfigLoader(tmp_path)
+        with pytest.raises(FrameworkConfigError, match="name is required"):
+            loader.load_portfolio_config("no-name")
+
+    def test_empty_display_name_raises(self, tmp_path, mock_framework_config):
+        (tmp_path / "no-display.toml").write_text(
+            '[portfolio]\nname = "has-name"\ndisplay_name = ""\n'
+            "share_target_ous = []\n"
+        )
+        loader = PortfolioConfigLoader(tmp_path)
+        with pytest.raises(FrameworkConfigError, match="Display name required"):
+            loader.load_portfolio_config("no-display")
