@@ -105,8 +105,7 @@ Parameters:
 
   ClusterName:
     Type: String
-    Description: 'Name for the cluster'
-    Default: 'research-cluster'
+    Description: 'Unique name for this cluster — must not match any existing cluster in this account and region. Shows in the ParallelCluster console, CLI, and CloudWatch.'
     AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-]{0,59}$'
     ConstraintDescription: 'Must start with a letter, up to 60 characters, alphanumeric and hyphens only'
 
@@ -147,6 +146,8 @@ Parameters:
     Type: String
     Default: ''
     Description: 'EC2 Capacity Block reservation ID for P-series GPU instances (required for p4/p5/p6 since they cannot be launched on-demand). Leave blank for all other instance types.'
+    AllowedPattern: '^$|^cr-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid Capacity Block reservation ID (cr-xxxx) or blank'
 
   HeadNodeSubnetId:
     Type: AWS::EC2::Subnet::Id
@@ -160,6 +161,8 @@ Parameters:
     Type: String
     Default: ''
     Description: 'Existing EFS filesystem ID to mount at /shared (e.g., fs-0123456789abcdef0). If blank, a new EFS is created and deleted with the cluster. If provided, the EFS persists independently of the cluster lifecycle.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
   S3BucketName:
     Type: String
@@ -170,6 +173,8 @@ Parameters:
     Type: String
     Default: ''
     Description: 'Existing FSx for Lustre filesystem ID to mount at /lustre (e.g., fs-0123456789abcdef0). The filesystem security group must allow ports 988, 1021-1023 from the cluster subnets. Leave blank if not using Lustre.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid FSx filesystem ID (fs-xxxx) or blank'
 
   KeyPairName:
     Type: String
@@ -186,12 +191,16 @@ Parameters:
     Type: String
     Default: ''
     Description: 'CIDR block allowed to connect to DCV (e.g., 203.0.113.0/24 for your office, 0.0.0.0/0 for anywhere). Required when DCV is enabled.'
+    AllowedPattern: '^$|^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+    ConstraintDescription: 'Must be a valid CIDR block (e.g., 10.0.0.0/8, 0.0.0.0/0) or blank'
 
   DCVPassword:
     Type: String
     NoEcho: true
     Default: ''
     Description: 'Password for DCV desktop login (username: ec2-user for Amazon Linux, ubuntu for Ubuntu). Required when DCV is enabled. Min 8 characters.'
+    AllowedPattern: '^$|^.{8,}$'
+    ConstraintDescription: 'Must be at least 8 characters or blank (when DCV is disabled)'
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]

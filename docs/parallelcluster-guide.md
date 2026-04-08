@@ -48,7 +48,7 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 
 | Parameter | Default | When to change |
 |-----------|---------|----------------|
-| ClusterName | research-cluster | When running multiple clusters in the same account |
+| ClusterName | (required) | Choose a unique name per account/region (e.g., `genomics-cluster`, `cfd-team`) |
 | OperatingSystem | alinux2023 | Ubuntu 22.04/24.04 if your software requires it |
 | HeadNodeInstanceType | m7i.2xlarge | Larger if running DCV with heavy GUI apps, smaller (e.g., m7i.large) if CLI-only |
 | ComputeInstanceType | c7i.8xlarge | Match to your workload: R-series for memory, G-series for GPU, Hpc-series for tightly-coupled MPI. See the [EC2 Instance Type Explorer](https://aws.amazon.com/ec2/instance-explorer/) for family overviews, or [Vantage](https://instances.vantage.sh/?id=421e512ec7fc071920ffc00ca2bc7141ef1c98aa) to compare specs and pricing side-by-side. |
