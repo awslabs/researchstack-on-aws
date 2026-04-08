@@ -73,6 +73,8 @@ Parameters:
     Type: String
     Default: ''
     Description: 'ARN of S3 bucket to link (e.g., arn:aws:s3:::my-research-data). Files are lazy-loaded on first access and changes sync automatically. Leave blank for standalone scratch storage.'
+    AllowedPattern: '^$|^arn:aws:s3:::.+$'
+    ConstraintDescription: 'Must be a valid S3 bucket ARN (arn:aws:s3:::bucket-name) or blank'
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]

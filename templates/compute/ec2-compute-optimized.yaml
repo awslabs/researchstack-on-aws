@@ -82,7 +82,7 @@ Parameters:
     Type: String
     Default: c8i.xlarge
     Description: 'C-series instance type - highest per-core performance for compute-bound workloads. See the templates README for help choosing a size.'
-    AllowedPattern: '^c[0-9]+[a-z]*\.(medium|large|[0-9]*xlarge)'
+    AllowedPattern: '^c[0-9]+[a-z]*\.(medium|large|[0-9]*xlarge)$'
     ConstraintDescription: 'Must be a C-series instance type (e.g., c8i.xlarge, c8g.2xlarge, c8a.4xlarge)'
 
   OperatingSystem:
@@ -122,11 +122,15 @@ Parameters:
     Type: String
     Default: ''
     Description: 'EFS filesystem ID to mount at /mnt/efs (from the EFS template stack outputs). Auto-mounts with TLS on both AL2023 and Ubuntu - Ubuntu takes 3-5 min longer at boot to build efs-utils. Leave blank if not using shared storage.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
   S3BucketName:
     Type: String
     Default: ''
     Description: 'S3 bucket name to grant this instance read/write access (from the S3 template stack outputs). Leave blank if not needed.'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid S3 bucket name (3-63 chars, lowercase, numbers, hyphens, periods) or blank'
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]

@@ -58,7 +58,8 @@ Parameters:
   
   Owner:
     Type: String
-    AllowedPattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    Default: ''
+    Description: 'PI or researcher email for cost tracking (optional)'
   
   DomainName:
     Type: String

@@ -82,7 +82,7 @@ Parameters:
     Type: String
     Default: g6.xlarge
     Description: 'G-series GPU instance type. g6 = NVIDIA L4, g6e = NVIDIA L40S, g5 = NVIDIA A10G. See the templates README for help choosing a size.'
-    AllowedPattern: '^g[0-9]+[a-z]*\.(xlarge|[0-9]*xlarge)'
+    AllowedPattern: '^g[0-9]+[a-z]*\.(xlarge|[0-9]*xlarge)$'
     ConstraintDescription: 'Must be a G-series instance type (e.g., g6.xlarge, g6e.2xlarge, g5.4xlarge)'
 
   OperatingSystem:
@@ -120,11 +120,15 @@ Parameters:
     Type: String
     Default: ''
     Description: 'EFS filesystem ID to mount at /mnt/efs (from the EFS template stack outputs). Auto-mounts with TLS on both AL2023 and Ubuntu - Ubuntu takes 3-5 min longer at boot to build efs-utils. Leave blank if not using shared storage.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
   S3BucketName:
     Type: String
     Default: ''
     Description: 'S3 bucket name to grant this instance read/write access (from the S3 template stack outputs). Leave blank if not needed.'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid S3 bucket name (3-63 chars, lowercase, numbers, hyphens, periods) or blank'
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]
