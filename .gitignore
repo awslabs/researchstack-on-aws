@@ -36,3 +36,7 @@ scan-results*/
 # Coverage reports
 .coverage
 htmlcov/
+
+# ASH scan artifacts
+ash-scan-*
+pcluster-ash-scan
