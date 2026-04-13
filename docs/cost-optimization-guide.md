@@ -18,12 +18,12 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 
 **S3 Intelligent Tiering** (Automatic)
 - Moves data between access tiers automatically based on usage patterns — frequently accessed data stays in a fast tier, infrequently accessed data moves to cheaper tiers
-- No retrieval fees (unlike Glacier, which charges per retrieval)
+- No retrieval fees — even for data that moves to the archive tiers within Intelligent Tiering (unlike [S3 Glacier](https://aws.amazon.com/s3/storage-classes/glacier/), which charges per retrieval request)
 - Saves 70-95% on infrequently accessed data
 - **All ResearchStack S3 templates use this by default**
 
 **EFS Lifecycle Management**
-- Moves files not accessed for 30 days to the [Infrequent Access tier](https://aws.amazon.com/efs/pricing/) (~$0.016/GB vs ~$0.30/GB for Standard)
+- Moves files not accessed for 30 days to the Infrequent Access tier (~$0.016/GB vs ~$0.30/GB for Standard)
 - Saves ~90% on inactive files
 - Transparent to applications — files move back to Standard automatically on next access
 - **The ResearchStack EFS template enables this by default** (`TransitionToIA: AFTER_30_DAYS`)
@@ -36,7 +36,7 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 ### Compute Optimization
 
 **Stop Instances When Not in Use**
-- **SageMaker**: SageMaker Studio only runs compute (training jobs, inference endpoints, ETL processing) when actively invoked — it shuts down automatically when idle. No action needed for most workloads. If using classic notebook instances, stop them between sessions.
+- **SageMaker**: SageMaker Studio apps (JupyterLab, Code Editor) auto-stop when idle — compute only runs during active sessions, training jobs, or inference. No manual action needed for most workloads.
 - **EC2**: ResearchStack EC2 templates include an idle shutdown feature that automatically stops instances when CPU utilization stays below 5% for a configurable period (default: 90 minutes). This catches the common case of a researcher finishing for the day and forgetting to stop the instance. You can disable it or adjust the duration via template parameters.
 - **ParallelCluster**: Compute nodes auto-terminate after idle timeout (default: 10 minutes). The head node stays running — stop it manually via the EC2 console or CLI when the cluster isn't in use.
 - Savings: 50-70% for intermittent workloads
@@ -75,7 +75,7 @@ Cost optimization isn't a one-time activity — it should be considered at every
 - Delete failed experiments and their resources promptly — unused EBS volumes and snapshots accumulate cost silently
 
 **Phase 2C (Production)**
-- Consider [Savings Plans](https://aws.amazon.com/savingsplans/) for stable, predictable workloads running weeks or months — the commitment pays for itself quickly
+- Consider [Savings Plans](https://aws.amazon.com/savingsplans/) for stable, predictable workloads running months or longer — the 1-year commitment typically breaks even around 7-9 months, so short-term projects won't benefit
 - Use ParallelCluster auto-scaling — compute nodes launch on job submission and terminate when idle, so you only pay for active computation
 - Keep compute and data in the same region to minimize [data transfer costs](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer)
 - Schedule batch jobs during off-peak hours if your workload is flexible — spot pricing is often lower overnight and on weekends
@@ -128,6 +128,8 @@ For day-to-day cost visibility, use [AWS Cost Explorer](https://console.aws.amaz
 
 For detailed chargeback reporting, grant reconciliation, or integration with institutional finance systems, set up [AWS Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html). Data Exports delivers detailed cost and usage data (hourly granularity, per-resource breakdowns) to an S3 bucket on a recurring schedule. From there, you can query it with [Amazon Athena](https://aws.amazon.com/athena/) or visualize it in [Amazon QuickSight](https://aws.amazon.com/quicksight/). This is the AWS-recommended approach for institutional cost reporting — it replaces the legacy Cost and Usage Reports (CUR).
 
+For organizations managing multiple accounts, [Cloud Intelligence Dashboards](https://docs.aws.amazon.com/guidance/latest/cloud-intelligence-dashboards/getting-started.html) provide pre-built QuickSight dashboards on top of Data Exports — including cost breakdowns by account, service, tag, and usage type. They simplify cross-organization cost visibility without building dashboards from scratch.
+
 ### Budget Alerts
 
 Use the **Budget Alert** template (`templates/governance/budget-alert.yaml`) to create automated budget tracking per cost center. The template:
@@ -165,7 +167,6 @@ For grant budgeting: check with your grants office for your institution's curren
 **[AWS Pricing Calculator](https://calculator.aws/)**
 - Estimate costs before deployment — model instance types, storage, and data transfer
 - Export estimates as PDF or CSV for grant proposals
-- Remember to check whether F&A applies to cloud at your institution (see [F&A and Cloud Computing](#fa-and-cloud-computing) above)
 
 **[AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer)**
 - Track actual spending in real time
