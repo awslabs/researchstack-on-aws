@@ -60,7 +60,7 @@ A key principle: **compute where your data lives**. Moving large datasets betwee
 - If your data is generated on-campus (instruments, sequencers), it may make sense to process it locally first, then upload results to S3
 - If your data is already in AWS (public datasets like [Registry of Open Data on AWS](https://registry.opendata.aws/), or shared by collaborators via S3), run your compute in AWS to avoid [data transfer costs](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer)
 - For multi-institution projects where each site generates data, a shared S3 bucket is often the simplest central repository
-- If your research produces datasets that could benefit the broader community, consider publishing them through the [Registry of Open Data on AWS](https://registry.opendata.aws/) — it hosts datasets at no cost to the publisher and makes them freely accessible to anyone
+- If your research produces datasets that could benefit the broader community, consider the [AWS Open Data Sponsorship Program](https://aws.amazon.com/opendata/open-data-sponsorship-program/) — AWS covers the cost of hosting and sharing your dataset publicly on the [Registry of Open Data on AWS](https://registry.opendata.aws/), making it freely accessible to anyone at no cost to you
 
 ### Cost Tips
 - S3 Intelligent Tiering handles cost optimization automatically — no manual tier management needed
@@ -161,7 +161,7 @@ Sustained, predictable workloads (running 24/7 for weeks) are often cheapest on 
 
 1. **Delete compute resources**: Terminate EC2 instances, delete ParallelCluster stacks, shut down SageMaker domains. Compute is the biggest cost and you don't need it anymore.
 2. **Keep your data in S3**: Intelligent Tiering handles cost optimization automatically. Data you haven't accessed in 90+ days moves to archive tiers at a fraction of the cost.
-3. **Share data per funder requirements**: If your funder requires data sharing (most NIH grants do), S3 with [IAM policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) provides fine-grained access control. Many [data repositories](https://www.nlm.nih.gov/NIHbmic/nih_data_sharing_repositories.html) use AWS as their backend. For datasets with broad community value, consider the [Registry of Open Data on AWS](https://registry.opendata.aws/) — it hosts datasets at no cost and makes them freely discoverable.
+3. **Share data per funder requirements**: If your funder requires data sharing (most NIH grants do), S3 with [IAM policies](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html) provides fine-grained access control. Many [data repositories](https://www.nlm.nih.gov/NIHbmic/nih_data_sharing_repositories.html) use AWS as their backend. For datasets with broad community value, consider the [AWS Open Data Sponsorship Program](https://aws.amazon.com/opendata/open-data-sponsorship-program/) — AWS covers the cost of hosting your dataset on the [Registry of Open Data on AWS](https://registry.opendata.aws/), making it freely discoverable and accessible at no cost to you.
 4. **Document your infrastructure**: If someone needs to reproduce your analysis, having the CloudFormation template parameters documented makes it straightforward to recreate the environment.
 
 ### If You Have On-Prem Resources
