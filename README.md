@@ -14,19 +14,18 @@ Browse the available templates in [`templates/`](templates/) or jump to the [tem
 
 ## Architecture
 
-<!-- TODO: Add high-level architecture diagram (draw.io) -->
+<!-- TODO: Add high-level architecture diagram -->
 <!-- Diagram should show:
   - Two deployment paths side by side:
     1. Standalone: User → CloudFormation → AWS Resources (with tags)
     2. Service Catalog: Hub Account → SC Portfolio → OU Sharing → Spoke Accounts → AWS Resources (with tags)
-  - Template categories feeding into both paths (compute, storage, ml, networking)
-  - Cost tracking flow: Tags → Cost and Usage Reports → Grant Chargeback
+  - Template categories feeding into both paths (compute, storage, ml, networking, governance)
+  - Cost governance layer: Budget alerts (governance template) + per-instance budgets + idle shutdown (EC2)
+  - Cost tracking flow: Tags → Cost Allocation Tags → Cost Explorer / Budgets → Grant Chargeback
   - Future: Quick Suite AI layer sitting above both paths
   - OU evolution note: Institutions typically start with a single "Research" OU, then split over time
     into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA, Research-Production).
     Show this as a callout or dashed-line expansion on the SC path.
-  - TODO (future arch section): Discuss OU scaling best practices, link to AWS Organizing Your Environment
-    whitepaper, and call out how LZA / Secure Research Environment accelerate compliance-heavy OU structures.
 -->
 
 ## Overview

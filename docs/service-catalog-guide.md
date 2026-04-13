@@ -4,7 +4,7 @@ This guide walks through deploying the ResearchStack's Service Catalog layer, wh
 
 ## Architecture
 
-<!-- TODO: Add Service Catalog architecture diagram (draw.io) -->
+<!-- TODO: Add Service Catalog architecture diagram -->
 <!-- Diagram should show:
   - Hub Account (center):
     - CDK deploys: Assets S3 Bucket, SC Portfolio, Products (linked to CFN templates)
@@ -22,12 +22,10 @@ This guide walks through deploying the ResearchStack's Service Catalog layer, wh
   - OU evolution note: Institutions typically start with a single "Research" OU, then split over time
     into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA, Research-Production).
     The SC layer supports sharing to multiple OUs — just add them to share_target_ous in the portfolio TOML.
-  - TODO (future arch section): Discuss OU scaling best practices, link to AWS Organizing Your Environment
-    whitepaper, and call out how LZA / Secure Research Environment accelerate compliance-heavy OU structures.
-  - TODO (future arch section): Recommend IAM Identity Center (IDC) as the default identity approach.
-    Show two starting permission sets: AWSServiceCatalogEndUserAccess (researchers) and
-    AdministratorAccess (IT admins). Explain how IDC permission sets auto-create matching IAM roles
-    in every assigned account, which enables automated principal sharing via access_principals in the TOML.
+  - IDC note: Recommend IAM Identity Center as the default identity approach.
+    Two starting permission sets: AWSServiceCatalogEndUserAccess (researchers) and
+    AdministratorAccess (IT admins). IDC permission sets auto-create matching IAM roles
+    in every assigned account, enabling automated principal sharing via access_principals in the TOML.
 -->
 
 ## Why CDK?
