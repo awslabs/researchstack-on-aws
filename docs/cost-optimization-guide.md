@@ -8,7 +8,7 @@ AWS costs vary by region, usage patterns, and pricing changes. Instead of static
 - **Compute**: EC2, SageMaker, ParallelCluster
 - **Storage**: S3, EFS, EBS volumes
 - **Networking**: Data transfer, NAT gateways
-- **F&A Overhead**: Most institutions charge 50-60% overhead on cloud costs based on their federally negotiated indirect cost rate agreement. Note: federal F&A rate policies are actively evolving — the administration proposed a 15% cap in early 2025, which was blocked by courts and Congress as of early 2026. Check with your grants office for your institution's current rate and any recent changes.
+- **F&A Overhead**: Currently 50-70% at most institutions, but enacted law (P.L. 119-75, Feb 2026) directs OMB to exclude cloud from F&A — see [F&A and Cloud Computing](#fa-and-cloud-computing) below
 
 ## Cost Optimization Strategies
 
@@ -117,7 +117,7 @@ Without this step, tag-based budget filtering and Cost Explorer breakdowns won't
 1. Activate cost allocation tags (see above)
 2. Use AWS Cost Explorer to filter by tags
 3. Create monthly reports by Project/CostCenter
-4. Add F&A overhead for grant reporting
+4. Add F&A overhead for grant reporting (if your institution still applies it to cloud — see note above about P.L. 119-75)
 
 ### Budget Alerts
 
@@ -141,13 +141,23 @@ For per-instance cost enforcement (automatically stopping an EC2 instance when i
 
 Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and enforcement are safety nets, not real-time spending caps.
 
+## F&A and Cloud Computing
+
+Historically, most U.S. research institutions classify cloud computing as a "service" in the Modified Total Direct Cost (MTDC) base, which means the full negotiated F&A rate (typically 50-70% at R1 institutions) is applied to every dollar of cloud spending on a federal grant. A researcher spending $500,000 on cloud at a 60% F&A rate must budget an additional $300,000 in indirect costs. By contrast, on-premises hardware purchases over $5,000 qualify as "equipment" and are excluded from MTDC — no F&A is charged.
+
+This is changing. The Consolidated Appropriations Act, 2026 ([P.L. 119-75](https://www.congress.gov/bill/119th-congress/house-bill/7148)), signed by President Trump on February 3, 2026, directs the OMB Director to "clarify that technology investments, whether for hardware or cloud computing, procured in support of projects funded by Federal grants should be subject to the same cost treatment and not subject to Facilities and Administration costs." This language has the force of law.
+
+Once OMB publishes the clarification, cloud costs on federal grants will carry zero F&A — the same treatment as equipment purchases. The timing of OMB action is uncertain, but the direction is enacted and bipartisan (identical language appeared in FY2025 appropriations and the FY2025 NDAA before being enacted in FY2026).
+
+For grant budgeting: check with your grants office for your institution's current F&A treatment of cloud, but model multi-year budgets with the expectation that F&A on cloud is being eliminated.
+
 ## Cost Estimation Tools
 
 **AWS Pricing Calculator**
 - https://calculator.aws.amazon.com/
 - Estimate costs before deployment
 - Export estimates for grant proposals
-- Remember to add F&A overhead
+- Remember to check whether F&A applies to cloud at your institution (see Cost Components above)
 
 **AWS Cost Explorer**
 - Track actual spending
@@ -173,7 +183,7 @@ Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and e
 
 1. Use AWS Pricing Calculator for initial estimates
 2. Add 20-30% buffer for usage variability
-3. Include F&A overhead (check with your grants office for current rate — federal policies are evolving)
+3. Include F&A overhead if your institution still applies it to cloud — but note that P.L. 119-75 (Feb 2026) directs OMB to exclude cloud from F&A, matching on-premises equipment treatment. Model accordingly.
 4. Plan for data egress costs if sharing data
 5. Consider Savings Plans for multi-year grants (up to 72% savings)
 6. Document cost optimization strategies in proposal
