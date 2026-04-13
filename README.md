@@ -26,9 +26,9 @@ Production-ready CloudFormation templates for research computing — deploy EC2,
 
 ## What's Included
 
-- **10 CloudFormation templates** for compute, storage, ML, networking, and cost governance
+- **CloudFormation templates** for compute, storage, ML, networking, and cost governance
 - **Service Catalog integration** for multi-account governance with launch roles and OU sharing
-- **Cost tracking** via required tags on every resource (Project, CostCenter, Owner)
+- **Cost tracking** via tags on every resource (Project, CostCenter, Owner)
 - **Budget alerts** with optional per-instance enforcement
 - **Idle shutdown** on EC2 instances (stops forgotten instances automatically)
 - **Documentation** for every template, the research lifecycle, cost optimization, and HPC clusters
@@ -50,6 +50,8 @@ Production-ready CloudFormation templates for research computing — deploy EC2,
 | Governance | budget-alert.yaml | Monthly budget tracking by cost center with email alerts |
 
 See the [Templates README](templates/README.md) for detailed descriptions, instance type guidance, and OS options.
+
+Not sure which template fits your work? The [Research Lifecycle Guide](docs/research-lifecycle-guide.md) maps each phase of a research project to the right templates and cost strategies. For budgeting, Savings Plans, and F&A guidance, see the [Cost Optimization Guide](docs/cost-optimization-guide.md).
 
 ## Quick Start
 
@@ -102,7 +104,7 @@ All templates automatically tag resources for cost allocation:
 
 Use these tags in [AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for per-grant chargeback. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for activating cost allocation tags, setting up budgets, and grant budgeting strategies.
 
-For access control, the recommended approach is [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) with permission sets — researchers get a "Researcher" permission set (scoped to launching Service Catalog products and accessing their resources), admins get an "Administrator" permission set. For institutions that need per-project resource isolation within a shared account, the consistent tagging enables [attribute-based access control (ABAC)](https://docs.aws.amazon.com/IAM/latest/UserGuide/introduction_attribute-based-access-control.html) as an additional layer — e.g., a policy condition that restricts S3 access to buckets matching the user's project tag. ResearchStack doesn't ship IAM policies (access control is institution-specific), but the tagging makes both RBAC and ABAC straightforward to implement.
+For access control, the recommended approach is [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) with permission sets. IDC uses group membership (an ABAC attribute) to assign users to the right role — researchers get a "Researcher" permission set, admins get an "Administrator" permission set. The role itself defines what resources the user can access (RBAC). This pattern works reliably across all AWS services, unlike pure tag-based ABAC which not all services support. ResearchStack doesn't ship IAM policies (access control is institution-specific), but the consistent tagging on resources makes it straightforward to build role policies that scope access by project or cost center where needed.
 
 ## Repository Structure
 

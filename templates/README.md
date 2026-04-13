@@ -2,6 +2,12 @@
 
 CloudFormation templates optimized for research workloads. Each template can be deployed standalone via the AWS Console or CLI, or governed via [Service Catalog](../docs/service-catalog-guide.md).
 
+## Getting Started
+
+Most templates require a VPC (a virtual network in AWS) and a subnet (a segment within that network). If you don't have one, deploy `research-vpc.yaml` first — it creates a ready-to-use network with public and private subnets, a NAT gateway for internet access, and an S3 endpoint. Then deploy compute, storage, or ML templates into that VPC using the VPC ID and subnet IDs from the stack outputs.
+
+If your institution already provides a VPC (common with [Landing Zone Accelerator](https://aws.amazon.com/solutions/implementations/landing-zone-accelerator-on-aws/) or [Control Tower](https://aws.amazon.com/controltower/)), use those VPC and subnet IDs directly — no need to deploy the VPC template.
+
 ## Available Templates
 
 ### Networking (`networking/`)
