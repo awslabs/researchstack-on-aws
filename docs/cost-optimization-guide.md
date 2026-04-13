@@ -53,8 +53,8 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 
 **Savings Plans** (up to 72% savings)
 - [Savings Plans](https://aws.amazon.com/savingsplans/) offer significant discounts in exchange for committing to a consistent amount of compute usage (measured in $/hour) for 1 or 3 years. Two types:
-  - **[Compute Savings Plans](https://aws.amazon.com/savingsplans/compute-pricing/)**: Most flexible — discounts apply automatically to any EC2 instance (any family, size, OS, region), Lambda, and Fargate usage. Best for research workloads where instance types change frequently.
-  - **[EC2 Instance Savings Plans](https://aws.amazon.com/savingsplans/pricing/)**: Higher discount (up to 72%) but locked to a specific instance family and region. Best for stable, predictable workloads that won't change instance types.
+  - **Compute Savings Plans**: Most flexible — discounts apply automatically to any EC2 instance (any family, size, OS, region), Lambda, and Fargate usage. Best for research workloads where instance types change frequently.
+  - **EC2 Instance Savings Plans**: Higher discount (up to 72%) but locked to a specific instance family and region. Best for stable, predictable workloads that won't change instance types.
 - Discounts apply automatically to eligible usage — no code changes or tagging needed
 - Use the [Savings Plans estimator](https://aws.amazon.com/savingsplans/compute-pricing/) to model costs based on your historical usage
 - **Recommended over Reserved Instances** for most research workloads — Savings Plans are more flexible and easier to manage
