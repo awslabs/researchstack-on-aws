@@ -8,7 +8,7 @@ AWS costs vary by region, usage patterns, and pricing changes. Instead of static
 - **Compute**: EC2, SageMaker, ParallelCluster
 - **Storage**: S3, EFS, EBS volumes
 - **Networking**: Data transfer, NAT gateways
-- **F&A Overhead**: Most institutions charge 50-60% overhead on cloud costs (check with your grants office)
+- **F&A Overhead**: Most institutions charge 50-60% overhead on cloud costs based on their federally negotiated indirect cost rate agreement. Note: federal F&A rate policies are actively evolving — the administration proposed a 15% cap in early 2025, which was blocked by courts and Congress as of early 2026. Check with your grants office for your institution's current rate and any recent changes.
 
 ## Cost Optimization Strategies
 
@@ -173,7 +173,7 @@ Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and e
 
 1. Use AWS Pricing Calculator for initial estimates
 2. Add 20-30% buffer for usage variability
-3. Include F&A overhead (50-60% typical)
+3. Include F&A overhead (check with your grants office for current rate — federal policies are evolving)
 4. Plan for data egress costs if sharing data
 5. Consider Savings Plans for multi-year grants (up to 72% savings)
 6. Document cost optimization strategies in proposal

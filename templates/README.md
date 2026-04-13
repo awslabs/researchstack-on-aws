@@ -41,7 +41,7 @@ All templates follow these conventions:
 Not sure which instance size to pick? Each EC2 template constrains you to the right family (M for general purpose, C for compute, etc.) but leaves the size up to you. These resources can help:
 
 - [AWS EC2 Instance Types](https://aws.amazon.com/ec2/instance-types/) — official specs and family descriptions
-- [Vantage Instance Comparison](https://instances.vantage.sh/) — community tool for comparing specs, pricing, and availability side-by-side (filter by family, sort by price)
+- [Vantage Instance Comparison](https://instances.vantage.sh/?id=421e512ec7fc071920ffc00ca2bc7141ef1c98aa) — community tool for comparing specs, pricing, and availability side-by-side (filter by family, sort by price)
 
 When in doubt, start small (e.g., `m7i.xlarge`) and scale up. You can always stop the instance, change the type, and restart.
 
