@@ -172,22 +172,6 @@ On-prem storage (tape archives, institutional NAS) works for archival if your in
 - Delete everything you don't need to keep — intermediate outputs, temporary EBS volumes, old snapshots
 - If you're done with the project entirely, delete the VPC stack too (NAT gateways cost ~$32/month even when idle)
 
-## Quick Reference: Template by Need
-
-| Need | Template | Phase |
-|------|----------|-------|
-| Object storage | s3-research-bucket.yaml | 2A, 3 |
-| Shared file system | efs-shared-storage.yaml | 2A, 2B, 2C |
-| High-throughput storage | fsx-lustre.yaml | 2C |
-| General compute | ec2-general-purpose.yaml | 2A, 2B |
-| CPU-intensive compute | ec2-compute-optimized.yaml | 2C |
-| Memory-intensive compute | ec2-memory-optimized.yaml | 2C |
-| GPU compute | ec2-accelerated-gpu.yaml | 2B, 2C |
-| HPC cluster (Slurm) | parallelcluster-hpc.yaml | 2C |
-| ML development | sagemaker-studio.yaml | 2B |
-| Networking (VPC) | research-vpc.yaml | 2A (deploy first) |
-| Budget tracking | budget-alert.yaml | All phases |
-
 ## Collaboration Considerations
 
 The complexity of your collaboration affects infrastructure choices:
@@ -198,4 +182,4 @@ The complexity of your collaboration affects infrastructure choices:
 
 **Multi-Institution Consortium**: AWS is a natural collaboration hub. A shared S3 bucket with [cross-account access policies](https://docs.aws.amazon.com/AmazonS3/latest/userguide/example-walkthroughs-managing-access-example2.html) gives each institution controlled access to shared data without VPN complexity — each institution uses their own AWS account and credentials. Compute runs in each institution's own account against the shared data. Note: [Service Catalog](service-catalog-guide.md) governance (OU sharing, StackSets) works within a single AWS Organization. For cross-organization collaboration, use S3 bucket policies and IAM roles for cross-account access instead.
 
-**International Collaboration**: AWS [regions](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/) solve data sovereignty requirements — EU data stays in an EU region, US data stays in a US region. No cross-border data transfer needed. For U.S. government-regulated research, [AWS GovCloud](https://aws.amazon.com/govcloud-us/) provides isolated regions for ITAR, FedRAMP High, and other compliance requirements. For classified workloads, AWS offers [Secret and Top Secret regions](https://aws.amazon.com/federal/us-intelligence-community/). [AWS European Sovereign Cloud](https://aws.amazon.com/sovereign-cloud/) is available for EU data residency requirements.
+**International Collaboration**: AWS [regions](https://aws.amazon.com/about-aws/global-infrastructure/regions_az/) solve data sovereignty requirements — EU data stays in an EU region, US data stays in a US region. No cross-border data transfer needed. For U.S. government-regulated research, [AWS GovCloud](https://aws.amazon.com/govcloud-us/) provides isolated regions for ITAR, FedRAMP High, and other compliance requirements. For classified workloads, AWS offers [Secret](https://aws.amazon.com/federal/secret-cloud/) and [Top Secret](https://aws.amazon.com/federal/top-secret-cloud/) regions.
