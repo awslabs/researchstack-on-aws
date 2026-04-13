@@ -5,100 +5,109 @@
 AWS costs vary by region, usage patterns, and pricing changes. Instead of static estimates, focus on optimization strategies and tools to control costs.
 
 ### Cost Components
-- **Compute**: EC2, SageMaker, ParallelCluster
-- **Storage**: S3, EFS, EBS volumes
-- **Networking**: Data transfer, NAT gateways
+- **Compute**: [EC2](https://aws.amazon.com/ec2/pricing/), [SageMaker](https://aws.amazon.com/sagemaker/pricing/), [ParallelCluster](https://aws.amazon.com/hpc/parallelcluster/) (uses EC2 pricing)
+- **Storage**: [S3](https://aws.amazon.com/s3/pricing/), [EFS](https://aws.amazon.com/efs/pricing/), [EBS volumes](https://aws.amazon.com/ebs/pricing/)
+- **Networking**: [Data transfer](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer), [NAT gateways](https://aws.amazon.com/vpc/pricing/)
 - **F&A Overhead**: Currently 50-70% at most institutions, but enacted law (P.L. 119-75, Feb 2026) directs OMB to exclude cloud from F&A — see [F&A and Cloud Computing](#fa-and-cloud-computing) below
 
 ## Cost Optimization Strategies
 
+Cost optimization matters at every phase of the research lifecycle — from choosing the right instance size during exploration to archiving data after publication. Small decisions compound: an idle instance left running over a weekend costs the same as a week of active use. See the [Research Lifecycle Guide](research-lifecycle-guide.md) for how templates map to each research phase.
+
 ### Storage Optimization
 
 **S3 Intelligent Tiering** (Automatic)
-- Moves data between access tiers automatically
-- No retrieval fees
+- Moves data between access tiers automatically based on usage patterns — frequently accessed data stays in a fast tier, infrequently accessed data moves to cheaper tiers
+- No retrieval fees (unlike Glacier, which charges per retrieval)
 - Saves 70-95% on infrequently accessed data
-- **All templates use this by default**
+- **All ResearchStack S3 templates use this by default**
 
 **EFS Lifecycle Management**
-- Moves files to Infrequent Access tier after 30 days
+- Moves files not accessed for 30 days to the [Infrequent Access tier](https://aws.amazon.com/efs/pricing/) (~$0.016/GB vs ~$0.30/GB for Standard)
 - Saves ~90% on inactive files
-- Transparent to applications
+- Transparent to applications — files move back to Standard automatically on next access
+- **The ResearchStack EFS template enables this by default** (`TransitionToIA: AFTER_30_DAYS`)
 
 **Delete Unused Resources**
-- Old EBS snapshots
-- Unused EBS volumes
-- Abandoned S3 buckets
+- Old [EBS snapshots](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-snapshots.html) (charged per GB stored)
+- Unused EBS volumes (charged even when not attached to an instance)
+- Abandoned S3 buckets and EFS volumes
 
 ### Compute Optimization
 
 **Stop Instances When Not in Use**
-- SageMaker: Stop notebook instances between sessions
-- EC2: Stop instances overnight/weekends
+- **SageMaker**: SageMaker Studio only runs compute (training jobs, inference endpoints, ETL processing) when actively invoked — it shuts down automatically when idle. No action needed for most workloads. If using classic notebook instances, stop them between sessions.
+- **EC2**: ResearchStack EC2 templates include an idle shutdown feature that automatically stops instances when CPU utilization stays below 5% for a configurable period (default: 90 minutes). This catches the common case of a researcher finishing for the day and forgetting to stop the instance. You can disable it or adjust the duration via template parameters.
+- **ParallelCluster**: Compute nodes auto-terminate after idle timeout (default: 10 minutes). The head node stays running — stop it manually via the EC2 console or CLI when the cluster isn't in use.
 - Savings: 50-70% for intermittent workloads
 
-**Use Spot Instances** (70% savings)
-- ParallelCluster: Enable spot for compute nodes (already supported)
-- Fault-tolerant workloads only
-- **Note**: Current EC2 templates don't support spot - use ParallelCluster or see Phase 4 roadmap
+**Use Spot Instances** (up to 70% savings)
+- [Spot Instances](https://aws.amazon.com/ec2/spot/) use spare EC2 capacity at a steep discount, but AWS can reclaim them with 2 minutes notice. Use for fault-tolerant workloads only — batch jobs, training runs with checkpointing, or any work that can be interrupted and restarted.
+- ParallelCluster: set `ComputePricingModel` to `SPOT` — Slurm automatically requeues interrupted jobs
+- Not recommended for: interactive sessions, long-running simulations without checkpointing, or anything where interruption means lost work
 
 **Right-Size Instances**
-- Start small, scale up if needed
-- Use AWS Compute Optimizer recommendations
-- Monitor CPU/memory utilization
+- Start small (e.g., `m7i.xlarge`), scale up if CPU or memory is consistently maxed out
+- Use [AWS Compute Optimizer](https://aws.amazon.com/compute-optimizer/) for right-sizing recommendations based on actual usage patterns (free service, no setup required — just enable it in the [Compute Optimizer console](https://console.aws.amazon.com/compute-optimizer/))
+- Monitor CPU/memory utilization in [CloudWatch](https://console.aws.amazon.com/cloudwatch/) — if utilization is consistently below 30%, you're likely over-provisioned
 
-**Savings Plans** (Up to 72% savings)
-- **Compute Savings Plans**: Most flexible - applies to EC2, Lambda, Fargate
-- **EC2 Instance Savings Plans**: Higher discount but less flexible
-- Commit to $/hour usage for 1 or 3 years
-- Automatically applies to eligible usage
-- **Recommended over Reserved Instances** for most research workloads
+**Savings Plans** (up to 72% savings)
+- [Savings Plans](https://aws.amazon.com/savingsplans/) offer significant discounts in exchange for committing to a consistent amount of compute usage (measured in $/hour) for 1 or 3 years. Two types:
+  - **[Compute Savings Plans](https://aws.amazon.com/savingsplans/compute-pricing/)**: Most flexible — discounts apply automatically to any EC2 instance (any family, size, OS, region), Lambda, and Fargate usage. Best for research workloads where instance types change frequently.
+  - **[EC2 Instance Savings Plans](https://aws.amazon.com/savingsplans/pricing/)**: Higher discount (up to 72%) but locked to a specific instance family and region. Best for stable, predictable workloads that won't change instance types.
+- Discounts apply automatically to eligible usage — no code changes or tagging needed
+- Use the [Savings Plans estimator](https://aws.amazon.com/savingsplans/compute-pricing/) to model costs based on your historical usage
+- **Recommended over Reserved Instances** for most research workloads — Savings Plans are more flexible and easier to manage
 
 ### Research Phase Strategies
 
+Cost optimization isn't a one-time activity — it should be considered at every phase of the research lifecycle. Different phases have different cost profiles, and the strategies that save money during exploration are different from those that matter in production. For a full mapping of research phases to templates, see the [Research Lifecycle Guide](research-lifecycle-guide.md).
+
 **Phase 2A (Data Collection)**
-- S3 Standard for active uploads
-- Intelligent Tiering for long-term storage
-- Minimal compute costs
+- Use [S3 Standard](https://aws.amazon.com/s3/storage-classes/) for active uploads — data is immediately accessible
+- Intelligent Tiering handles long-term storage automatically (no manual tier management)
+- Minimal compute costs — data ingestion is typically lightweight
 
 **Phase 2B (Exploration)**
-- Use spot instances where possible
-- Stop instances when not in use
-- Start with smaller instance types
-- Delete failed experiments
+- Use [Spot Instances](https://aws.amazon.com/ec2/spot/) for fault-tolerant experimentation (up to 70% savings) — if a job gets interrupted, just rerun it
+- Idle shutdown (enabled by default on EC2 templates) catches forgotten instances
+- Start with smaller instance types and scale up only if needed — exploration rarely needs the largest instances
+- Delete failed experiments and their resources promptly — unused EBS volumes and snapshots accumulate cost silently
 
 **Phase 2C (Production)**
-- Consider Savings Plans for stable workloads (more flexible than Reserved Instances)
-- Use auto-scaling (ParallelCluster)
-- Optimize data transfer patterns
-- Schedule batch jobs for off-peak
+- Consider [Savings Plans](https://aws.amazon.com/savingsplans/) for stable, predictable workloads running weeks or months — the commitment pays for itself quickly
+- Use ParallelCluster auto-scaling — compute nodes launch on job submission and terminate when idle, so you only pay for active computation
+- Keep compute and data in the same region to minimize [data transfer costs](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer)
+- Schedule batch jobs during off-peak hours if your workload is flexible — spot pricing is often lower overnight and on weekends
 
 **Phase 3 (Archival)**
-- S3 Glacier Deep Archive (cheapest)
-- Delete compute resources
-- Keep only final results and raw data
+- Move final datasets to [S3 Glacier Deep Archive](https://aws.amazon.com/s3/storage-classes/glacier/) (~$0.00099/GB/month — the cheapest storage option)
+- Delete all compute resources (EC2 instances, ParallelCluster stacks, SageMaker domains)
+- Keep only final results and raw data — intermediate outputs can be regenerated if needed
 
 ### Networking Optimization
 
 **Minimize Data Transfer**
-- Keep compute and storage in same region
-- Use VPC endpoints for S3 (free)
-- Avoid unnecessary cross-region transfers
+- Keep compute and storage in the same AWS region — [cross-region data transfer](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer) is charged per GB
+- Use [VPC endpoints for S3](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-s3.html) (free, included in the Research VPC template) — traffic stays on the AWS network instead of going through the NAT gateway
+- Avoid unnecessary cross-region transfers — if your data is in `us-east-1`, run your compute there too
 
-**NAT Gateway Alternatives**
-- Use VPC endpoints instead where possible
-- Consider NAT instances for low-traffic scenarios
-- Or use public subnets with security groups
+**NAT Gateway Costs**
+- NAT gateways have a base cost (~$32/month) plus per-GB data processing charges
+- The Research VPC template includes a NAT gateway for private subnet internet access
+- To reduce costs: use [VPC endpoints](https://docs.aws.amazon.com/vpc/latest/privatelink/what-is-privatelink.html) for AWS services (S3, DynamoDB endpoints are free), and delete the VPC stack when not in use
 
 ## Cost Tracking
 
 ### Required Tags (All Templates)
-All templates enforce these tags for cost allocation:
+All ResearchStack templates automatically tag resources for cost allocation:
 - **Project**: Research project name
 - **CostCenter**: Department or grant number
 - **Owner**: PI or researcher email
 - **ManagedBy**: ResearchStack
 - **Environment**: Research
+
+These tags enable filtering in [Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/), [Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/), and [Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) for per-project and per-grant chargeback reporting.
 
 ### Activating Cost Allocation Tags
 
@@ -113,17 +122,17 @@ If you're using AWS Organizations, activate tags in the **management account** �
 
 Without this step, tag-based budget filtering and Cost Explorer breakdowns won't work, even though the tags exist on the resources.
 
-### Cost Allocation Reports
-1. Activate cost allocation tags (see above)
-2. Use AWS Cost Explorer to filter by tags
-3. Create monthly reports by Project/CostCenter
-4. Add F&A overhead for grant reporting (if your institution still applies it to cloud — see note above about P.L. 119-75)
+### Cost Reporting
+
+For day-to-day cost visibility, use [AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) — filter by `CostCenter` or `Project` tags to see spending per grant or research activity.
+
+For detailed chargeback reporting, grant reconciliation, or integration with institutional finance systems, set up [AWS Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html). Data Exports delivers detailed cost and usage data (hourly granularity, per-resource breakdowns) to an S3 bucket on a recurring schedule. From there, you can query it with [Amazon Athena](https://aws.amazon.com/athena/) or visualize it in [Amazon QuickSight](https://aws.amazon.com/quicksight/). This is the AWS-recommended approach for institutional cost reporting — it replaces the legacy Cost and Usage Reports (CUR).
 
 ### Budget Alerts
 
 Use the **Budget Alert** template (`templates/governance/budget-alert.yaml`) to create automated budget tracking per cost center. The template:
 - Creates a monthly budget filtered by your `CostCenter` tag (optionally narrowed to a specific `Project`)
-- Sends email alerts at 50% (actual), 80% (actual), and 100% (forecasted) of your budget
+- Sends email alerts at 50% (actual), 80% (actual), 100% (forecasted), and 100% (actual) of your budget
 
 Deploy via Service Catalog or CloudFormation:
 ```bash
@@ -137,7 +146,7 @@ aws cloudformation create-stack \
     ParameterKey=NotificationEmail,ParameterValue=pi@university.edu
 ```
 
-For per-instance cost enforcement (automatically stopping an EC2 instance when its budget is exceeded), this feature is planned for EC2 templates — see the project roadmap.
+For per-instance cost enforcement, EC2 templates include an optional `EnableInstanceBudget` parameter. When set to `enforce`, the instance is automatically stopped if its project's monthly spend exceeds the configured budget. See the EC2 template parameters for details.
 
 Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and enforcement are safety nets, not real-time spending caps.
 
@@ -153,38 +162,37 @@ For grant budgeting: check with your grants office for your institution's curren
 
 ## Cost Estimation Tools
 
-**AWS Pricing Calculator**
-- https://calculator.aws.amazon.com/
-- Estimate costs before deployment
-- Export estimates for grant proposals
-- Remember to check whether F&A applies to cloud at your institution (see Cost Components above)
+**[AWS Pricing Calculator](https://calculator.aws/)**
+- Estimate costs before deployment — model instance types, storage, and data transfer
+- Export estimates as PDF or CSV for grant proposals
+- Remember to check whether F&A applies to cloud at your institution (see [F&A and Cloud Computing](#fa-and-cloud-computing) above)
 
-**AWS Cost Explorer**
-- Track actual spending
-- Identify cost trends
-- Find optimization opportunities
-- Filter by tags for chargeback
+**[AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer)**
+- Track actual spending in real time
+- Identify cost trends and anomalies
+- Filter by tags (`CostCenter`, `Project`) for per-grant visibility
+- Available in the [Billing and Cost Management console](https://console.aws.amazon.com/cost-management/)
 
-**AWS Compute Optimizer**
-- Right-sizing recommendations
-- Based on actual usage patterns
-- Free service
+**[AWS Compute Optimizer](https://console.aws.amazon.com/compute-optimizer/)**
+- Right-sizing recommendations based on actual CPU, memory, and network utilization
+- Identifies over-provisioned and under-provisioned instances
+- Free service — just [enable it](https://docs.aws.amazon.com/compute-optimizer/latest/ug/getting-started.html) in the console
 
 ## Common Cost Pitfalls
 
-1. **Leaving instances running 24/7** - Stop when not in use
-2. **Not using S3 Intelligent Tiering** - All templates use this
-3. **Ignoring data transfer costs** - Keep data and compute in same region
-4. **Not deleting failed experiments** - Clean up regularly
-5. **Over-provisioning** - Start small, scale up as needed
-6. **Not monitoring costs** - Set up budget alerts
+1. **Leaving instances running 24/7** — EC2 templates include idle shutdown by default, but verify it's enabled. Stop ParallelCluster head nodes when not in use.
+2. **Not using S3 Intelligent Tiering** — all ResearchStack S3 templates enable this by default
+3. **Ignoring data transfer costs** — keep data and compute in the same region. Use VPC endpoints for S3.
+4. **Not deleting failed experiments** — unused EBS volumes, old snapshots, and abandoned stacks accumulate cost silently
+5. **Over-provisioning** — start small, use Compute Optimizer to right-size, scale up only when needed
+6. **Not monitoring costs** — set up budget alerts using the Budget Alert template. Activate cost allocation tags.
+7. **Not activating cost allocation tags** — tags exist on resources but won't appear in Cost Explorer or Budgets until [activated](#activating-cost-allocation-tags)
 
 ## Grant Budgeting Tips
 
-1. Use AWS Pricing Calculator for initial estimates
+1. Use [AWS Pricing Calculator](https://calculator.aws/) for initial estimates
 2. Add 20-30% buffer for usage variability
-3. Include F&A overhead if your institution still applies it to cloud — but note that P.L. 119-75 (Feb 2026) directs OMB to exclude cloud from F&A, matching on-premises equipment treatment. Model accordingly.
-4. Plan for data egress costs if sharing data
-5. Consider Savings Plans for multi-year grants (up to 72% savings)
-6. Document cost optimization strategies in proposal
-7. Savings Plans are more flexible than Reserved Instances for research workloads
+3. Include F&A overhead if your institution still applies it to cloud — but note that [P.L. 119-75](#fa-and-cloud-computing) (Feb 2026) directs OMB to exclude cloud from F&A. Model accordingly.
+4. Plan for [data egress costs](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer) if sharing data outside AWS
+5. Consider [Savings Plans](https://aws.amazon.com/savingsplans/) for multi-year grants (up to 72% savings)
+6. Document cost optimization strategies in your proposal — reviewers appreciate cost awareness
