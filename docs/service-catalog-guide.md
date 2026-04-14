@@ -117,54 +117,10 @@ Each TOML file defines one portfolio with its products. The example `research-co
 
 - Add/remove products by editing `[[portfolio.products]]` entries
 - Set `share_target_ous` to the OUs you want to share with
-- Set `access_principals` to grant portfolio access automatically (see [Granting Portfolio Access](#granting-portfolio-access) below)
+- Set `access_principals` to grant portfolio access automatically (see [Granting Portfolio Access](#granting-portfolio-access))
 - Each product's `launch_role_policies` declares the AWS managed policies its launch role needs
 
-To create additional portfolios (e.g., separate catalogs for different departments), create a new TOML file in the same directory.
-
-## Configuration Reference
-
-Complete reference for every configurable field. Fields marked (required) must be set before deploying.
-
-### Framework Config Fields (`framework_config.yaml`)
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `deployment.hub_account` | String | Yes | — | 12-digit AWS account ID for the hub account |
-| `deployment.hub_region` | String | Yes | — | AWS region for deployment (e.g., `us-east-1`) |
-| `deployment.organization_id` | String | Yes | — | AWS Organization ID (format: `o-xxxxxxxxxx`). Used for S3 bucket org-wide read policy |
-| `deployment.default_env_name` | String | No | `dev` | Environment name baked into resource names (e.g., `dev`, `staging`, `prod`) |
-| `available_ous` | List of strings | Yes | — | OU IDs that portfolios are allowed to share to. Format: `ou-xxxx-xxxxxxxx` |
-| `tagging.required_tags` | Map | No | `{}` | Tags applied to the CDK-managed infrastructure stacks themselves (not to researcher-provisioned resources — those are tagged by the templates). Use for identifying SC infrastructure, e.g., `Project: ResearchStack`, `ManagedBy: ServiceCatalog`. |
-
-### Portfolio Config Fields (`portfolios/*.toml`)
-
-**Portfolio section (`[portfolio]`)** — defines the portfolio that researchers see in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/):
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | String | Yes | — | Portfolio machine identifier (used in CDK stack names and IAM role names — no spaces, alphanumeric + hyphens) |
-| `display_name` | String | Yes | — | Portfolio name shown to researchers in the SC console |
-| `description` | String | No | `""` | Portfolio description shown in the SC console |
-| `provider_name` | String | No | `"ResearchStack on AWS"` | Organization name shown as the portfolio publisher (e.g., your institution name) |
-| `support_email` | String | No | `""` | Support email shown on all products in this portfolio |
-| `support_url` | String | No | `""` | Support URL shown on all products |
-| `support_description` | String | No | `""` | Support description text shown on all products |
-| `distributor` | String | No | `""` | Distributor name shown on individual products — typically the team that maintains the templates (can differ from `provider_name` if products come from different teams) |
-| `share_target_ous` | List of strings | Yes | — | OU IDs to share this portfolio with. Must be in `framework_config.yaml` `available_ous` |
-| `access_principals` | List of strings | No | `[]` | [IAM principal](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html) ARN patterns that determine who can see and launch products. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
-| `share_tag_options` | Boolean | No | `true` | Share [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) with spoke accounts when sharing the portfolio. TagOptions are pre-defined key-value pairs that SC can enforce at provisioning time (e.g., valid cost center values). ResearchStack doesn't currently automate TagOption creation — this requires a curated list of valid values per institution. Enable this if you plan to configure TagOptions manually in the SC console. |
-| `share_principals` | Boolean | No | `true` | When `true`, the `access_principals` patterns are [propagated to spoke accounts](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html) that receive the portfolio share — so matching IAM roles in those accounts automatically get access. When `false`, access must be granted manually in each spoke account. |
-
-**Product entries (`[[portfolio.products]]`)** — each entry defines one product (template) within the portfolio:
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `name` | String | Yes | — | Product machine identifier (used for IAM launch role names and StackSet names — alphanumeric + hyphens, no spaces) |
-| `display_name` | String | No | Derived from `name` | Product name shown to researchers in the SC console |
-| `description` | String | No | `""` | Product description shown in the SC console |
-| `template` | String | Yes | — | Relative path to the CloudFormation template (e.g., `../templates/storage/s3-research-bucket.yaml`) |
-| `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
+To create additional portfolios (e.g., separate catalogs for different departments), create a new TOML file in the same directory. For a complete field reference, see [Configuration Reference](#configuration-reference).
 
 ## Deployment
 
@@ -235,13 +191,6 @@ For one-off access or spoke-account-specific overrides:
 3. Click **Access** → **Grant access**
 4. Select the principal type and enter the role name or ARN
 
-## Updating Products
-
-- **Update a template**: Edit the YAML file in `templates/`, then `cdk deploy --all`. SC updates the product's provisioning artifact. Existing provisioned resources are unaffected.
-- **Add a new product**: Add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
-- **Remove a product**: Remove it from the TOML and deploy. Existing provisioned resources continue running.
-- **Researcher self-service updates**: Researchers can update their own provisioned products in the [SC console](https://console.aws.amazon.com/servicecatalog/) — go to **Provisioned products**, select the product, and click **Update**. This lets them change parameters (e.g., instance type, volume size) without IT involvement.
-
 ## Verify Your Deployment
 
 After `cdk deploy --all` completes, verify everything is working:
@@ -255,6 +204,57 @@ After `cdk deploy --all` completes, verify everything is working:
 4. **Test launch** — In the spoke account, launch a simple product (e.g., the S3 bucket). Verify it creates successfully and the resources are tagged with Project, CostCenter, Owner, ManagedBy, and Environment.
 
 If any step fails, see [Troubleshooting](#troubleshooting) below.
+
+## Updating Products
+
+- **Update a template**: Edit the YAML file in `templates/`, then `cdk deploy --all`. SC updates the product's provisioning artifact. Existing provisioned resources are unaffected.
+- **Add a new product**: Add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
+- **Remove a product**: Remove it from the TOML and deploy. Existing provisioned resources continue running.
+- **Researcher self-service updates**: Researchers can update their own provisioned products in the [SC console](https://console.aws.amazon.com/servicecatalog/) — go to **Provisioned products**, select the product, and click **Update**. This lets them change parameters (e.g., instance type, volume size) without IT involvement.
+
+## Configuration Reference
+
+Complete reference for every configurable field. Fields marked (required) must be set before deploying.
+
+### Framework Config Fields (`framework_config.yaml`)
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `deployment.hub_account` | String | Yes | — | 12-digit AWS account ID for the hub account |
+| `deployment.hub_region` | String | Yes | — | AWS region for deployment (e.g., `us-east-1`) |
+| `deployment.organization_id` | String | Yes | — | AWS Organization ID (format: `o-xxxxxxxxxx`). Used for S3 bucket org-wide read policy |
+| `deployment.default_env_name` | String | No | `dev` | Environment name baked into resource names (e.g., `dev`, `staging`, `prod`) |
+| `available_ous` | List of strings | Yes | — | OU IDs that portfolios are allowed to share to. Format: `ou-xxxx-xxxxxxxx` |
+| `tagging.required_tags` | Map | No | `{}` | Tags applied to the CDK-managed infrastructure stacks themselves (not to researcher-provisioned resources — those are tagged by the templates). Use for identifying SC infrastructure, e.g., `Project: ResearchStack`, `ManagedBy: ServiceCatalog`. |
+
+### Portfolio Config Fields (`portfolios/*.toml`)
+
+**Portfolio section (`[portfolio]`)** — defines the portfolio that researchers see in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/):
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | String | Yes | — | Portfolio machine identifier (used in CDK stack names and IAM role names — no spaces, alphanumeric + hyphens) |
+| `display_name` | String | Yes | — | Portfolio name shown to researchers in the SC console |
+| `description` | String | No | `""` | Portfolio description shown in the SC console |
+| `provider_name` | String | No | `"ResearchStack on AWS"` | Organization name shown as the portfolio publisher (e.g., your institution name) |
+| `support_email` | String | No | `""` | Support email shown on all products in this portfolio |
+| `support_url` | String | No | `""` | Support URL shown on all products |
+| `support_description` | String | No | `""` | Support description text shown on all products |
+| `distributor` | String | No | `""` | Distributor name shown on individual products — typically the team that maintains the templates (can differ from `provider_name` if products come from different teams) |
+| `share_target_ous` | List of strings | Yes | — | OU IDs to share this portfolio with. Must be in `framework_config.yaml` `available_ous` |
+| `access_principals` | List of strings | No | `[]` | [IAM principal](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html) ARN patterns that determine who can see and launch products. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
+| `share_tag_options` | Boolean | No | `true` | Share [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) with spoke accounts when sharing the portfolio. TagOptions are pre-defined key-value pairs that SC can enforce at provisioning time (e.g., valid cost center values). ResearchStack doesn't currently automate TagOption creation — this requires a curated list of valid values per institution. Enable this if you plan to configure TagOptions manually in the SC console. |
+| `share_principals` | Boolean | No | `true` | When `true`, the `access_principals` patterns are [propagated to spoke accounts](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html) that receive the portfolio share — so matching IAM roles in those accounts automatically get access. When `false`, access must be granted manually in each spoke account. |
+
+**Product entries (`[[portfolio.products]]`)** — each entry defines one product (template) within the portfolio:
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `name` | String | Yes | — | Product machine identifier (used for IAM launch role names and StackSet names — alphanumeric + hyphens, no spaces) |
+| `display_name` | String | No | Derived from `name` | Product name shown to researchers in the SC console |
+| `description` | String | No | `""` | Product description shown in the SC console |
+| `template` | String | Yes | — | Relative path to the CloudFormation template (e.g., `../templates/storage/s3-research-bucket.yaml`) |
+| `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
 
 ## Troubleshooting
 
