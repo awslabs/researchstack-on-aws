@@ -11,18 +11,8 @@ Production-ready CloudFormation templates for research computing — deploy EC2,
 ## Architecture
 
 <!-- TODO: Add high-level architecture diagram -->
-<!-- Diagram should show:
-  - Two deployment paths side by side:
-    1. Standalone: User → CloudFormation → AWS Resources (with tags)
-    2. Service Catalog: Hub Account → SC Portfolio → OU Sharing → Spoke Accounts → AWS Resources (with tags)
-  - Template categories feeding into both paths (compute, storage, ml, networking, governance)
-  - Cost governance layer: Budget alerts (governance template) + per-instance budgets + idle shutdown (EC2)
-  - Cost tracking flow: Tags → Cost Allocation Tags → Cost Explorer / Budgets → Grant Chargeback
-  - Future: Quick Suite AI layer sitting above both paths
-  - OU evolution note: Institutions typically start with a single "Research" OU, then split over time
-    into purpose-specific OUs (e.g., Research-Sandbox, Research-HIPAA, Research-Production).
-    Show this as a callout or dashed-line expansion on the SC path.
--->
+
+ResearchStack supports two deployment paths. **Standalone**: deploy templates directly via the CloudFormation console or CLI into any AWS account — simplest for single accounts and small teams. **Service Catalog**: deploy the governance layer (CDK) to share templates across multiple accounts via a hub-and-spoke model with per-product launch roles and OU-level sharing — best for institutions managing multiple researcher accounts. Both paths use the same templates and produce the same tagged resources.
 
 ## What's Included
 
@@ -65,6 +55,8 @@ Not sure which template fits your work? The [Research Lifecycle Guide](docs/rese
 Most templates require a VPC and subnet. Deploy `research-vpc.yaml` first if you don't have one.
 
 ### Deploy via AWS CLI
+
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
 
 ```bash
 # Deploy a VPC first (if you don't have one)

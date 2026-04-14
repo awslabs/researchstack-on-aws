@@ -15,13 +15,13 @@ The Service Catalog layer adds governance on top of the same templates you can d
     - Per-product Launch Roles created locally in hub
   - StackSets (arrows from hub to spoke accounts):
     - Launch Role StackSets push per-product IAM roles into spoke accounts
-  - Spoke Accounts (in target OUs):
+  - Spoke Accounts (in target OUs, e.g., ou-xxxx-research, ou-yyyy-sandbox):
     - Receive portfolio share via OU sharing
     - Launch roles exist locally (created by StackSets)
     - Users provision products → CloudFormation creates resources with tags
   - AWS Organizations context:
     - Management Account delegates SC + StackSets admin to Hub Account
-    - OUs contain spoke accounts (e.g., ou-xxxx-research, ou-yyyy-sandbox)
+    - OUs contain spoke accounts
   - Flow: CDK deploy → Assets Bucket + Portfolio + StackSets → OU Share → Spoke users see portfolio → Provision product → Launch role scopes permissions → CFN creates tagged resources
   - IDC note: Recommend IAM Identity Center as the default identity approach.
     Two starting permission sets: AWSServiceCatalogEndUserAccess (researchers) and
@@ -29,21 +29,23 @@ The Service Catalog layer adds governance on top of the same templates you can d
     in every assigned account, enabling automated principal sharing via access_principals in the TOML.
 -->
 
-**Hub account** — A designated AWS account (not the management account) where [CDK](https://aws.amazon.com/cdk/) deploys the Service Catalog portfolio, products, and an S3 bucket for template artifacts. This account is registered as a [delegated administrator](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html) for Service Catalog and CloudFormation StackSets, so it can manage resources across the organization without using the management account (which should be reserved for billing and Organizations administration only).
+**Hub account** — A designated AWS account (not the management account) where [CDK](https://aws.amazon.com/cdk/) deploys the Service Catalog portfolio, products, and an S3 bucket for template artifacts. This account is registered as a [delegated administrator](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html) for Service Catalog and CloudFormation StackSets, so it can manage resources across the organization without using the management account (which should be reserved for billing and [Organizations](https://aws.amazon.com/organizations/) administration only — keeping workloads out of the management account is an [AWS security best practice](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_best-practices_mgmt-acct.html)).
 
-**Portfolio** — A collection of products (templates) shared to specific [Organizational Units (OUs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_ous.html). Controls who can launch what. Defined in a TOML config file.
+**Portfolio** — A collection of products shared to specific [Organizational Units (OUs)](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_ous.html). The portfolio name and description are what researchers see when browsing the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/). Defined in a TOML config file.
 
-**Products** — Each ResearchStack CloudFormation template wrapped for Service Catalog. Researchers see a product name, description, and a "Launch" button — they fill in parameters and get their resources.
+**Products** — Each ResearchStack CloudFormation template wrapped for Service Catalog. Researchers see a product name, description, and a "Launch" button — they fill in parameters and get their resources. The product name and description are what researchers see when browsing within a portfolio.
 
-**Launch roles** — Per-product IAM roles that Service Catalog assumes when creating resources on behalf of a researcher. Each product gets only the permissions it needs (e.g., the S3 product gets `AmazonS3FullAccess`, not admin access). Created in the hub account by CDK, then deployed to every spoke account via [CloudFormation StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html).
+**Launch roles** — Per-product [IAM roles](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html) that Service Catalog assumes when creating resources on behalf of a researcher. Each product gets only the permissions it needs (e.g., the S3 product gets `AmazonS3FullAccess`, not admin access). Created in the hub account by CDK, then deployed to every spoke account via StackSets.
 
-**StackSets** — CloudFormation's built-in mechanism for deploying the same template to multiple accounts. Here, they push launch roles into every account in the target OUs. When a new account is added to an OU, the launch role is deployed automatically.
+**[StackSets](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/what-is-cfnstacksets.html)** — CloudFormation's built-in mechanism for deploying the same template to multiple accounts. Here, they push launch roles into every account in the target OUs. When a new account is added to an OU, the launch role is deployed automatically.
 
-**OU sharing** — The portfolio is shared at the OU level, so every account in the OU sees it. Researchers in spoke accounts browse the shared portfolio and launch products using the launch roles that StackSets deployed into their account.
+**OU sharing** — The portfolio is shared at the [OU](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_ous.html) level, so every account in the OU sees it. Researchers in spoke accounts browse the shared portfolio and launch products using the launch roles that StackSets deployed into their account.
+
+**[Access principals](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html)** — IAM role ARN patterns that determine who can see and launch products from the portfolio. Typically mapped to [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) permission sets so access is granted automatically across all spoke accounts.
 
 ## Why CDK?
 
-The Service Catalog layer uses [AWS CDK](https://aws.amazon.com/cdk/) (Cloud Development Kit) with Python as the infrastructure-as-code tool. CDK generates CloudFormation templates from Python code, giving us:
+The Service Catalog layer uses [AWS CDK](https://aws.amazon.com/cdk/) (Cloud Development Kit) with Python as the infrastructure-as-code tool. CDK generates [CloudFormation](https://aws.amazon.com/cloudformation/) templates from Python code, giving us:
 
 | What CDK handles | Where we use it |
 |---|---|
@@ -60,7 +62,7 @@ You don't need to know CDK or Python to use this — just edit config files and 
 
 1. **[AWS Organizations](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_getting-started.html) enabled** — Service Catalog OU sharing and StackSets both require Organizations.
 
-2. **A hub account registered as delegated administrator** — Pick one account (not the management account — the management account should be reserved for billing and Organizations administration, not workload deployment). Run these from the **management account**:
+2. **A hub account registered as delegated administrator** — Pick one account (not the management account — the management account should be reserved for billing and Organizations administration, not workload deployment). Run these two commands from the **management account** using the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) or [CloudShell](https://aws.amazon.com/cloudshell/) (available in the AWS console — no install needed):
    ```bash
    # Delegate Service Catalog admin to hub account
    aws organizations register-delegated-administrator \
@@ -79,7 +81,7 @@ You don't need to know CDK or Python to use this — just edit config files and 
 - **Python 3.11+** — [python.org](https://www.python.org/downloads/) or your system package manager
 - **Node.js 18+** — Required by the CDK CLI. [nodejs.org](https://nodejs.org/)
 - **AWS CDK CLI** — `npm install -g aws-cdk` (after Node.js is installed)
-- **AWS CLI** — [Install guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Configure credentials for the hub account: `aws configure sso` for [IAM Identity Center](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (recommended) or `aws configure` for [access keys](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html). Alternatively, run CLI commands from [AWS CloudShell](https://aws.amazon.com/cloudshell/) in the console — no local install needed.
+- **AWS CLI** — [Install guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html). Configure credentials for the hub account: `aws configure sso` for [IAM Identity Center](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html) (recommended) or `aws configure` for [access keys](https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html).
 
 Verify:
 ```bash
@@ -111,7 +113,7 @@ The `available_ous` list acts as a guardrail — portfolio configs can only shar
 
 ### 2. Portfolio Config (`service-catalog/portfolios/*.toml`)
 
-Each TOML file defines a portfolio with inline products. The example `research-computing.toml` includes all templates. Customize it:
+Each TOML file defines one portfolio with its products. The example `research-computing.toml` includes all ResearchStack templates. Customize it:
 
 - Add/remove products by editing `[[portfolio.products]]` entries
 - Set `share_target_ous` to the OUs you want to share with
@@ -133,40 +135,40 @@ Complete reference for every configurable field. Fields marked (required) must b
 | `deployment.organization_id` | String | Yes | — | AWS Organization ID (format: `o-xxxxxxxxxx`). Used for S3 bucket org-wide read policy |
 | `deployment.default_env_name` | String | No | `dev` | Environment name baked into resource names (e.g., `dev`, `staging`, `prod`) |
 | `available_ous` | List of strings | Yes | — | OU IDs that portfolios are allowed to share to. Format: `ou-xxxx-xxxxxxxx` |
-| `tagging.required_tags` | Map | No | `{}` | Key-value pairs applied as tags to all CDK-managed stacks |
+| `tagging.required_tags` | Map | No | `{}` | Tags applied to the CDK-managed infrastructure stacks themselves (not to researcher-provisioned resources — those are tagged by the templates). Use for identifying SC infrastructure, e.g., `Project: ResearchStack`, `ManagedBy: ServiceCatalog`. |
 
 ### Portfolio Config Fields (`portfolios/*.toml`)
 
-**Portfolio section (`[portfolio]`):**
+**Portfolio section (`[portfolio]`)** — defines the portfolio that researchers see in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/):
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `name` | String | Yes | — | Machine identifier (used in stack names, no spaces) |
-| `display_name` | String | Yes | — | Human-readable name shown in the [SC console](https://console.aws.amazon.com/servicecatalog/) |
+| `name` | String | Yes | — | Portfolio machine identifier (used in CDK stack names and IAM role names — no spaces, alphanumeric + hyphens) |
+| `display_name` | String | Yes | — | Portfolio name shown to researchers in the SC console |
 | `description` | String | No | `""` | Portfolio description shown in the SC console |
-| `provider_name` | String | No | `"ResearchStack on AWS"` | Organization name shown as the portfolio provider |
-| `support_email` | String | No | `""` | Support email shown on all products |
+| `provider_name` | String | No | `"ResearchStack on AWS"` | Organization name shown as the portfolio publisher (e.g., your institution name) |
+| `support_email` | String | No | `""` | Support email shown on all products in this portfolio |
 | `support_url` | String | No | `""` | Support URL shown on all products |
 | `support_description` | String | No | `""` | Support description text shown on all products |
-| `distributor` | String | No | `""` | Distributor name shown on all products |
+| `distributor` | String | No | `""` | Distributor name shown on individual products — typically the team that maintains the templates (can differ from `provider_name` if products come from different teams) |
 | `share_target_ous` | List of strings | Yes | — | OU IDs to share this portfolio with. Must be in `framework_config.yaml` `available_ous` |
-| `access_principals` | List of strings | No | `[]` | IAM principal ARN patterns for automated portfolio access. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
-| `share_tag_options` | Boolean | No | `true` | Share TagOptions with spoke accounts |
-| `share_principals` | Boolean | No | `true` | Propagate `access_principals` to spoke accounts |
+| `access_principals` | List of strings | No | `[]` | [IAM principal](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html) ARN patterns that determine who can see and launch products. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
+| `share_tag_options` | Boolean | No | `true` | Share [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) with spoke accounts when sharing the portfolio. TagOptions are pre-defined key-value pairs that SC can enforce at provisioning time (e.g., valid cost center values). ResearchStack doesn't automate TagOption creation yet — this requires a curated list of valid values per institution. Enable this if you plan to configure TagOptions manually in the SC console. |
+| `share_principals` | Boolean | No | `true` | When `true`, the `access_principals` patterns are [propagated to spoke accounts](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html) that receive the portfolio share — so matching IAM roles in those accounts automatically get access. When `false`, access must be granted manually in each spoke account. |
 
-**Product entries (`[[portfolio.products]]`):**
+**Product entries (`[[portfolio.products]]`)** — each entry defines one product (template) within the portfolio:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `name` | String | Yes | — | Machine identifier (used for IAM role names, StackSet names — alphanumeric + hyphens) |
-| `display_name` | String | No | Derived from `name` | Human-readable name in the SC console |
-| `description` | String | No | `""` | Product description in the SC console |
+| `name` | String | Yes | — | Product machine identifier (used for IAM launch role names and StackSet names — alphanumeric + hyphens, no spaces) |
+| `display_name` | String | No | Derived from `name` | Product name shown to researchers in the SC console |
+| `description` | String | No | `""` | Product description shown in the SC console |
 | `template` | String | Yes | — | Relative path to the CloudFormation template (e.g., `../templates/storage/s3-research-bucket.yaml`) |
-| `launch_role_policies` | List of strings | No | `[]` | AWS managed policy names for the launch role. `AWSCloudFormationFullAccess` is always added automatically |
+| `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
 
 ## Deployment
 
-Deploy from the `service-catalog/` directory. CDK creates the assets bucket, portfolio, products, launch roles, and StackSets. Add `--profile your-profile-name` to CDK commands if using named AWS CLI profiles. You can also run these commands from [AWS CloudShell](https://aws.amazon.com/cloudshell/) if you prefer not to install tools locally.
+Deploy from the `service-catalog/` directory. Based on your configs, CDK creates the assets bucket, portfolio, products, launch roles, and StackSets. Add `--profile your-profile-name` to CDK commands if using named AWS CLI profiles.
 
 ```bash
 cd service-catalog
@@ -190,7 +192,7 @@ cdk deploy --all
 
 ## Granting Portfolio Access
 
-Researchers need access to the portfolio before they can launch products. The recommended approach is to define principal ARN patterns in your portfolio TOML — this grants access automatically in the hub account and propagates to all spoke accounts via principal sharing.
+Researchers need access to the portfolio before they can launch products. The recommended approach is to define [principal ARN patterns](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html) in your portfolio TOML — this grants access automatically in the hub account and propagates to all spoke accounts via [principal sharing](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html).
 
 ### Recommended: Automated via TOML Config
 
@@ -227,9 +229,24 @@ For one-off access or spoke-account-specific overrides:
 
 ## Updating Products
 
-- **Update a template**: Edit the YAML file in `templates/`, then `cdk deploy --all`. Existing provisioned resources are unaffected.
+- **Update a template**: Edit the YAML file in `templates/`, then `cdk deploy --all`. SC updates the product's provisioning artifact. Existing provisioned resources are unaffected.
 - **Add a new product**: Add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
 - **Remove a product**: Remove it from the TOML and deploy. Existing provisioned resources continue running.
+- **Researcher self-service updates**: Researchers can update their own provisioned products in the [SC console](https://console.aws.amazon.com/servicecatalog/) — go to **Provisioned products**, select the product, and click **Update**. This lets them change parameters (e.g., instance type, volume size) without IT involvement.
+
+## Verify Your Deployment
+
+After `cdk deploy --all` completes, verify everything is working:
+
+1. **Hub account** — Open the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/) in the hub account. Under **Portfolios** → **Local portfolios**, you should see your portfolio with all products listed.
+
+2. **Spoke account** — Sign into a spoke account in one of the target OUs. Under **Portfolios** → **Imported portfolios**, you should see the shared portfolio. Under **Products**, each product should show a "Launch" button.
+
+3. **Launch roles** — In the spoke account, go to [IAM → Roles](https://console.aws.amazon.com/iam/home#/roles) and search for your project slug (e.g., `rs-`). You should see one launch role per product (e.g., `rs-dev-research-computing-s3-research-bucket-lc`).
+
+4. **Test launch** — In the spoke account, launch a simple product (e.g., the S3 bucket). Verify it creates successfully and the resources are tagged with Project, CostCenter, Owner, ManagedBy, and Environment.
+
+If any step fails, see [Troubleshooting](#troubleshooting) below.
 
 ## Troubleshooting
 
@@ -242,3 +259,4 @@ For one-off access or spoke-account-specific overrides:
 | StackSet deployment fails | Verify hub account is [delegated admin](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html) for CloudFormation StackSets |
 | Portfolio not visible to users | Check `access_principals` in your portfolio TOML — see [Granting Portfolio Access](#granting-portfolio-access) |
 | Portfolio not visible in spoke accounts | Ensure OU IDs are in `share_target_ous` in your portfolio TOML and redeploy |
+| Launch fails with permission error | Check that the product's `launch_role_policies` include all required permissions. Look at the CloudFormation events tab for the specific denied action. |
