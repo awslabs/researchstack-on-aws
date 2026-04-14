@@ -61,7 +61,7 @@ Most templates require a VPC and subnet. Deploy `research-vpc.yaml` first if you
 
 ### Deploy via AWS CLI
 
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). Add --profile your-profile-name to the commands if using named AWS CLI profiles.
 
 ```bash
 # Deploy a VPC first (if you don't have one)
