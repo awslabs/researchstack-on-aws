@@ -1,5 +1,26 @@
 # Frequently Asked Questions
 
+## Getting Data Into AWS
+
+**How do I upload research data from my local machine to S3?**
+Use the [AWS CLI](https://aws.amazon.com/cli/) from your local machine:
+```bash
+# Upload a single file
+aws s3 cp my-dataset.csv s3://my-bucket-name/
+
+# Sync an entire directory (only uploads new/changed files)
+aws s3 sync ./my-data/ s3://my-bucket-name/my-data/
+```
+You can also drag-and-drop files in the [S3 console](https://console.aws.amazon.com/s3/) for small uploads. For datasets over 100 GB, `aws s3 sync` handles multipart uploads automatically — no special setup needed.
+
+**How do I get data onto EFS or an EC2 instance?**
+EFS can't be accessed directly from outside AWS. Two options:
+- **Upload to S3 first**, then copy to EFS from an EC2 instance: `aws s3 sync s3://my-bucket/ /mnt/efs/data/`
+- **rsync/scp over SSH** directly to an EC2 instance (requires a key pair and allowed IP): `rsync -avz ./my-data/ ec2-user@<IP>:/home/ec2-user/data/`
+
+**What about very large datasets (multi-TB)?**
+For one-time bulk transfers, `aws s3 sync` over a fast connection works well up to a few TB. Beyond that, consider [AWS DataSync](https://aws.amazon.com/datasync/) for automated, accelerated transfers from on-prem storage, or [AWS Snow Family](https://aws.amazon.com/snow/) for offline transfer of petabyte-scale data. See the [AWS data transfer documentation](https://aws.amazon.com/cloud-data-migration/) for guidance on choosing the right approach.
+
 ## Getting Started
 
 **What do I need before deploying any template?**
