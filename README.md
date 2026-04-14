@@ -140,6 +140,7 @@ researchstack/
 - [Templates README](templates/README.md) — Template details, instance types, OS options, deployment instructions
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) — Map your research phase to the right templates
 - [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, F&A guidance, cost tracking
+- [FAQ](docs/faq.md) — Common questions about connecting, costs, security, and configuration
 - [ParallelCluster Guide](docs/parallelcluster-guide.md) — Deploy, connect, run jobs, and customize HPC clusters
 - [Service Catalog Deployment Guide](docs/service-catalog-guide.md) — Multi-account governance setup
 - [Service Catalog Developer Guide](service-catalog/README.md) — Code architecture for contributors
