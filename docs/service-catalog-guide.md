@@ -207,6 +207,12 @@ access_principals = [
 ]
 ```
 
+The sample config includes two principals:
+- `AdministratorAccess` — for IT admins who manage the portfolio, test products, and troubleshoot deployments
+- `AWSServiceCatalogEndUserAccess` — for researchers who browse and launch products (this is an [AWS-managed permission set](https://docs.aws.amazon.com/singlesignon/latest/userguide/awsmp.html) available in IDC by default)
+
+For production use, we recommend creating a custom "Researcher" permission set in IDC that combines SC end-user access with the additional permissions researchers need day-to-day (e.g., SSM Session Manager for connecting to instances, S3 read access for their data, Cost Explorer for budget visibility). This avoids giving researchers full admin while still letting them be productive beyond just launching products. If you're not using IDC, create equivalent IAM roles in each spoke account and reference them here.
+
 Then run `cdk deploy --all`. Service Catalog associates these patterns with the portfolio and — because `share_principals = true` — automatically grants access to matching roles in every spoke account.
 
 **ARN format:**
