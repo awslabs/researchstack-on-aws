@@ -19,7 +19,12 @@ EFS can't be accessed directly from outside AWS. Two options:
 - **rsync/scp over SSH** directly to an EC2 instance (requires a key pair and allowed IP): `rsync -avz ./my-data/ ec2-user@<IP>:/home/ec2-user/data/`
 
 **What about very large datasets (multi-TB)?**
-For one-time bulk transfers, `aws s3 sync` over a fast connection works well up to a few TB. Beyond that, consider [AWS DataSync](https://aws.amazon.com/datasync/) for automated, accelerated transfers from on-prem storage, or [AWS Snow Family](https://aws.amazon.com/snow/) for offline transfer of petabyte-scale data. See the [AWS data transfer documentation](https://aws.amazon.com/cloud-data-migration/) for guidance on choosing the right approach.
+For one-time bulk transfers, `aws s3 sync` over a fast connection works well up to a few TB. Beyond that:
+- **[Globus](https://www.globus.org/)** — the standard for academic data transfer. If your institution already has Globus endpoints (most universities do), use the [Globus S3 connector](https://www.globus.org/connectors/amazon-s3) to transfer directly from your campus storage to an S3 bucket. Familiar to researchers and handles large transfers reliably.
+- **[AWS DataSync](https://aws.amazon.com/datasync/)** — automated, accelerated transfers from on-prem NFS/SMB storage to S3 or EFS.
+- **[AWS Snow Family](https://aws.amazon.com/snow/)** — offline transfer for petabyte-scale data.
+
+See the [AWS data transfer documentation](https://aws.amazon.com/cloud-data-migration/) for guidance on choosing the right approach.
 
 ## Getting Started
 
