@@ -87,7 +87,18 @@ display_name = "Slurm Cluster (ParallelCluster)"
 description = "Full HPC cluster with Slurm scheduler, optional DCV remote desktop, and shared storage"
 template = "../templates/compute/parallelcluster-hpc.yaml"
 launch_role_policies = [
-    "AdministratorAccess",
+    "AmazonEC2FullAccess",
+    "AmazonS3FullAccess",
+    "AmazonSSMManagedInstanceCore",
+    "AWSLambda_FullAccess",
+    "AmazonElasticFileSystemFullAccess",
+    "IAMFullAccess",
+    "AWSCloudFormationFullAccess",
+    "SecretsManagerReadWrite",
+    "CloudWatchLogsFullAccess",
+    "AmazonDynamoDBFullAccess",
+    "AmazonRoute53FullAccess",
+    "CloudWatchFullAccess",
 ]
 
 [[portfolio.products]]
