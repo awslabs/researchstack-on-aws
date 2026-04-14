@@ -23,7 +23,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("arc-sc")
+logger = logging.getLogger("rs-sc")
 
 
 def main():

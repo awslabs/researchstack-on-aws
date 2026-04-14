@@ -1,6 +1,6 @@
 # ResearchStack on AWS
 
-Production-ready CloudFormation templates for research computing — deploy EC2, S3, EFS, SageMaker, ParallelCluster, and more with built-in security, cost tracking, and governance. From a single researcher to a multi-account institution.
+Production-ready [CloudFormation](https://aws.amazon.com/cloudformation/) templates for research computing — deploy EC2, S3, EFS, SageMaker, ParallelCluster, and more with built-in security, cost tracking, and governance. From a single researcher to a multi-account institution.
 
 ## Why ResearchStack?
 
@@ -14,8 +14,8 @@ Production-ready CloudFormation templates for research computing — deploy EC2,
 
 ResearchStack supports two deployment paths:
 
-- **Standalone**: deploy templates directly via the [CloudFormation](https://aws.amazon.com/cloudformation/) console or [AWS CLI](https://aws.amazon.com/cli/) into any AWS account — simplest for single accounts and small teams
-- **Service Catalog**: deploy a governance layer to share templates across multiple accounts via a hub-and-spoke model with per-product deployment permissions and OU-level sharing — best for institutions managing multiple researcher accounts
+- **Standalone**: deploy templates directly via the CloudFormation console or [AWS CLI](https://aws.amazon.com/cli/) into any AWS account — simplest for single accounts and small teams
+- **[Service Catalog](https://aws.amazon.com/servicecatalog/)**: deploy a governance layer to share templates across multiple accounts via a hub-and-spoke model with per-product deployment permissions and OU-level sharing — best for institutions managing multiple researcher accounts
 
 Both paths use the same templates and produce the same tagged resources.
 

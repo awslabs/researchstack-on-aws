@@ -31,7 +31,7 @@ service-catalog/
 
 ## Call Flow
 
-This is the order things execute when you run `cdk deploy`:
+This is the order in which the code executes after you run `cdk deploy`:
 
 ```
 cdk deploy --all
@@ -104,7 +104,7 @@ Lower-level pieces that `portfolio_stack.py` assembles. These are CDK constructs
 
 Stateless utilities used across the codebase:
 
-- `config.py` — Global singleton holding `project_slug` (default `"arc"`) and `env_name` (default `"dev"`). These values get baked into every resource name as prefixes. Set once by `app.py` at startup, read by naming utilities throughout synthesis.
+- `config.py` — Global singleton holding `project_slug` (default `"rs"`) and `env_name` (default `"dev"`). These values get baked into every resource name as prefixes. Set once by `app.py` at startup, read by naming utilities throughout synthesis.
 
 - `resource_naming.py` — Naming conventions for AWS resources:
   - `NameValidator` — regex validation for OU IDs and org IDs
@@ -135,4 +135,4 @@ Python package config (like `package.json` for npm). Declares dependencies (`aws
 3. Run `cdk deploy --all` — CDK auto-discovers the new TOML file
 
 ### Change the naming prefix
-Run `cdk deploy --all -c project_slug=myorg` to override the default `arc` prefix. All resource names will use `myorg` instead.
+Run `cdk deploy --all -c project_slug=myorg` to override the default `rs` prefix. All resource names will use `myorg` instead.
