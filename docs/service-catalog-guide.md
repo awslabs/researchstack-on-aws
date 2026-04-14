@@ -117,7 +117,7 @@ Each TOML file defines one portfolio with its products. The example `research-co
 
 - Add/remove products by editing `[[portfolio.products]]` entries
 - Set `share_target_ous` to the OUs you want to share with
-- Set `access_principals` to grant portfolio access automatically (see [Granting Portfolio Access](#granting-portfolio-access))
+- Set `access_principals` to grant portfolio access automatically (see [Granting Portfolio Access](#granting-portfolio-access)). If you're not ready to configure this yet, leave the field as an empty list (`[]`) and grant access manually in the SC console after deployment.
 - Each product's `launch_role_policies` declares the AWS managed policies its launch role needs
 
 To create additional portfolios (e.g., separate catalogs for different departments), create a new TOML file in the same directory. For a complete field reference, see [Configuration Reference](#configuration-reference).
