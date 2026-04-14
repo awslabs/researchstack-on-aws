@@ -41,7 +41,7 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 
 | Parameter | What to enter |
 |-----------|---------------|
-| DCVAllowedIps | Your office/campus CIDR (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow access from anywhere. |
+| DCVAllowedIps | Your office/campus CIDR (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow access from anywhere. Also controls SSH access when a key pair is provided. |
 | DCVPassword | Password for the DCV desktop login. Min 8 characters. You can change it later by connecting to the head node and running `sudo passwd ec2-user` (or `sudo passwd ubuntu` on Ubuntu). |
 
 **Optional configuration — safe to leave as defaults:**
