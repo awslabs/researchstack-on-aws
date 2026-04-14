@@ -16,7 +16,7 @@ distributor = "University Cloud Team"
 
 # OUs to share this portfolio with (must be listed in framework_config.yaml available_ous)
 share_target_ous = [
-    "ou-ajo0-pu0xwe7g",
+    "ou-xxxx-xxxxxxxx",
 ]
 
 # IAM principal ARN patterns to grant portfolio access (propagated to spoke accounts via principal sharing).
