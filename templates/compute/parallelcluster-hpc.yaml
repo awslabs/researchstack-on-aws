@@ -222,7 +222,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub
-        - 'https://${AWS::Region}-aws-parallelcluster.s3.${AWS::Region}.${AWS::URLSuffix}/parallelcluster/3.14.0/templates/custom_resource/cluster.yaml'
+        - 'https://${AWS::Region}-aws-parallelcluster.s3.${AWS::Region}.${AWS::URLSuffix}/parallelcluster/3.15.0/templates/custom_resource/cluster.yaml'
         - {}
       Tags:
         - Key: Project
@@ -302,7 +302,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: DCVEnabled
     Properties:
-      ManagedPolicyName: !Sub 'pcluster-${ClusterName}-dcv-secrets'
+      ManagedPolicyName: !Sub 'parallelcluster-${ClusterName}-dcv-secrets'
       PolicyDocument:
         Version: '2012-10-17'
         Statement:

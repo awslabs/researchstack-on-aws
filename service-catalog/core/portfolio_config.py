@@ -17,6 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class CustomPolicyStatement:
+    """An inline IAM policy statement for a launch role."""
+    actions: List[str]
+    resources: List[str]
+    effect: str = "Allow"
+
+
+@dataclass
 class ProductConfig:
     """A product within a portfolio."""
     name: str  # machine-friendly identifier (used for IAM roles, StackSets)
@@ -24,6 +32,7 @@ class ProductConfig:
     display_name: str = ""  # human-friendly name shown in Service Catalog console
     description: str = ""  # product description shown in Service Catalog console
     launch_role_policies: List[str] = field(default_factory=list)
+    custom_policy: List[CustomPolicyStatement] = field(default_factory=list)
 
 
 @dataclass
@@ -103,6 +112,14 @@ class PortfolioConfigLoader:
                 display_name=p.get("display_name", p["name"].replace("-", " ").title()),
                 description=p.get("description", ""),
                 launch_role_policies=p.get("launch_role_policies", []),
+                custom_policy=[
+                    CustomPolicyStatement(
+                        actions=stmt["actions"],
+                        resources=stmt["resources"],
+                        effect=stmt.get("effect", "Allow"),
+                    )
+                    for stmt in p.get("custom_policy", [])
+                ],
             ))
 
         config = PortfolioConfig(

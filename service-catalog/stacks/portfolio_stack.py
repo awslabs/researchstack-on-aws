@@ -118,6 +118,7 @@ class PortfolioStack(Stack):
             product_name=product_cfg.name,
             portfolio_name=self.config.name,
             managed_policy_names=product_cfg.launch_role_policies,
+            custom_policy=[vars(s) for s in product_cfg.custom_policy],
         )
 
         # Add launch constraint using local role name (works cross-account for shared portfolios)
@@ -135,6 +136,7 @@ class PortfolioStack(Stack):
                     product_name=product_cfg.name,
                     portfolio_name=self.config.name,
                     managed_policy_names=product_cfg.launch_role_policies,
+                    custom_policy=[vars(s) for s in product_cfg.custom_policy],
                 ),
                 target_regions=[Stack.of(self).region],
                 target_ou_ids=self.config.target_ous,

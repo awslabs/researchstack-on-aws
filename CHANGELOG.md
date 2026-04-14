@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [Unreleased]
 
 ### Added
+- Custom inline policy support (`custom_policy`) for Service Catalog launch roles — use when AWS managed policies have gaps (e.g., `AmazonSageMakerFullAccess` excludes domain-level tagging actions)
+
+### Fixed
+- SageMaker Studio: launch role now uses `sagemaker:*` custom policy instead of `AmazonSageMakerFullAccess`, which excludes domain/user-profile/app/space resources via `NotResource`
+- ParallelCluster: renamed `DCVSecretsPolicy` from `pcluster-` to `parallelcluster-` prefix to match the PCluster provider's IAM policy allowlist
+- ParallelCluster: bumped provider from 3.14.0 to 3.15.0 to fix CloudWatch alarm tagging permission error (`UnauthorizedTaggingOperation`) caused by stricter CloudFormation tag enforcement
+
+### Added
 - Governance budget alert template (`templates/governance/budget-alert.yaml`) — monthly budget tracking by CostCenter tag with email notifications at 50%, 80%, 100% forecasted, and 100% actual thresholds
 - ADR 0007: Cost governance strategy (budgets, idle shutdown, enforcement)
 - 80 unit tests at 98% coverage (config loaders, utils, CDK stack synthesis)

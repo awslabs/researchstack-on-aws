@@ -90,7 +90,7 @@ Each file produces one CloudFormation stack:
 
 Lower-level pieces that `portfolio_stack.py` assembles. These are CDK constructs — reusable components that encapsulate one piece of infrastructure.
 
-- `launch_role.py` — Creates one IAM role per product. The role is assumed by `servicecatalog.amazonaws.com` when launching a product. Always includes `AWSCloudFormationFullAccess` (SC launches CFN stacks) plus whatever managed policies the product declares in the TOML. Also includes an inline policy for reading SC template artifacts from S3. Role name follows the convention: `{slug}-{env}-{portfolio}-{product}-lc`.
+- `launch_role.py` — Creates one IAM role per product. The role is assumed by `servicecatalog.amazonaws.com` when launching a product. Always includes `AWSCloudFormationFullAccess` (SC launches CFN stacks) plus whatever managed policies the product declares in the TOML. Also supports optional `custom_policy` inline statements for cases where AWS managed policies have gaps (e.g., `AmazonSageMakerFullAccess` excludes domain-level actions). Also includes an inline policy for reading SC template artifacts from S3. Role name follows the convention: `{slug}-{env}-{portfolio}-{product}-lc`.
 
 - `portfolio_share.py` — Shares a portfolio with an OU using a CDK custom resource (Lambda-backed). CDK's built-in portfolio sharing doesn't support OU-level sharing with `share_tag_options` and `share_principals` flags, so this construct wraps the raw SC API calls (`createPortfolioShare`, `updatePortfolioShare`, `deletePortfolioShare`).
 
@@ -126,7 +126,7 @@ Python package config (like `package.json` for npm). Declares dependencies (`aws
 
 ### Add a new product
 1. Create the CloudFormation template in `templates/`
-2. Add a `[[portfolio.products]]` entry to the portfolio TOML with `name`, `template`, and `launch_role_policies`
+2. Add a `[[portfolio.products]]` entry to the portfolio TOML with `name`, `template`, and `launch_role_policies`. If AWS managed policies don't cover all required actions, add `[[portfolio.products.custom_policy]]` entries with the missing `actions` and `resources`.
 3. Run `cdk deploy --all`
 
 ### Create a new portfolio

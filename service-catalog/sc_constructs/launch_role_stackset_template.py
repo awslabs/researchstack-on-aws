@@ -1,6 +1,6 @@
 """StackSet template that deploys a launch role into target accounts."""
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from aws_cdk import aws_iam as iam
 from constructs import Construct
@@ -18,6 +18,7 @@ class LaunchRoleStacksetProps:
         product_name: str,
         portfolio_name: str,
         managed_policy_names: Optional[List[str]] = None,
+        custom_policy: Optional[List[Dict]] = None,
     ):
         ok, reason = ServiceCatalogRoleNaming.validate_name_components(
             product_name=product_name,
@@ -29,6 +30,7 @@ class LaunchRoleStacksetProps:
         self.product_name = product_name
         self.portfolio_name = portfolio_name
         self.managed_policy_names = managed_policy_names or []
+        self.custom_policy = custom_policy or []
 
 
 class LaunchRoleStacksetTemplate(BaseStacksetTemplate):
@@ -44,4 +46,5 @@ class LaunchRoleStacksetTemplate(BaseStacksetTemplate):
             product_name=self.props["product_name"],
             portfolio_name=self.props["portfolio_name"],
             managed_policy_names=self.props.get("managed_policy_names", []),
+            custom_policy=self.props.get("custom_policy", []),
         )

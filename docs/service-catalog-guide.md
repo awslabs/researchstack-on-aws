@@ -279,6 +279,7 @@ Complete reference for every configurable field. Fields marked (required) must b
 | `description` | String | No | `""` | Product description shown in the SC console |
 | `template` | String | Yes | — | Relative path to the CloudFormation template (e.g., `../templates/storage/s3-research-bucket.yaml`) |
 | `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
+| `custom_policy` | List of inline statements | No | `[]` | Custom IAM policy statements added to the launch role as an inline policy. Use when AWS managed policies don't cover a required action (e.g., `AmazonSageMakerFullAccess` excludes `sagemaker:AddTags` on domains). Each entry has `actions` (list of IAM actions) and `resources` (list of ARN patterns). See the sagemaker-studio product in the sample TOML for an example. |
 
 ## Troubleshooting
 
@@ -291,4 +292,4 @@ Complete reference for every configurable field. Fields marked (required) must b
 | StackSet deployment fails | Verify hub account is [delegated admin](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html) for CloudFormation StackSets |
 | Portfolio not visible to users | Check `access_principals` in your portfolio TOML — see [Granting Portfolio Access](#granting-portfolio-access) |
 | Portfolio not visible in spoke accounts | Ensure OU IDs are in `share_target_ous` in your portfolio TOML and redeploy |
-| Launch fails with permission error | Check that the product's `launch_role_policies` include all required permissions. Look at the CloudFormation events tab for the specific denied action. |
+| Launch fails with permission error | Check that the product's `launch_role_policies` include all required permissions. Look at the CloudFormation events tab for the specific denied action. If an AWS managed policy doesn't cover the action (some policies have `NotResource` exclusions), add a `[[portfolio.products.custom_policy]]` entry with the missing actions and resources. |

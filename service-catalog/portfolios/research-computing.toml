@@ -103,7 +103,11 @@ name = "sagemaker-studio"
 display_name = "SageMaker Studio"
 description = "Managed Jupyter environment with GPU support for ML development"
 template = "../templates/ml/sagemaker-studio.yaml"
-launch_role_policies = ["AmazonSageMakerFullAccess", "AmazonS3FullAccess", "AmazonEC2FullAccess", "IAMFullAccess"]
+launch_role_policies = ["AmazonS3FullAccess", "AmazonEC2FullAccess", "IAMFullAccess"]
+
+  [[portfolio.products.custom_policy]]
+  actions = ["sagemaker:*"]
+  resources = ["*"]
 
 [[portfolio.products]]
 name = "research-vpc"
