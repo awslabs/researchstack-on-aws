@@ -88,7 +88,7 @@ Verify:
 python3 --version            # 3.11+
 node --version               # 18+
 cdk --version                # 2.x
-aws sts get-caller-identity  # should show your hub account ID
+aws sts get-caller-identity  # should show your hub account ID (add --profile your-profile-name if using named profiles)
 ```
 
 ## Configuration
@@ -153,7 +153,7 @@ Complete reference for every configurable field. Fields marked (required) must b
 | `distributor` | String | No | `""` | Distributor name shown on individual products — typically the team that maintains the templates (can differ from `provider_name` if products come from different teams) |
 | `share_target_ous` | List of strings | Yes | — | OU IDs to share this portfolio with. Must be in `framework_config.yaml` `available_ous` |
 | `access_principals` | List of strings | No | `[]` | [IAM principal](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html) ARN patterns that determine who can see and launch products. Supports wildcards. See [Granting Portfolio Access](#granting-portfolio-access) |
-| `share_tag_options` | Boolean | No | `true` | Share [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) with spoke accounts when sharing the portfolio. TagOptions are pre-defined key-value pairs that SC can enforce at provisioning time (e.g., valid cost center values). ResearchStack doesn't automate TagOption creation yet — this requires a curated list of valid values per institution. Enable this if you plan to configure TagOptions manually in the SC console. |
+| `share_tag_options` | Boolean | No | `true` | Share [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) with spoke accounts when sharing the portfolio. TagOptions are pre-defined key-value pairs that SC can enforce at provisioning time (e.g., valid cost center values). ResearchStack doesn't currently automate TagOption creation — this requires a curated list of valid values per institution. Enable this if you plan to configure TagOptions manually in the SC console. |
 | `share_principals` | Boolean | No | `true` | When `true`, the `access_principals` patterns are [propagated to spoke accounts](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_sharing.html) that receive the portfolio share — so matching IAM roles in those accounts automatically get access. When `false`, access must be granted manually in each spoke account. |
 
 **Product entries (`[[portfolio.products]]`)** — each entry defines one product (template) within the portfolio:
@@ -240,7 +240,7 @@ After `cdk deploy --all` completes, verify everything is working:
 
 1. **Hub account** — Open the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/) in the hub account. Under **Portfolios** → **Local portfolios**, you should see your portfolio with all products listed.
 
-2. **Spoke account** — Sign into a spoke account in one of the target OUs. Under **Portfolios** → **Imported portfolios**, you should see the shared portfolio. Under **Products**, each product should show a "Launch" button.
+2. **Spoke account** — Sign into a spoke account in one of the target OUs. Under **Portfolios** → **Imported portfolios**, you should see the shared portfolio. Under **Products**, each product should be displayed.
 
 3. **Launch roles** — In the spoke account, go to [IAM → Roles](https://console.aws.amazon.com/iam/home#/roles) and search for your project slug (e.g., `rs-`). You should see one launch role per product (e.g., `rs-dev-research-computing-s3-research-bucket-lc`).
 

@@ -12,7 +12,12 @@ Production-ready CloudFormation templates for research computing — deploy EC2,
 
 <!-- TODO: Add high-level architecture diagram -->
 
-ResearchStack supports two deployment paths. **Standalone**: deploy templates directly via the CloudFormation console or CLI into any AWS account — simplest for single accounts and small teams. **Service Catalog**: deploy the governance layer (CDK) to share templates across multiple accounts via a hub-and-spoke model with per-product launch roles and OU-level sharing — best for institutions managing multiple researcher accounts. Both paths use the same templates and produce the same tagged resources.
+ResearchStack supports two deployment paths:
+
+- **Standalone**: deploy templates directly via the [CloudFormation](https://aws.amazon.com/cloudformation/) console or [AWS CLI](https://aws.amazon.com/cli/) into any AWS account — simplest for single accounts and small teams
+- **Service Catalog**: deploy a governance layer to share templates across multiple accounts via a hub-and-spoke model with per-product deployment permissions and OU-level sharing — best for institutions managing multiple researcher accounts
+
+Both paths use the same templates and produce the same tagged resources.
 
 ## What's Included
 
