@@ -19,10 +19,6 @@ Metadata:
         Parameters:
           - CostCenter
           - ProjectName
-      - Label:
-          default: 'Resource Tagging'
-        Parameters:
-          - Owner
     ParameterLabels:
       BudgetName:
         default: 'Budget Name'
@@ -34,8 +30,6 @@ Metadata:
         default: 'Cost Center'
       ProjectName:
         default: 'Project Name (optional)'
-      Owner:
-        default: 'Owner Email'
 
 Parameters:
   BudgetName:
@@ -76,14 +70,8 @@ Parameters:
       cost center (AND filter). Leave blank to track all projects under the
       cost center.
 
-  Owner:
-    Type: String
-    Default: ''
-    Description: 'PI or researcher email (for resource tagging — optional)'
-
 Conditions:
   HasProject: !Not [!Equals [!Ref ProjectName, '']]
-  HasOwner: !Not [!Equals [!Ref Owner, '']]
 
 Resources:
   BudgetSNSTopic:
@@ -95,11 +83,6 @@ Resources:
           Value: !If [HasProject, !Ref ProjectName, 'all-projects']
         - Key: CostCenter
           Value: !Ref CostCenter
-        - !If
-          - HasOwner
-          - Key: Owner
-            Value: !Ref Owner
-          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment

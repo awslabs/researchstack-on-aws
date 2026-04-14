@@ -201,7 +201,7 @@ After `cdk deploy --all` completes, verify everything is working:
 
 3. **Launch roles** — In the spoke account, go to [IAM → Roles](https://console.aws.amazon.com/iam/home#/roles) and search for your project slug (e.g., `rs-`). You should see one launch role per product (e.g., `rs-dev-research-computing-s3-research-bucket-lc`).
 
-4. **Test launch** — In the spoke account, launch a simple product (e.g., the S3 bucket). Verify it creates successfully and the resources are tagged with Project, CostCenter, Owner, ManagedBy, and Environment.
+4. **Test launch** — In the spoke account, launch a simple product (e.g., the S3 bucket). Verify it creates successfully and the resources are tagged with Project, CostCenter, Owner, ManagedBy, and Environment. For EC2 products, connect to the instance using the SSM Session Manager command from the stack outputs.
 
 If any step fails, see [Troubleshooting](#troubleshooting) below.
 
@@ -211,6 +211,30 @@ If any step fails, see [Troubleshooting](#troubleshooting) below.
 - **Add a new product**: Add a `[[portfolio.products]]` entry to your portfolio TOML, then deploy.
 - **Remove a product**: Remove it from the TOML and deploy. Existing provisioned resources continue running.
 - **Researcher self-service updates**: Researchers can update their own provisioned products in the [SC console](https://console.aws.amazon.com/servicecatalog/) — go to **Provisioned products**, select the product, and click **Update**. This lets them change parameters (e.g., instance type, volume size) without IT involvement.
+
+## Deleting Resources
+
+### Researchers: Terminate Provisioned Products
+
+Researchers can delete their own resources in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/):
+
+1. Go to **Provisioned products**
+2. Select the product
+3. Choose **Actions** → **Terminate**
+
+This deletes the underlying CloudFormation stack and all resources it created. Terminated products stop incurring costs immediately (except for any data retained in S3 buckets with deletion protection).
+
+### IT Admins: Tear Down the Service Catalog Infrastructure
+
+To remove the entire Service Catalog layer (portfolios, products, launch roles, StackSets, assets bucket):
+
+```bash
+cd service-catalog
+source .venv/bin/activate
+cdk destroy --all
+```
+
+This does not affect resources that researchers have already provisioned — those are independent CloudFormation stacks in spoke accounts. Researchers (or IT admins) must terminate provisioned products separately before or after tearing down the SC infrastructure.
 
 ## Configuration Reference
 

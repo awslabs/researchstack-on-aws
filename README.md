@@ -59,6 +59,8 @@ Not sure which template fits your work? The [Research Lifecycle Guide](docs/rese
 
 Most templates require a VPC and subnet. Deploy `research-vpc.yaml` first if you don't have one.
 
+After deploying EC2 instances, connect via [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) — no SSH keys or open ports needed. The instance ID and connect command are in the stack outputs. See the [Templates README](templates/README.md#connecting-to-instances) for details.
+
 ### Deploy via AWS CLI
 
 Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). Add --profile your-profile-name to the commands if using named AWS CLI profiles.
@@ -89,6 +91,19 @@ aws cloudformation create-stack \
 For institutions managing multiple AWS accounts with governed self-service. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed.
 
 See the [Service Catalog Deployment Guide](docs/service-catalog-guide.md) for full setup.
+
+### Deleting Resources
+
+When you're done with a resource, delete the CloudFormation stack to clean up all associated AWS resources and stop incurring costs.
+
+**Via AWS Console**: Go to [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select the stack → **Delete**.
+
+**Via AWS CLI**:
+```bash
+aws cloudformation delete-stack --stack-name my-ec2
+```
+
+Delete resources in reverse order of creation — delete compute/storage stacks first, then the VPC stack (since other resources depend on the VPC).
 
 ## Cost Tracking and Access Control
 

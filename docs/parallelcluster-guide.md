@@ -353,6 +353,21 @@ ParallelCluster automatically creates a [CloudWatch dashboard](https://docs.aws.
 
 Cluster logs (Slurm scheduler, DCV, system) are streamed to CloudWatch Logs automatically under the log group `/aws/parallelcluster/CLUSTER_NAME`.
 
+## Deleting the Cluster
+
+When you're done with the cluster, delete the CloudFormation stack to clean up all resources (head node, compute nodes, EFS if auto-created, security groups, Elastic IP, bootstrap bucket, Lambda functions).
+
+**Via AWS Console**: Go to [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select the cluster stack → **Delete**.
+
+**Via AWS CLI**:
+```bash
+aws cloudformation delete-stack --stack-name STACK_NAME
+```
+
+Deletion takes 10-15 minutes. If you provided an existing EFS (`EfsFileSystemId`) or FSx Lustre filesystem, those persist independently — only auto-created storage is deleted with the stack.
+
+If the stack deletion fails (common cause: the ParallelCluster cluster is still in a transitional state), wait a few minutes and retry. Check the CloudFormation events tab for the specific error.
+
 ## Troubleshooting
 
 | Issue | Solution |
