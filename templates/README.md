@@ -42,6 +42,45 @@ All templates follow these conventions:
 - **Security defaults**: Encryption enabled, public access blocked, least privilege where applicable
 - **Naming**: Resources include account ID and region for uniqueness
 
+## EC2 Parameter Reference
+
+All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GPU) share the same parameters. Fill in the required ones; the rest have sensible defaults.
+
+**Required:**
+
+| Parameter | What to enter |
+|-----------|---------------|
+| ProjectName | Your research project name (e.g., `genomics-lab`). Used in resource names and cost tags. |
+| CostCenter | Department or grant number for billing (e.g., `grant-12345`). |
+| VpcId | VPC to launch in. Get this from the Research VPC stack outputs or your institution's VPC. |
+| SubnetId | Subnet within the VPC. Use a private subnet for production, public for quick experiments. |
+
+**Optional — safe to leave as defaults:**
+
+| Parameter | Default | When to change |
+|-----------|---------|----------------|
+| Owner | (blank) | PI or researcher email — helps FinOps trace resources to a person |
+| InstanceName | `{ProjectName}-instance` | When running multiple instances for the same project |
+| InstanceType | Varies by template | Scale up/down based on workload. See [Choosing an Instance Type](#choosing-an-instance-type). |
+| OperatingSystem | Amazon Linux 2023 | Ubuntu 24.04 if your software requires it |
+| AMI | Latest AL2023 x86_64 | Match to your OS + architecture (arm64 for Graviton) |
+| VolumeSize | 100 GB (200 for GPU) | Increase if storing data locally instead of EFS/S3 |
+| EfsFileSystemId | (blank) | Provide an EFS ID to mount shared storage at `/mnt/efs` |
+| S3BucketName | (blank) | Provide a bucket name to grant the instance read/write access |
+| KeyPairName | (blank) | Provide for SSH access (file transfers, VS Code Remote, port forwarding). SSM works without this. |
+| SSHAllowedIps | (blank) | CIDR for SSH access (e.g., `203.0.113.0/24`). Required when key pair is provided. |
+
+**Template-specific differences:**
+
+| Template | Instance family | Default type | Default volume | AMI notes |
+|----------|----------------|-------------|----------------|-----------|
+| ec2-general-purpose | M-series | m8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
+| ec2-compute-optimized | C-series | c8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
+| ec2-memory-optimized | R-series | r8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
+| ec2-accelerated-gpu | G-series | g6.xlarge | 200 GB | Deep Learning Base AMI (NVIDIA drivers + CUDA pre-installed). Ubuntu 22.04 (not 24.04). x86_64 only. |
+
+For ParallelCluster parameters, see the [ParallelCluster Guide](../docs/parallelcluster-guide.md#2-deploy). For SageMaker Studio, S3, EFS, FSx Lustre, VPC, and Budget Alert parameters, see the parameter descriptions in the templates themselves (visible in the CloudFormation console when deploying).
+
 ## Choosing an Instance Type
 
 Not sure which instance size to pick? Each EC2 template constrains you to the right family (M for general purpose, C for compute, etc.) but leaves the size up to you. These resources can help:
