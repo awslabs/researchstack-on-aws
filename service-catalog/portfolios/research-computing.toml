@@ -95,6 +95,7 @@ launch_role_policies = [
     "IAMFullAccess",
     "AWSCloudFormationFullAccess",
     "SecretsManagerReadWrite",
+    "CloudWatchLogsFullAccess",
 ]
 
 [[portfolio.products]]

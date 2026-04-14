@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SageMaker Studio Domain for Research'
+Description: 'SageMaker Studio Domain — managed Jupyter environment with GPU support for ML development and data science'
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -11,7 +11,7 @@ Metadata:
           - CostCenter
           - Owner
       - Label:
-          default: 'Basic Configuration'
+          default: 'Domain Configuration'
         Parameters:
           - DomainName
       - Label:
@@ -20,80 +20,79 @@ Metadata:
           - VpcId
           - SubnetIds
       - Label:
-          default: 'Storage Configuration'
+          default: 'Storage Configuration (optional)'
         Parameters:
           - ExistingS3BucketName
           - ExistingEfsFileSystemId
-          - EfsGroupId
-          - EfsFileSystemPath
-  
-  ResearchLifecycle:
-    Phases:
-      - Phase2B
-      - Phase2C
-    Description: 'ML development and production workloads'
-  
-  QuickSuite:
-    Keywords:
-      - ml
-      - sagemaker
-      - jupyter
-      - gpu
-      - machine-learning
-    UseCases:
-      - ML model development
-      - Data science notebooks
-      - GPU-accelerated computing
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
+      DomainName:
+        default: 'Domain Name'
+      VpcId:
+        default: 'VPC ID'
+      SubnetIds:
+        default: 'Subnet IDs'
+      ExistingS3BucketName:
+        default: 'Existing S3 Bucket Name (optional)'
+      ExistingEfsFileSystemId:
+        default: 'Existing EFS Filesystem ID (optional)'
 
 Parameters:
   ProjectName:
     Type: String
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
     AllowedPattern: '^[a-zA-Z0-9-]+$'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
     MinLength: 3
     MaxLength: 40
-  
+
   CostCenter:
     Type: String
+    Description: 'Department or grant number for cost allocation'
     MinLength: 1
-  
+
   Owner:
     Type: String
     Default: ''
     Description: 'PI or researcher email for cost tracking (optional)'
-  
+
   DomainName:
     Type: String
-    AllowedPattern: ^[a-z0-9\-]{1,40}$
-  
+    Description: 'Name for the SageMaker Studio domain (lowercase, numbers, hyphens only). Used in resource naming — must be unique per account/region.'
+    AllowedPattern: '^[a-z0-9-]{1,40}$'
+    ConstraintDescription: 'Must be lowercase letters, numbers, and hyphens only (max 40 characters)'
+
   VpcId:
     Type: AWS::EC2::VPC::Id
-  
+    Description: 'VPC to deploy SageMaker Studio in (deploy the Research VPC template first if you do not have one)'
+
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-  
+    Description: 'Subnets for SageMaker Studio — select 2-3 in different AZs for high availability. Must be in the same VPC.'
+
   ExistingS3BucketName:
     Type: String
     Default: ''
-  
+    Description: 'Existing S3 bucket name for research data (from the S3 template stack outputs). If blank, a new bucket is created automatically.'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid S3 bucket name or blank'
+
   ExistingEfsFileSystemId:
     Type: String
     Default: ''
-    AllowedPattern: ^(fs-[0-9a-f]{8,})?$
-  
-  EfsGroupId:
-    Type: Number
-    Default: 1100
-    MinValue: 1000
-    MaxValue: 4000000
-  
-  EfsFileSystemPath:
-    Type: String
-    Default: '/'
-    AllowedPattern: ^\/.*$
+    Description: 'Existing EFS filesystem ID to mount in Studio spaces (e.g., fs-0123456789abcdef0). Leave blank if not using shared EFS storage.'
+    AllowedPattern: '^$|^fs-[0-9a-f]{8,}$'
+    ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
 Conditions:
   CreateNewBucket: !Equals [!Ref ExistingS3BucketName, '']
   HasCustomEfs: !Not [!Equals [!Ref ExistingEfsFileSystemId, '']]
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
 
 Resources:
   ResearchDataBucket:
@@ -125,8 +124,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment
@@ -157,11 +159,11 @@ Resources:
                   - s3:DeleteObject
                   - s3:ListBucket
                 Resource:
-                  - !If 
+                  - !If
                     - CreateNewBucket
                     - !Sub '${ResearchDataBucket.Arn}/*'
                     - !Sub 'arn:aws:s3:::${ExistingS3BucketName}/*'
-                  - !If 
+                  - !If
                     - CreateNewBucket
                     - !GetAtt ResearchDataBucket.Arn
                     - !Sub 'arn:aws:s3:::${ExistingS3BucketName}'
@@ -170,8 +172,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment
@@ -192,8 +197,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment
@@ -231,13 +239,13 @@ Resources:
         CustomPosixUserConfig: !If
           - HasCustomEfs
           - Uid: 10000
-            Gid: !Ref EfsGroupId
+            Gid: 1100
           - !Ref AWS::NoValue
         CustomFileSystemConfigs: !If
           - HasCustomEfs
           - - EFSFileSystemConfig:
                 FileSystemId: !Ref ExistingEfsFileSystemId
-                FileSystemPath: !Ref EfsFileSystemPath
+                FileSystemPath: /
           - !Ref AWS::NoValue
       DefaultSpaceSettings:
         ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
@@ -246,13 +254,13 @@ Resources:
         CustomPosixUserConfig: !If
           - HasCustomEfs
           - Uid: 10000
-            Gid: !Ref EfsGroupId
+            Gid: 1100
           - !Ref AWS::NoValue
         CustomFileSystemConfigs: !If
           - HasCustomEfs
           - - EFSFileSystemConfig:
                 FileSystemId: !Ref ExistingEfsFileSystemId
-                FileSystemPath: !Ref EfsFileSystemPath
+                FileSystemPath: /
           - !Ref AWS::NoValue
       VpcId: !Ref VpcId
       SubnetIds: !Ref SubnetIds
@@ -262,8 +270,11 @@ Resources:
           Value: !Ref ProjectName
         - Key: CostCenter
           Value: !Ref CostCenter
-        - Key: Owner
-          Value: !Ref Owner
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment
@@ -271,13 +282,16 @@ Resources:
 
 Outputs:
   DomainId:
+    Description: 'SageMaker Studio domain ID'
     Value: !Ref SageMakerStudioDomain
-  
+
   S3BucketName:
-    Value: !If 
+    Description: 'S3 bucket for research data (auto-created or existing)'
+    Value: !If
       - CreateNewBucket
       - !Ref ResearchDataBucket
       - !Ref ExistingS3BucketName
-  
+
   ManagedEfsId:
+    Description: 'EFS filesystem ID managed by SageMaker Studio (for home directories)'
     Value: !GetAtt SageMakerStudioDomain.HomeEfsFileSystemId

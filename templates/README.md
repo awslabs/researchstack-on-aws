@@ -28,7 +28,7 @@ If your institution already provides a VPC (common with [Landing Zone Accelerato
 All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
 
 ### Machine Learning (`ml/`)
-- **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support
+- **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support. After deployment, assign users or [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) groups to the domain in the [SageMaker console](https://console.aws.amazon.com/sagemaker/) under **Domains** → your domain → **User profiles**.
 
 ### Governance (`governance/`)
 - **budget-alert.yaml** — Monthly budget tracking by CostCenter tag with email alerts at 50%, 80%, and 100% thresholds. Optionally scoped to a specific project. Requires cost allocation tags to be activated first — see the [Cost Optimization Guide](../docs/cost-optimization-guide.md).
