@@ -371,6 +371,54 @@ class TestLaunchRoleDetails:
         assert "servicecatalog:provisioning" in role_str
 
 
+class TestCustomPolicy:
+
+    def test_custom_policy_in_launch_role(self):
+        """Custom policy statements should appear as an inline policy on the launch role."""
+        from core.portfolio_config import CustomPolicyStatement
+
+        app = App()
+        env = Environment(account="123456789012", region="us-east-1")
+
+        assets_stack = AssetsStack(
+            app, "Assets",
+            organization_id="o-abc123def456",
+            env=env,
+        )
+
+        config = _make_portfolio_config(products=[
+            ProductConfig(
+                name="sm-product",
+                template="../templates/storage/s3-research-bucket.yaml",
+                display_name="SM Product",
+                launch_role_policies=["AmazonS3FullAccess"],
+                custom_policy=[
+                    CustomPolicyStatement(
+                        actions=["sagemaker:*"],
+                        resources=["*"],
+                    ),
+                ],
+            ),
+        ])
+
+        stack = PortfolioStack(
+            app, "CustomPolicyTest",
+            portfolio_config=config,
+            asset_bucket=assets_stack.assets_bucket,
+            env=env,
+        )
+        template = Template.from_stack(stack)
+
+        roles = template.find_resources("AWS::IAM::Role")
+        launch_role = [
+            r for r in roles.values()
+            if "servicecatalog.amazonaws.com" in str(r)
+        ]
+        assert len(launch_role) == 1
+        role_str = str(launch_role[0])
+        assert "sagemaker:*" in role_str
+
+
 class TestStackSetFactory:
 
     def test_no_targets_raises_value_error(self):

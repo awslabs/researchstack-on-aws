@@ -166,3 +166,30 @@ class TestPortfolioConfigDefaults:
         loader = PortfolioConfigLoader(tmp_path)
         with pytest.raises(FrameworkConfigError, match="Display name required"):
             loader.load_portfolio_config("no-display")
+
+
+class TestCustomPolicy:
+    """Test custom_policy parsing from TOML."""
+
+    def test_custom_policy_parsed(self, tmp_path, mock_framework_config):
+        (tmp_path / "custom.toml").write_text(
+            '[portfolio]\nname = "custom"\ndisplay_name = "Custom"\n'
+            "share_target_ous = []\n\n"
+            "[[portfolio.products]]\n"
+            'name = "sm-product"\n'
+            'template = "../templates/storage/s3-research-bucket.yaml"\n'
+            'launch_role_policies = ["AmazonS3FullAccess"]\n\n'
+            "  [[portfolio.products.custom_policy]]\n"
+            '  actions = ["sagemaker:*"]\n'
+            '  resources = ["*"]\n'
+        )
+        loader = PortfolioConfigLoader(tmp_path)
+        config = loader.load_portfolio_config("custom")
+        assert len(config.products[0].custom_policy) == 1
+        assert config.products[0].custom_policy[0].actions == ["sagemaker:*"]
+        assert config.products[0].custom_policy[0].resources == ["*"]
+
+    def test_no_custom_policy_defaults_empty(self, valid_portfolio_dir, mock_framework_config):
+        loader = PortfolioConfigLoader(valid_portfolio_dir)
+        config = loader.load_portfolio_config("test-portfolio")
+        assert config.products[0].custom_policy == []
