@@ -279,7 +279,7 @@ Complete reference for every configurable field. Fields marked (required) must b
 | `description` | String | No | `""` | Product description shown in the SC console |
 | `template` | String | Yes | — | Relative path to the CloudFormation template (e.g., `../templates/storage/s3-research-bucket.yaml`) |
 | `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
-| `custom_policy` | List of inline statements | No | `[]` | Custom IAM policy statements added to the launch role as an inline policy. Use when AWS managed policies don't cover a required action (e.g., `AmazonSageMakerFullAccess` excludes `sagemaker:AddTags` on domains). Each entry has `actions` (list of IAM actions) and `resources` (list of ARN patterns). See the sagemaker-studio product in the sample TOML for an example. |
+| `custom_policy` | List of inline statements | No | `[]` | Custom IAM policy statements added to the launch role as an inline policy. Use to fill gaps in AWS managed policies (e.g., `AmazonSageMakerFullAccess` excludes domain-level actions) or to replace broad managed policies with scoped-down permissions for tighter security. Each entry has `actions` (list of IAM actions) and `resources` (list of ARN patterns). See the sagemaker-studio product in the sample TOML for an example. |
 
 ## Troubleshooting
 
