@@ -106,8 +106,8 @@ Parameters:
   ClusterName:
     Type: String
     Description: 'Unique name for this cluster - must not match any existing cluster in this account and region. Shows in the ParallelCluster console, CLI, and CloudWatch.'
-    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-]{0,59}$'
-    ConstraintDescription: 'Must start with a letter, up to 60 characters, alphanumeric and hyphens only'
+    AllowedPattern: '^[a-zA-Z][a-zA-Z0-9-]{0,39}$'
+    ConstraintDescription: 'Must start with a letter, up to 40 characters, alphanumeric and hyphens only'
 
   OperatingSystem:
     Type: String
@@ -243,7 +243,7 @@ Resources:
   BootstrapBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub 'pcluster-bootstrap-${AWS::StackName}-${AWS::AccountId}'
+      BucketName: !Sub 'pcluster-${ClusterName}-${AWS::AccountId}'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -304,7 +304,7 @@ Resources:
     Type: AWS::IAM::ManagedPolicy
     Condition: DCVEnabled
     Properties:
-      ManagedPolicyName: !Sub 'parallelcluster-${AWS::StackName}-dcv-secrets'
+      ManagedPolicyName: !Sub 'pcluster-${ClusterName}-dcv-secrets'
       PolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -318,7 +318,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Condition: DCVEnabled
     Properties:
-      Name: !Sub '${AWS::StackName}-dcv-password'
+      Name: !Sub '${ClusterName}-dcv-password'
       Description: !Sub 'DCV desktop password for ${ClusterName}'
       SecretString: !Ref DCVPassword
       Tags:
