@@ -105,6 +105,8 @@ aws cloudformation delete-stack --stack-name my-ec2
 
 Delete resources in reverse order of creation — delete compute/storage stacks first, then the VPC stack (since other resources depend on the VPC).
 
+Have questions about connecting, costs, data transfer, or security? See the [FAQ](docs/faq.md).
+
 ## Cost Tracking and Access Control
 
 All templates automatically tag resources for cost allocation:

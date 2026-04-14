@@ -8,6 +8,8 @@ Most templates require a VPC (a virtual network in AWS) and a subnet (a segment 
 
 If your institution already provides a VPC (common with [Landing Zone Accelerator](https://aws.amazon.com/solutions/implementations/landing-zone-accelerator-on-aws/) or [Control Tower](https://aws.amazon.com/controltower/)), use those VPC and subnet IDs directly — no need to deploy the VPC template.
 
+Have questions about connecting, costs, data transfer, or security? See the [FAQ](../docs/faq.md).
+
 ## Available Templates
 
 ### Networking (`networking/`)
