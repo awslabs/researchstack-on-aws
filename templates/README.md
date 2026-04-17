@@ -18,6 +18,7 @@ Have questions about connecting, costs, data transfer, or security? See the [FAQ
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
 - **efs-shared-storage.yaml** — Network file system for shared access across multiple instances. EC2 instances must have the EFS security group (from stack outputs) attached to mount the filesystem.
+- **s3-files.yaml** — Mount an S3 bucket as a POSIX filesystem via NFS. ~13x cheaper than EFS for storage, full read/write support. Auto-creates a bucket or uses an existing one.
 - **fsx-lustre.yaml** — High-throughput parallel filesystem for compute-intensive workloads. Supports S3 data repository associations for transparent access to S3 data.
 
 ### Compute (`compute/`)
@@ -25,6 +26,7 @@ Have questions about connecting, costs, data transfer, or security? See the [FAQ
 - **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks (simulations, batch processing, modeling)
 - **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads (genomics, large datasets, in-memory DBs)
 - **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML training and inference
+- **ec2-spot-fleet.yaml** — Cost-optimized Spot instances across multiple instance generations and AZs. Pick a family (general/compute/memory) and size — the fleet automatically selects the best available Spot pool. Up to 70% savings vs On-Demand.
 - **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and optional DCV remote desktop. See the [ParallelCluster Guide](../docs/parallelcluster-guide.md) for deployment, job submission, and post-deploy customization (adding queues, multi-user, login nodes).
 
 All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
@@ -46,7 +48,7 @@ All templates follow these conventions:
 
 ## EC2 Parameter Reference
 
-All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GPU) share the same parameters. Fill in the required ones; the rest have sensible defaults.
+All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GPU) share the same parameters, plus a separate Spot Fleet template for cost-optimized multi-type deployments. Fill in the required ones; the rest have sensible defaults.
 
 **Required:**
 
@@ -64,13 +66,17 @@ All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GP
 | Owner | (blank) | PI or researcher email — helps FinOps trace resources to a person |
 | InstanceName | `{ProjectName}-instance` | When running multiple instances for the same project |
 | InstanceType | Varies by template | Scale up/down based on workload. See [Choosing an Instance Type](#choosing-an-instance-type). |
+| PricingModel | on-demand | Set to `spot` for up to 70% savings. Instance can be interrupted — use for batch jobs, not interactive work. |
 | OperatingSystem | Amazon Linux 2023 | Ubuntu 24.04 if your software requires it |
 | AMI | Latest AL2023 x86_64 | Match to your OS + architecture (arm64 for Graviton) |
+| CustomAmiId | (blank) | Provide a custom AMI ID (e.g., `ami-xxx`) to override the OS/AMI selection. Use for golden AMIs with pre-installed software. |
 | VolumeSize | 100 GB (200 for GPU) | Increase if storing data locally instead of EFS/S3 |
 | EfsFileSystemId | (blank) | Provide an EFS ID to mount shared storage at `/mnt/efs` |
 | S3BucketName | (blank) | Provide a bucket name to grant the instance read/write access |
 | KeyPairName | (blank) | Provide for SSH access (file transfers, VS Code Remote, port forwarding). SSM works without this. |
 | SSHAllowedIps | (blank) | CIDR for SSH access (e.g., `203.0.113.0/24`). Required when key pair is provided. |
+| EnableIdleShutdown | yes | Automatically stops the instance after a period of low CPU usage. Saves costs on forgotten instances. Data on EBS is preserved — just restart when needed. |
+| IdleMinutesBeforeStop | 120 | Minutes of idle CPU (< 5%) before auto-stop. Min 15, max 1440 (24 hours). |
 
 **Template-specific differences:**
 
@@ -79,7 +85,7 @@ All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GP
 | ec2-general-purpose | M-series | m8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
 | ec2-compute-optimized | C-series | c8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
 | ec2-memory-optimized | R-series | r8i.xlarge | 100 GB | Standard AL2023 or Ubuntu 24.04 |
-| ec2-accelerated-gpu | G-series | g6.xlarge | 200 GB | Deep Learning Base AMI (NVIDIA drivers + CUDA pre-installed). Ubuntu 22.04 (not 24.04). x86_64 only. |
+| ec2-accelerated-gpu | G-series | g6.xlarge | 200 GB | Deep Learning Base AMI (NVIDIA drivers + CUDA pre-installed). Ubuntu 22.04 (not 24.04). x86_64 only. Optional `CapacityReservationId` for P-series GPU reservations. |
 
 For ParallelCluster parameters, see the [ParallelCluster Guide](../docs/parallelcluster-guide.md#2-deploy). For SageMaker Studio, S3, EFS, FSx Lustre, VPC, and Budget Alert parameters, see the parameter descriptions in the templates themselves (visible in the CloudFormation console when deploying).
 

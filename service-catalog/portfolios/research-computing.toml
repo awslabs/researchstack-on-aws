@@ -16,7 +16,7 @@ distributor = "University Cloud Team"
 
 # OUs to share this portfolio with (must be listed in framework_config.yaml available_ous)
 share_target_ous = [
-    "ou-xxxx-xxxxxxxx",
+    "ou-ajo0-pu0xwe7g",
 ]
 
 # IAM principal ARN patterns to grant portfolio access (propagated to spoke accounts via principal sharing).
@@ -54,32 +54,46 @@ template = "../templates/storage/efs-shared-storage.yaml"
 launch_role_policies = ["AmazonElasticFileSystemFullAccess", "AmazonEC2FullAccess"]
 
 [[portfolio.products]]
+name = "s3-files"
+display_name = "S3 Files (Filesystem on S3)"
+description = "Mount an S3 bucket as a POSIX filesystem via NFS - ~13x cheaper than EFS, full read/write support"
+template = "../templates/storage/s3-files.yaml"
+launch_role_policies = ["AmazonS3FullAccess", "AmazonEC2FullAccess", "IAMFullAccess", "AWSLambda_FullAccess"]
+
+[[portfolio.products]]
 name = "ec2-general-purpose"
 display_name = "General Purpose Compute (EC2)"
 description = "M-series instances for balanced CPU, memory, and networking workloads"
 template = "../templates/compute/ec2-general-purpose.yaml"
-launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess"]
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
 [[portfolio.products]]
 name = "ec2-compute-optimized"
 display_name = "CPU-Optimized Compute (EC2)"
 description = "C-series instances for compute-intensive tasks like simulations and modeling"
 template = "../templates/compute/ec2-compute-optimized.yaml"
-launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess"]
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
 [[portfolio.products]]
 name = "ec2-memory-optimized"
 display_name = "Memory-Optimized Compute (EC2)"
 description = "R-series instances for memory-intensive workloads like genomics and large datasets"
 template = "../templates/compute/ec2-memory-optimized.yaml"
-launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess"]
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
 [[portfolio.products]]
 name = "ec2-accelerated-gpu"
 display_name = "GPU Compute (EC2)"
 description = "G-series NVIDIA GPU instances with Deep Learning Base AMI for ML training, inference, and GPU-accelerated research"
 template = "../templates/compute/ec2-accelerated-gpu.yaml"
-launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess"]
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess", "AmazonS3FullAccess", "CloudWatchFullAccess"]
+
+[[portfolio.products]]
+name = "ec2-spot-fleet"
+display_name = "Spot Fleet (EC2)"
+description = "Cost-optimized Spot instances across multiple instance types and AZs — up to 70% savings vs On-Demand"
+template = "../templates/compute/ec2-spot-fleet.yaml"
+launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "IAMFullAccess", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
 [[portfolio.products]]
 name = "parallelcluster-slurm"

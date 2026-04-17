@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [Unreleased]
 
 ### Added
+- EC2 idle shutdown — CloudWatch alarm auto-stops instances after configurable idle period (CPU < 5%). Default 2 hours, user-configurable 15 min to 24 hours. Enabled by default on all EC2 templates.
+- EC2 custom AMI support — optional `CustomAmiId` parameter on all EC2 templates overrides the default OS/AMI selection. Use for golden AMIs with pre-installed software.
+- EC2 Spot pricing — `PricingModel` parameter (on-demand/spot) on all EC2 templates. Persistent Spot with stop-on-interruption preserves EBS data.
+- EC2 Spot Fleet template (`ec2-spot-fleet.yaml`) — cost-optimized Spot across multiple instance generations and AZs. Pick a family and size, fleet picks the best pool.
+- EC2 start/stop commands in stack outputs — researchers can restart stopped instances without IT help
+- ParallelCluster `AllowedIps` parameter (renamed from `DCVAllowedIps`) — controls both SSH and DCV access. Required when key pair or DCV is enabled (CloudFormation Rules validation).
+- cdk-nag integrated into pytest suite (4 tests, AwsSolutions checks with documented suppressions)
+- ASH config (`.ash/.ash.yaml`) — disabled redundant scanners, added ignore paths
+
+### Changed
 - Custom inline policy support (`custom_policy`) for Service Catalog launch roles — use when AWS managed policies have gaps (e.g., `AmazonSageMakerFullAccess` excludes domain-level tagging actions)
 
 ### Fixed

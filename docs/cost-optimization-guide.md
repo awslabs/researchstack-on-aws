@@ -28,6 +28,12 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 - Transparent to applications — files move back to Standard automatically on next access
 - **The ResearchStack EFS template enables this by default** (`TransitionToIA: AFTER_30_DAYS`)
 
+**S3 Files (Filesystem on S3)**
+- Mount an S3 bucket as a POSIX filesystem — read/write files directly at ~$0.023/GB/month (~13x cheaper than EFS Standard)
+- Best for single-instance workloads or read-heavy access patterns
+- EC2 templates default to auto-creating S3 Files storage — no extra setup needed
+- Use EFS instead when multiple instances need concurrent write access to the same files
+
 **Delete Unused Resources**
 - Old [EBS snapshots](https://docs.aws.amazon.com/ebs/latest/userguide/ebs-snapshots.html) (charged per GB stored)
 - Unused EBS volumes (charged even when not attached to an instance)
@@ -43,6 +49,8 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 
 **Use Spot Instances** (up to 70% savings)
 - [Spot Instances](https://aws.amazon.com/ec2/spot/) use spare EC2 capacity at a steep discount, but AWS can reclaim them with 2 minutes notice. Use for fault-tolerant workloads only — batch jobs, training runs with checkpointing, or any work that can be interrupted and restarted.
+- EC2 templates: set `PricingModel` to `spot` — instance stops (not terminates) on interruption, preserving your data
+- Spot Fleet template (`ec2-spot-fleet.yaml`): spreads across multiple instance types and AZs for better availability
 - ParallelCluster: set `ComputePricingModel` to `SPOT` — Slurm automatically requeues interrupted jobs
 - Not recommended for: interactive sessions, long-running simulations without checkpointing, or anything where interruption means lost work
 

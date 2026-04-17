@@ -41,7 +41,7 @@ Deploy via the CloudFormation console, CLI, or Service Catalog.
 
 | Parameter | What to enter |
 |-----------|---------------|
-| DCVAllowedIps | Your office/campus CIDR (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow access from anywhere. Also controls SSH access when a key pair is provided. |
+| AllowedIps | CIDR block for SSH (port 22) and DCV (port 8443) access (e.g., `203.0.113.0/24`). Use `0.0.0.0/0` to allow from anywhere. Required when a key pair is provided or DCV is enabled. |
 | DCVPassword | Password for the DCV desktop login. Min 8 characters. You can change it later by connecting to the head node and running `sudo passwd ec2-user` (or `sudo passwd ubuntu` on Ubuntu). |
 
 **Optional configuration — safe to leave as defaults:**
@@ -373,7 +373,7 @@ If the stack deletion fails (common cause: the ParallelCluster cluster is still 
 | Issue | Solution |
 |-------|----------|
 | Cluster creation fails | Check CloudFormation events tab for the error. Common: invalid subnet, insufficient IAM permissions. |
-| DCV not accessible | Verify `DCVAllowedIps` includes your IP. Check security group allows port 8443. |
+| DCV not accessible | Verify `AllowedIps` includes your IP. Check security group allows port 8443. |
 | Compute nodes not launching | Run `sinfo` — nodes should show as `idle~` (powered down). Submit a job to trigger scaling. Check `/var/log/parallelcluster/slurm_resume.log` on head node. |
 | Bootstrap script failed | Check `/var/log/bootstrap.log` on the head node. |
 | Session Manager not connecting | Verify [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) are installed. Run `aws sts get-caller-identity` to confirm credentials are working. |

@@ -1,0 +1,291 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Amazon S3 Files — Mount an S3 bucket as a POSIX filesystem via NFS. ~13x cheaper than EFS for storage, with full read/write support.'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
+      - Label:
+          default: 'S3 Files Configuration'
+        Parameters:
+          - ExistingS3BucketName
+          - VpcId
+          - SubnetIds
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
+      ExistingS3BucketName:
+        default: 'Existing S3 Bucket Name (optional)'
+      VpcId:
+        default: 'VPC ID'
+      SubnetIds:
+        default: 'Subnets (select 2+ for availability)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
+    AllowedPattern: '^[a-zA-Z0-9-]+'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
+    MinLength: 3
+    MaxLength: 40
+
+  CostCenter:
+    Type: String
+    Description: 'Department or grant number for cost allocation'
+    MinLength: 1
+
+  Owner:
+    Type: String
+    Default: ''
+    Description: 'PI or researcher email for cost tracking (optional)'
+
+  ExistingS3BucketName:
+    Type: String
+    Default: ''
+    Description: 'Name of an existing S3 bucket. If blank, a new encrypted bucket is created automatically. The bucket must be in the same region as this stack.'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid S3 bucket name or blank'
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC for mount targets — must be the same VPC as your EC2 instances'
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: 'Subnets for mount targets. Select at least 2 in different AZs for availability. Must be in the same VPC.'
+
+Conditions:
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+  CreateBucket: !Equals [!Ref ExistingS3BucketName, '']
+
+Resources:
+  # Auto-created S3 bucket (when no existing bucket provided)
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Condition: CreateBucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${ProjectName}-s3files-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+        - Key: Environment
+          Value: Research
+
+  # IAM role for S3 Files to access the bucket
+  S3FilesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-s3files-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticfilesystem.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3BucketAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObject*, s3:PutObject, s3:PutObject*, s3:DeleteObject*, s3:AbortMultipartUpload, s3:List*, s3:GetBucketLocation]
+                Resource:
+                  - !Sub
+                    - 'arn:${AWS::Partition}:s3:::${BucketName}'
+                    - BucketName: !If [CreateBucket, !Ref S3Bucket, !Ref ExistingS3BucketName]
+                  - !Sub
+                    - 'arn:${AWS::Partition}:s3:::${BucketName}/*'
+                    - BucketName: !If [CreateBucket, !Ref S3Bucket, !Ref ExistingS3BucketName]
+              - Effect: Allow
+                Action: [events:DeleteRule, events:DisableRule, events:EnableRule, events:PutRule, events:PutTargets, events:RemoveTargets]
+                Resource: 'arn:aws:events:*:*:rule/DO-NOT-DELETE-S3-Files*'
+                Condition:
+                  StringEquals:
+                    events:ManagedBy: elasticfilesystem.amazonaws.com
+              - Effect: Allow
+                Action: [events:DescribeRule, events:ListRuleNamesByTarget, events:ListRules, events:ListTargetsByRule]
+                Resource: 'arn:aws:events:*:*:rule/*'
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  # VPC CIDR lookup for security group rules
+  VpcCidrLookupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeVpc
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: ec2:DescribeVpcs
+                Resource: '*'
+
+  VpcCidrLookupFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !GetAtt VpcCidrLookupRole.Arn
+      Timeout: 30
+      ReservedConcurrentExecutions: 1
+      Code:
+        ZipFile: |
+          import boto3, json
+          from urllib.request import urlopen, Request
+          def send(event, context, status, data):
+            body = json.dumps({'Status': status, 'Reason': 'See CloudWatch', 'PhysicalResourceId': context.log_stream_name, 'StackId': event['StackId'], 'RequestId': event['RequestId'], 'LogicalResourceId': event['LogicalResourceId'], 'Data': data})
+            urlopen(Request(event['ResponseURL'], data=body.encode(), headers={'Content-Type': ''}, method='PUT'))
+          def handler(event, context):
+            if event['RequestType'] == 'Delete':
+              send(event, context, 'SUCCESS', {})
+              return
+            try:
+              vpc_id = event['ResourceProperties']['VpcId']
+              ec2 = boto3.client('ec2')
+              resp = ec2.describe_vpcs(VpcIds=[vpc_id])
+              cidr = resp['Vpcs'][0]['CidrBlock']
+              send(event, context, 'SUCCESS', {'CidrBlock': cidr})
+            except Exception as e:
+              send(event, context, 'FAILED', {'Error': str(e)})
+
+  VpcCidrLookup:
+    Type: Custom::VpcCidrLookup
+    Properties:
+      ServiceToken: !GetAtt VpcCidrLookupFunction.Arn
+      VpcId: !Ref VpcId
+
+  # Security group for NFS access
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'NFS access for ${ProjectName} S3 Files filesystem'
+      GroupName: !Sub '${AWS::StackName}-sg'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: !GetAtt VpcCidrLookup.CidrBlock
+          Description: 'NFS from VPC'
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: 'Allow all outbound'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-s3files-sg'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  # S3 Files filesystem
+  FileSystem:
+    Type: AWS::S3Files::FileSystem
+    Properties:
+      Bucket: !Sub
+        - 'arn:${AWS::Partition}:s3:::${BucketName}'
+        - BucketName: !If [CreateBucket, !Ref S3Bucket, !Ref ExistingS3BucketName]
+      RoleArn: !GetAtt S3FilesRole.Arn
+      AcceptBucketWarning: true
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-s3files'
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - !If
+          - HasOwner
+          - Key: Owner
+            Value: !Ref Owner
+          - !Ref 'AWS::NoValue'
+        - Key: ManagedBy
+          Value: ResearchStack
+        - Key: Environment
+          Value: Research
+
+  # Mount targets — one per subnet
+  MountTarget1:
+    Type: AWS::S3Files::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Select [0, !Ref SubnetIds]
+      SecurityGroups:
+        - !Ref SecurityGroup
+
+  MountTarget2:
+    Type: AWS::S3Files::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Select [1, !Ref SubnetIds]
+      SecurityGroups:
+        - !Ref SecurityGroup
+
+Outputs:
+  FileSystemId:
+    Description: 'S3 Files filesystem ID — use this in EC2 templates to mount the filesystem'
+    Value: !Select [1, !Split ['file-system/', !Ref FileSystem]]
+    Export:
+      Name: !Sub '${AWS::StackName}-FileSystemId'
+
+  SecurityGroupId:
+    Description: 'Security group ID for NFS access'
+    Value: !Ref SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
+
+  S3BucketName:
+    Description: 'S3 bucket backing this filesystem'
+    Value: !If [CreateBucket, !Ref S3Bucket, !Ref ExistingS3BucketName]
+
+  MountCommand:
+    Description: 'Mount command for EC2 instances (requires amazon-efs-utils 3.0+)'
+    Value: !Sub
+      - 'sudo mkdir -p /mnt/s3files && sudo mount -t s3files ${FsId}:/ /mnt/s3files'
+      - FsId: !Select [1, !Split ['file-system/', !Ref FileSystem]]

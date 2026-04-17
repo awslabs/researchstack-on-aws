@@ -35,11 +35,13 @@ Both paths use the same templates and produce the same tagged resources.
 | Networking | research-vpc.yaml | VPC with public/private subnets, NAT gateway, S3 endpoint |
 | Storage | s3-research-bucket.yaml | Encrypted S3 bucket with versioning and intelligent tiering |
 | Storage | efs-shared-storage.yaml | Shared network filesystem (NFS) across multiple instances |
+| Storage | s3-files.yaml | Mount S3 as a POSIX filesystem via NFS (~13x cheaper than EFS) |
 | Storage | fsx-lustre.yaml | High-throughput parallel filesystem for compute-intensive I/O |
 | Compute | ec2-general-purpose.yaml | M-series instances for balanced workloads |
 | Compute | ec2-compute-optimized.yaml | C-series instances for simulations and batch processing |
 | Compute | ec2-memory-optimized.yaml | R-series instances for genomics and large datasets |
 | Compute | ec2-accelerated-gpu.yaml | GPU instances (G-series) for ML training and inference |
+| Compute | ec2-spot-fleet.yaml | Cost-optimized Spot instances across multiple types and AZs (up to 70% savings) |
 | Compute | parallelcluster-hpc.yaml | Slurm HPC cluster with auto-scaling and optional remote desktop |
 | ML | sagemaker-studio.yaml | Managed Jupyter environment with GPU support |
 | Governance | budget-alert.yaml | Monthly budget tracking by cost center with email alerts |

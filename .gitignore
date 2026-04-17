@@ -9,7 +9,7 @@ build/
 venv/
 
 # CDK
-cdk.out/
+**/cdk.out/
 cdk.context.json
 
 # macOS

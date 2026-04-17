@@ -1,0 +1,582 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'EC2 Spot Fleet Instance - Cost-optimized compute using multiple instance types for best availability. Up to 70% savings vs On-Demand.'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'Research Project Information'
+        Parameters:
+          - ProjectName
+          - CostCenter
+          - Owner
+      - Label:
+          default: 'Instance Configuration'
+        Parameters:
+          - InstanceFamily
+          - InstanceSize
+          - OperatingSystem
+          - AMI
+          - VolumeSize
+      - Label:
+          default: 'Network Configuration'
+        Parameters:
+          - VpcId
+          - SubnetIds
+      - Label:
+          default: 'Shared Storage'
+        Parameters:
+          - AutoCreateStorage
+      - Label:
+          default: 'Advanced Configuration (optional)'
+        Parameters:
+          - CustomAmiId
+          - KeyPairName
+          - SSHAllowedIps
+          - EfsFileSystemId
+          - S3FilesFileSystemId
+          - S3BucketName
+    ParameterLabels:
+      ProjectName:
+        default: 'Project Name'
+      CostCenter:
+        default: 'Cost Center'
+      Owner:
+        default: 'Owner Email (optional)'
+      InstanceFamily:
+        default: 'Instance Family'
+      InstanceSize:
+        default: 'Instance Size'
+      OperatingSystem:
+        default: 'Operating System'
+      AMI:
+        default: 'AMI'
+      VolumeSize:
+        default: 'Root Volume Size (GB)'
+      VpcId:
+        default: 'VPC ID'
+      SubnetIds:
+        default: 'Subnets (multiple AZs recommended)'
+      AutoCreateStorage:
+        default: 'Shared Storage'
+      CustomAmiId:
+        default: 'Custom AMI ID (overrides OS/AMI)'
+      KeyPairName:
+        default: 'SSH Key Pair'
+      SSHAllowedIps:
+        default: 'SSH Allowed IP Range'
+      EfsFileSystemId:
+        default: 'Existing EFS Filesystem ID'
+      S3FilesFileSystemId:
+        default: 'Existing S3 Files Mount Target IP'
+      S3BucketName:
+        default: 'Existing S3 Bucket Name (CLI access only)'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Research project name (used for cost tracking tags and resource naming)'
+    AllowedPattern: '^[a-zA-Z0-9-]+'
+    ConstraintDescription: 'Must contain only alphanumeric characters and hyphens'
+    MinLength: 3
+    MaxLength: 40
+
+  CostCenter:
+    Type: String
+    Description: 'Department or grant number for cost allocation'
+    MinLength: 1
+
+  Owner:
+    Type: String
+    Default: ''
+    Description: 'PI or researcher email for cost tracking (optional)'
+
+  InstanceFamily:
+    Type: String
+    Default: general-purpose
+    AllowedValues:
+      - general-purpose
+      - compute-optimized
+      - memory-optimized
+    Description: 'General Purpose (M-series) for balanced workloads. Compute Optimized (C-series) for CPU-intensive. Memory Optimized (R-series) for large datasets.'
+
+  InstanceSize:
+    Type: String
+    Default: xlarge
+    AllowedValues:
+      - large
+      - xlarge
+      - 2xlarge
+      - 4xlarge
+      - 8xlarge
+    Description: 'Instance size — applies across all generations in the selected family. large=2 vCPU, xlarge=4, 2xlarge=8, 4xlarge=16, 8xlarge=32.'
+
+  OperatingSystem:
+    Type: String
+    Default: amazon-linux-2023
+    AllowedValues:
+      - amazon-linux-2023
+      - ubuntu-2404
+    Description: 'Amazon Linux 2023 recommended.'
+
+  AMI:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+    AllowedValues:
+      - /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+      - /aws/service/canonical/ubuntu/server/noble/stable/current/amd64/hvm/ebs-gp3/ami-id
+    Description: 'Pick the AMI matching your OS. x86_64 only (Spot Fleet spans multiple instance generations).'
+
+  CustomAmiId:
+    Type: String
+    Default: ''
+    Description: 'Custom AMI ID to override the OS/AMI selection (e.g., ami-0123456789abcdef0). Leave blank for standard AMI.'
+    AllowedPattern: '^$|^ami-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid AMI ID (ami-xxxx) or blank'
+
+  VolumeSize:
+    Type: Number
+    Default: 100
+    MinValue: 30
+    MaxValue: 16384
+    Description: 'Root EBS volume size in GB (gp3, encrypted).'
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: 'VPC to launch the instance in'
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: 'Select subnets in multiple AZs for best Spot availability. Must be in the same VPC.'
+
+  AutoCreateStorage:
+    Type: String
+    Default: none
+    AllowedValues: [s3-files, none]
+    Description: 'Automatically create shared storage mounted at /mnt/s3files. s3-files creates an S3 bucket with filesystem access - ~$0.023/GB/month, no cost until you store data. Note: mount takes 5-10 minutes after first boot for DNS propagation.'
+
+  EfsFileSystemId:
+    Type: String
+    Default: ''
+    Description: 'EFS filesystem ID to mount at /mnt/efs (optional).'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
+
+  S3BucketName:
+    Type: String
+    Default: ''
+    Description: 'S3 bucket name to grant read/write access (optional).'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
+    ConstraintDescription: 'Must be a valid S3 bucket name or blank'
+
+  S3FilesFileSystemId:
+    Type: String
+    Default: ''
+    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if using AutoCreateStorage or if not needed.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
+
+  KeyPairName:
+    Type: String
+    Default: ''
+    Description: 'EC2 key pair for SSH access (optional). If blank, use Session Manager.'
+
+  SSHAllowedIps:
+    Type: String
+    Default: ''
+    Description: 'CIDR block for SSH access. Required when a key pair is provided.'
+    AllowedPattern: '^$|^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+    ConstraintDescription: 'Must be a valid CIDR block or blank'
+
+Mappings:
+  InstanceTypes:
+    general-purpose:
+      large: m5.large,m6i.large,m7i.large,m8i.large
+      xlarge: m5.xlarge,m6i.xlarge,m7i.xlarge,m8i.xlarge
+      2xlarge: m5.2xlarge,m6i.2xlarge,m7i.2xlarge,m8i.2xlarge
+      4xlarge: m5.4xlarge,m6i.4xlarge,m7i.4xlarge,m8i.4xlarge
+      8xlarge: m5.8xlarge,m6i.8xlarge,m7i.8xlarge,m8i.8xlarge
+    compute-optimized:
+      large: c5.large,c6i.large,c7i.large,c8i.large
+      xlarge: c5.xlarge,c6i.xlarge,c7i.xlarge,c8i.xlarge
+      2xlarge: c5.2xlarge,c6i.2xlarge,c7i.2xlarge,c8i.2xlarge
+      4xlarge: c5.4xlarge,c6i.4xlarge,c7i.4xlarge,c8i.4xlarge
+      8xlarge: c5.8xlarge,c6i.8xlarge,c7i.8xlarge,c8i.8xlarge
+    memory-optimized:
+      large: r5.large,r6i.large,r7i.large,r8i.large
+      xlarge: r5.xlarge,r6i.xlarge,r7i.xlarge,r8i.xlarge
+      2xlarge: r5.2xlarge,r6i.2xlarge,r7i.2xlarge,r8i.2xlarge
+      4xlarge: r5.4xlarge,r6i.4xlarge,r7i.4xlarge,r8i.4xlarge
+      8xlarge: r5.8xlarge,r6i.8xlarge,r7i.8xlarge,r8i.8xlarge
+
+Conditions:
+  HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasCustomAmi: !Not [!Equals [!Ref CustomAmiId, '']]
+  HasEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
+  HasS3: !Not [!Equals [!Ref S3BucketName, '']]
+  HasS3Files: !Not [!Equals [!Ref S3FilesFileSystemId, '']]
+  AutoCreateS3Files: !Equals [!Ref AutoCreateStorage, 's3-files']
+  HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
+  IsUbuntu: !Equals [!Ref OperatingSystem, 'ubuntu-2404']
+  IsAL2023: !Not [!Condition IsUbuntu]
+  NeedsAL2023UserData: !And [!Condition IsAL2023, !Or [!Condition HasEfs, !Condition HasS3Files, !Condition AutoCreateS3Files]]
+
+Resources:
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Security group for ${ProjectName} Spot Fleet instance'
+      GroupName: !Sub '${AWS::StackName}-sg'
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: 'Allow all outbound traffic'
+      Tags:
+        - Key: Name
+          Value: !Sub '${ProjectName}-sg'
+
+  SSHIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Condition: HasKeyPair
+    Properties:
+      GroupId: !Ref SecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref SSHAllowedIps
+      Description: 'SSH access'
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+        - Key: Environment
+          Value: Research
+
+  S3AccessPolicy:
+    Type: AWS::IAM::Policy
+    Condition: HasS3
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-s3-access'
+      Roles:
+        - !Ref InstanceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:ListBucket
+              - s3:DeleteObject
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3BucketName}/*'
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  S3FilesAccessPolicy:
+    Type: AWS::IAM::Policy
+    Condition: AutoCreateS3Files
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-s3files-access'
+      Roles:
+        - !Ref InstanceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3files:ClientMount
+              - s3files:ClientWrite
+              - s3files:ClientRootAccess
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}/*'
+
+  AutoS3Bucket:
+    Type: AWS::S3::Bucket
+    Condition: AutoCreateS3Files
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${ProjectName}-data-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  AutoS3FilesRole:
+    Type: AWS::IAM::Role
+    Condition: AutoCreateS3Files
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticfilesystem.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObject*, s3:PutObject, s3:PutObject*, s3:DeleteObject*, s3:AbortMultipartUpload, s3:List*]
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}/*'
+              - Effect: Allow
+                Action: [events:DeleteRule, events:DisableRule, events:EnableRule, events:PutRule, events:PutTargets, events:RemoveTargets]
+                Resource: 'arn:aws:events:*:*:rule/DO-NOT-DELETE-S3-Files*'
+                Condition:
+                  StringEquals:
+                    events:ManagedBy: elasticfilesystem.amazonaws.com
+              - Effect: Allow
+                Action: [events:DescribeRule, events:ListRuleNamesByTarget, events:ListRules, events:ListTargetsByRule]
+                Resource: 'arn:aws:events:*:*:rule/*'
+
+  AutoS3FilesFileSystem:
+    Type: AWS::S3Files::FileSystem
+    Condition: AutoCreateS3Files
+    Properties:
+      Bucket: !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+      RoleArn: !GetAtt AutoS3FilesRole.Arn
+      AcceptBucketWarning: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  AutoS3FilesSG:
+    Type: AWS::EC2::SecurityGroup
+    Condition: AutoCreateS3Files
+    Properties:
+      GroupDescription: !Sub 'NFS for ${ProjectName} S3 Files'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SecurityGroup
+          Description: 'NFS from instance security group'
+
+  AutoS3FilesMountTarget:
+    Type: AWS::S3Files::MountTarget
+    Condition: AutoCreateS3Files
+    Properties:
+      FileSystemId: !Ref AutoS3FilesFileSystem
+      SubnetId: !Select [0, !Ref SubnetIds]
+      SecurityGroups:
+        - !Ref AutoS3FilesSG
+
+  SpotFleetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: spotfleet.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetTaggingRole
+
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId: !If [HasCustomAmi, !Ref CustomAmiId, !Ref AMI]
+        KeyName: !If [HasKeyPair, !Ref KeyPairName, !Ref 'AWS::NoValue']
+        IamInstanceProfile:
+          Arn: !GetAtt InstanceProfile.Arn
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        BlockDeviceMappings:
+          - DeviceName: !If [IsUbuntu, /dev/sda1, /dev/xvda]
+            Ebs:
+              VolumeSize: !Ref VolumeSize
+              VolumeType: gp3
+              Encrypted: true
+              DeleteOnTermination: true
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub '${ProjectName}-spot'
+              - Key: Project
+                Value: !Ref ProjectName
+              - Key: CostCenter
+                Value: !Ref CostCenter
+              - !If
+                - HasOwner
+                - Key: Owner
+                  Value: !Ref Owner
+                - !Ref 'AWS::NoValue'
+              - Key: ManagedBy
+                Value: ResearchStack
+              - Key: Environment
+                Value: Research
+        UserData: !If
+          - IsUbuntu
+          - Fn::Base64: !Sub
+              - |
+                #!/bin/bash -xe
+                export DEBIAN_FRONTEND=noninteractive
+                for i in $(seq 1 30); do
+                  apt-get update -y && break
+                  echo "apt-get update failed (attempt $i/30), retrying in 10s..."
+                  sleep 10
+                done
+                APT_OPTS="-o DPkg::Lock::Timeout=300"
+                apt-get $APT_OPTS -y install unzip curl
+                ARCH=$(uname -m)
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-$ARCH.zip" -o /tmp/awscliv2.zip
+                unzip -q /tmp/awscliv2.zip -d /tmp
+                /tmp/aws/install
+                rm -rf /tmp/aws /tmp/awscliv2.zip
+
+                EFS_ID="${EfsFileSystemId}"
+                S3FILES_ID="${ResolvedS3FilesId}"
+                if [ -n "$EFS_ID" ] || [ -n "$S3FILES_ID" ]; then
+                  apt-get $APT_OPTS -y install git binutils rustc cargo pkg-config libssl-dev cmake golang-go
+                  cd /tmp
+                  git clone https://github.com/aws/efs-utils.git
+                  cd efs-utils
+                  ./build-deb.sh
+                  apt-get $APT_OPTS -y install ./build/amazon-efs-utils*deb
+                fi
+
+                if [ -n "$EFS_ID" ]; then
+                  mkdir -p /mnt/efs
+                  mount -t efs -o tls $EFS_ID:/ /mnt/efs
+                  echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+                fi
+
+                if [ -n "$S3FILES_ID" ]; then
+                  mkdir -p /mnt/s3files
+                  for i in $(seq 1 20); do mount -t s3files $S3FILES_ID:/ /mnt/s3files && break; echo "S3 Files mount retry $i/20, waiting 15s..."; sleep 15; done
+                  echo "$S3FILES_ID:/ /mnt/s3files s3files _netdev 0 0" >> /etc/fstab
+                fi
+              - ResolvedS3FilesId: !If
+                  - AutoCreateS3Files
+                  - !Select [1, !Split ['file-system/', !Ref AutoS3FilesFileSystem]]
+                  - !Ref S3FilesFileSystemId
+          - !If
+            - NeedsAL2023UserData
+            - Fn::Base64: !Sub
+                - |
+                  #!/bin/bash -xe
+                  yum install -y amazon-efs-utils
+
+                  EFS_ID="${EfsFileSystemId}"
+                  if [ -n "$EFS_ID" ]; then
+                    mkdir -p /mnt/efs
+                    mount -t efs -o tls $EFS_ID:/ /mnt/efs
+                    echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+                  fi
+
+                  S3FILES_ID="${ResolvedS3FilesId}"
+                  if [ -n "$S3FILES_ID" ]; then
+                    mkdir -p /mnt/s3files
+                    for i in $(seq 1 20); do mount -t s3files $S3FILES_ID:/ /mnt/s3files && break; echo "S3 Files mount retry $i/20, waiting 15s..."; sleep 15; done
+                    echo "$S3FILES_ID:/ /mnt/s3files s3files _netdev 0 0" >> /etc/fstab
+                  fi
+                - ResolvedS3FilesId: !If
+                  - AutoCreateS3Files
+                  - !Select [1, !Split ['file-system/', !Ref AutoS3FilesFileSystem]]
+                  - !Ref S3FilesFileSystemId
+            - !Ref 'AWS::NoValue'
+
+  SpotFleet:
+    Type: AWS::EC2::SpotFleet
+    Properties:
+      SpotFleetRequestConfigData:
+        IamFleetRole: !GetAtt SpotFleetRole.Arn
+        TargetCapacity: 1
+        AllocationStrategy: capacityOptimized
+        InstanceInterruptionBehavior: stop
+        TerminateInstancesWithExpiration: false
+        Type: maintain
+        LaunchTemplateConfigs:
+          - LaunchTemplateSpecification:
+              LaunchTemplateId: !Ref LaunchTemplate
+              Version: !GetAtt LaunchTemplate.LatestVersionNumber
+            Overrides:
+              - InstanceType: !Select [0, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [0, !Ref SubnetIds]
+              - InstanceType: !Select [1, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [0, !Ref SubnetIds]
+              - InstanceType: !Select [2, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [0, !Ref SubnetIds]
+              - InstanceType: !Select [3, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [0, !Ref SubnetIds]
+              - InstanceType: !Select [0, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [1, !Ref SubnetIds]
+              - InstanceType: !Select [1, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [1, !Ref SubnetIds]
+              - InstanceType: !Select [2, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [1, !Ref SubnetIds]
+              - InstanceType: !Select [3, !Split [',', !FindInMap [InstanceTypes, !Ref InstanceFamily, !Ref InstanceSize]]]
+                SubnetId: !Select [1, !Ref SubnetIds]
+
+Outputs:
+  SpotFleetId:
+    Description: 'Spot Fleet request ID'
+    Value: !Ref SpotFleet
+
+  SecurityGroupId:
+    Description: 'Security group ID'
+    Value: !Ref SecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityGroupId'
+
+  SSMConnectNote:
+    Description: 'Connect via SSM once the instance launches'
+    Value: 'Run: aws ec2 describe-spot-fleet-instances --spot-fleet-request-id <fleet-id> to find the instance ID, then: aws ssm start-session --target <instance-id>'

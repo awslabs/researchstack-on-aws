@@ -42,7 +42,7 @@ Metadata:
         Parameters:
           - KeyPairName
           - EnableDCV
-          - DCVAllowedIps
+          - AllowedIps
           - DCVPassword
     ParameterLabels:
       ProjectName:
@@ -79,8 +79,8 @@ Metadata:
         default: 'SSH Key Pair (optional)'
       EnableDCV:
         default: 'Enable DCV Remote Desktop'
-      DCVAllowedIps:
-        default: 'Allowed IP Range (DCV + SSH)'
+      AllowedIps:
+        default: 'Allowed IP Range (SSH + DCV)'
       DCVPassword:
         default: 'DCV Desktop Password'
 
@@ -189,10 +189,10 @@ Parameters:
     AllowedValues: ['yes', 'no']
     Default: 'yes'
 
-  DCVAllowedIps:
+  AllowedIps:
     Type: String
     Default: ''
-    Description: 'CIDR block allowed to connect to this cluster via DCV (port 8443) and SSH (port 22). For example, 203.0.113.0/24 for your office or 0.0.0.0/0 for anywhere. Required when DCV is enabled or a key pair is provided.'
+    Description: 'CIDR block for SSH (port 22) and DCV (port 8443) access. For example, 203.0.113.0/24 for your office or 0.0.0.0/0 for anywhere. Required when a key pair is provided or DCV is enabled.'
     AllowedPattern: '^$|^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
     ConstraintDescription: 'Must be a valid CIDR block (e.g., 10.0.0.0/8, 0.0.0.0/0) or blank'
 
@@ -204,6 +204,18 @@ Parameters:
     AllowedPattern: '^$|^.{8,}$'
     ConstraintDescription: 'Must be at least 8 characters or blank (when DCV is disabled)'
 
+Rules:
+  RequireAllowedIpsForSSH:
+    RuleCondition: !Not [!Equals [!Ref KeyPairName, '']]
+    Assertions:
+      - Assert: !Not [!Equals [!Ref AllowedIps, '']]
+        AssertDescription: 'AllowedIps is required when a key pair is provided (controls SSH access on port 22). Use 0.0.0.0/0 to allow from anywhere.'
+  RequireAllowedIpsForDCV:
+    RuleCondition: !Equals [!Ref EnableDCV, 'yes']
+    Assertions:
+      - Assert: !Not [!Equals [!Ref AllowedIps, '']]
+        AssertDescription: 'AllowedIps is required when DCV is enabled (controls DCV access on port 8443). Use 0.0.0.0/0 to allow from anywhere.'
+
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]
   HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
@@ -212,6 +224,7 @@ Conditions:
   HasFsxLustre: !Not [!Equals [!Ref FsxLustreFileSystemId, '']]
   HasS3Bucket: !Not [!Equals [!Ref S3BucketName, '']]
   DCVEnabled: !Equals [!Ref EnableDCV, 'yes']
+  HasAllowedIps: !Not [!Equals [!Ref AllowedIps, '']]
   IsUbuntu: !Or
     - !Equals [!Ref OperatingSystem, 'ubuntu2204']
     - !Equals [!Ref OperatingSystem, 'ubuntu2404']
@@ -639,7 +652,10 @@ Resources:
           Ssh: !If
             - HasKeyPair
             - KeyName: !Ref KeyPairName
-              AllowedIps: !Ref DCVAllowedIps
+              AllowedIps: !If
+                - HasAllowedIps
+                - !Ref AllowedIps
+                - !Ref 'AWS::NoValue'
             - !Ref 'AWS::NoValue'
           LocalStorage:
             RootVolume:
@@ -663,7 +679,10 @@ Resources:
           Dcv: !If
             - DCVEnabled
             - Enabled: true
-              AllowedIps: !Ref DCVAllowedIps
+              AllowedIps: !If
+                - HasAllowedIps
+                - !Ref AllowedIps
+                - 0.0.0.0/0
             - !Ref 'AWS::NoValue'
           CustomActions:
             OnNodeConfigured:

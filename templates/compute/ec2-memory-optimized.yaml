@@ -15,6 +15,7 @@ Metadata:
         Parameters:
           - InstanceName
           - InstanceType
+          - PricingModel
           - OperatingSystem
           - AMI
           - VolumeSize
@@ -24,15 +25,23 @@ Metadata:
           - VpcId
           - SubnetId
       - Label:
-          default: 'Storage Integration (optional)'
+          default: 'Shared Storage'
         Parameters:
-          - EfsFileSystemId
-          - S3BucketName
+          - AutoCreateStorage
       - Label:
-          default: 'SSH Access (optional)'
+          default: 'Cost Management'
         Parameters:
+          - EnableIdleShutdown
+          - IdleMinutesBeforeStop
+      - Label:
+          default: 'Advanced Configuration (optional)'
+        Parameters:
+          - CustomAmiId
           - KeyPairName
           - SSHAllowedIps
+          - EfsFileSystemId
+          - S3FilesFileSystemId
+          - S3BucketName
     ParameterLabels:
       ProjectName:
         default: 'Project Name'
@@ -44,6 +53,8 @@ Metadata:
         default: 'Instance Name'
       InstanceType:
         default: 'Instance Type'
+      PricingModel:
+        default: 'Pricing Model'
       OperatingSystem:
         default: 'Operating System'
       AMI:
@@ -54,14 +65,24 @@ Metadata:
         default: 'VPC ID'
       SubnetId:
         default: 'Subnet ID'
-      EfsFileSystemId:
-        default: 'EFS Filesystem ID (optional)'
-      S3BucketName:
-        default: 'S3 Bucket Name (optional)'
+      AutoCreateStorage:
+        default: 'Shared Storage'
+      EnableIdleShutdown:
+        default: 'Auto-Stop Idle Instances'
+      IdleMinutesBeforeStop:
+        default: 'Idle Minutes Before Auto-Stop'
+      CustomAmiId:
+        default: 'Custom AMI ID (overrides OS/AMI)'
       KeyPairName:
-        default: 'SSH Key Pair (optional)'
+        default: 'SSH Key Pair'
       SSHAllowedIps:
         default: 'SSH Allowed IP Range'
+      EfsFileSystemId:
+        default: 'Existing EFS Filesystem ID'
+      S3FilesFileSystemId:
+        default: 'Existing S3 Files Mount Target IP'
+      S3BucketName:
+        default: 'Existing S3 Bucket Name (CLI access only)'
 
 Parameters:
   ProjectName:
@@ -94,6 +115,12 @@ Parameters:
     AllowedPattern: '^r[0-9]+[a-z]*\.(medium|large|[0-9]*xlarge)$'
     ConstraintDescription: 'Must be an R-series instance type (e.g., r8i.xlarge, r8g.2xlarge, r8a.4xlarge)'
 
+  PricingModel:
+    Type: String
+    Default: on-demand
+    AllowedValues: [on-demand, spot]
+    Description: 'On-Demand (default) guarantees availability. Spot saves up to 70% — you pay the current Spot price (capped at On-Demand price, never more). Instance can be interrupted with 2 minutes notice and will stop (not terminate) preserving your data. Use Spot for fault-tolerant batch jobs, not interactive work. Spot capacity varies by instance type and AZ — GPU instances may fail to launch. Retry in a different AZ or switch to On-Demand if needed.'
+
   OperatingSystem:
     Type: String
     Default: amazon-linux-2023
@@ -112,6 +139,13 @@ Parameters:
       - /aws/service/canonical/ubuntu/server/noble/stable/current/arm64/hvm/ebs-gp3/ami-id
     Description: 'Always resolves to the latest AMI. Pick the row matching your OS + architecture (arm64 for Graviton like r8g, x86/amd64 for Intel/AMD like r8i/r8a). See templates README for details.'
 
+  CustomAmiId:
+    Type: String
+    Default: ''
+    Description: 'Custom AMI ID to use instead of the OS/AMI selection above (e.g., ami-0123456789abcdef0). Use this for golden AMIs with pre-installed software. Leave blank to use the standard AMI.'
+    AllowedPattern: '^$|^ami-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid AMI ID (ami-xxxx) or blank'
+
   VolumeSize:
     Type: Number
     Default: 100
@@ -127,6 +161,12 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: 'Subnet to launch the instance in - must be in the same VPC/subnets as your EFS mount targets if using shared storage. Use a private subnet for production workloads, public for quick experiments.'
 
+  AutoCreateStorage:
+    Type: String
+    Default: none
+    AllowedValues: [s3-files, none]
+    Description: 'Automatically create shared storage mounted at /mnt/s3files. s3-files creates an S3 bucket with filesystem access - ~$0.023/GB/month, no cost until you store data. Note: mount takes 5-10 minutes after first boot for DNS propagation. For immediate access, deploy the S3 Files template separately first and provide the filesystem ID below.'
+
   EfsFileSystemId:
     Type: String
     Default: ''
@@ -141,6 +181,13 @@ Parameters:
     AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
     ConstraintDescription: 'Must be a valid S3 bucket name (3-63 chars, lowercase, numbers, hyphens, periods) or blank'
 
+  S3FilesFileSystemId:
+    Type: String
+    Default: ''
+    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if using AutoCreateStorage or if not needed.'
+    AllowedPattern: '^$|^fs-[a-f0-9]+$'
+    ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
+
   KeyPairName:
     Type: String
     Default: ''
@@ -153,15 +200,33 @@ Parameters:
     AllowedPattern: '^$|^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
     ConstraintDescription: 'Must be a valid CIDR block (e.g., 10.0.0.0/8, 0.0.0.0/0) or blank'
 
+  EnableIdleShutdown:
+    Type: String
+    Default: 'yes'
+    AllowedValues: ['yes', 'no']
+    Description: 'Automatically stop this instance when idle (low CPU and network) to save costs. The instance and its data are preserved — just start it again when needed.'
+
+  IdleMinutesBeforeStop:
+    Type: Number
+    Default: 120
+    MinValue: 15
+    MaxValue: 1440
+    Description: 'Minutes of inactivity (CPU < 5%) before the instance is automatically stopped. Default 120 (2 hours). Minimum 15 minutes, maximum 1440 (24 hours).'
+
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasCustomAmi: !Not [!Equals [!Ref CustomAmiId, '']]
+  IsSpot: !Equals [!Ref PricingModel, 'spot']
   HasInstanceName: !Not [!Equals [!Ref InstanceName, '']]
   HasEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
   HasS3: !Not [!Equals [!Ref S3BucketName, '']]
+  HasS3Files: !Not [!Equals [!Ref S3FilesFileSystemId, '']]
+  AutoCreateS3Files: !Equals [!Ref AutoCreateStorage, 's3-files']
   HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
   IsUbuntu: !Equals [!Ref OperatingSystem, 'ubuntu-2404']
   IsAL2023: !Not [!Condition IsUbuntu]
-  MountEfsAL2023: !And [!Condition HasEfs, !Condition IsAL2023]
+  NeedsAL2023UserData: !And [!Condition IsAL2023, !Or [!Condition HasEfs, !Condition HasS3Files, !Condition AutoCreateS3Files]]
+  IdleShutdownEnabled: !Equals [!Ref EnableIdleShutdown, 'yes']
 
 Resources:
   SecurityGroup:
@@ -242,11 +307,147 @@ Resources:
       Roles:
         - !Ref InstanceRole
 
+  S3FilesAccessPolicy:
+    Type: AWS::IAM::Policy
+    Condition: AutoCreateS3Files
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-s3files-access'
+      Roles:
+        - !Ref InstanceRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3files:ClientMount
+              - s3files:ClientWrite
+              - s3files:ClientRootAccess
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:ListBucket
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}/*'
+
+  AutoS3Bucket:
+    Type: AWS::S3::Bucket
+    Condition: AutoCreateS3Files
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${ProjectName}-data-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  AutoS3FilesRole:
+    Type: AWS::IAM::Role
+    Condition: AutoCreateS3Files
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: elasticfilesystem.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: S3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [s3:GetObject, s3:GetObject*, s3:PutObject, s3:PutObject*, s3:DeleteObject*, s3:AbortMultipartUpload, s3:List*]
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}/*'
+              - Effect: Allow
+                Action: [events:DeleteRule, events:DisableRule, events:EnableRule, events:PutRule, events:PutTargets, events:RemoveTargets]
+                Resource: 'arn:aws:events:*:*:rule/DO-NOT-DELETE-S3-Files*'
+                Condition:
+                  StringEquals:
+                    events:ManagedBy: elasticfilesystem.amazonaws.com
+              - Effect: Allow
+                Action: [events:DescribeRule, events:ListRuleNamesByTarget, events:ListRules, events:ListTargetsByRule]
+                Resource: 'arn:aws:events:*:*:rule/*'
+
+  AutoS3FilesFileSystem:
+    Type: AWS::S3Files::FileSystem
+    Condition: AutoCreateS3Files
+    Properties:
+      Bucket: !Sub 'arn:${AWS::Partition}:s3:::${AutoS3Bucket}'
+      RoleArn: !GetAtt AutoS3FilesRole.Arn
+      AcceptBucketWarning: true
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: CostCenter
+          Value: !Ref CostCenter
+        - Key: ManagedBy
+          Value: ResearchStack
+
+  AutoS3FilesSG:
+    Type: AWS::EC2::SecurityGroup
+    Condition: AutoCreateS3Files
+    Properties:
+      GroupDescription: !Sub 'NFS for ${ProjectName} S3 Files'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          SourceSecurityGroupId: !Ref SecurityGroup
+          Description: 'NFS from instance security group'
+
+  AutoS3FilesMountTarget:
+    Type: AWS::S3Files::MountTarget
+    Condition: AutoCreateS3Files
+    Properties:
+      FileSystemId: !Ref AutoS3FilesFileSystem
+      SubnetId: !Ref SubnetId
+      SecurityGroups:
+        - !Ref AutoS3FilesSG
+
+  SpotLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Condition: IsSpot
+    Properties:
+      LaunchTemplateData:
+        InstanceMarketOptions:
+          MarketType: spot
+          SpotOptions:
+            SpotInstanceType: persistent
+            InstanceInterruptionBehavior: stop
+
   Instance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
-      ImageId: !Ref AMI
+      ImageId: !If [HasCustomAmi, !Ref CustomAmiId, !Ref AMI]
+      LaunchTemplate: !If
+        - IsSpot
+        - LaunchTemplateId: !Ref SpotLaunchTemplate
+          Version: !GetAtt SpotLaunchTemplate.LatestVersionNumber
+        - !Ref 'AWS::NoValue'
       KeyName: !If [HasKeyPair, !Ref KeyPairName, !Ref 'AWS::NoValue']
       IamInstanceProfile: !Ref InstanceProfile
       SubnetId: !Ref SubnetId
@@ -261,50 +462,75 @@ Resources:
             DeleteOnTermination: true
       UserData: !If
         - IsUbuntu
-        - Fn::Base64: !Sub |
-            #!/bin/bash -xe
-            export DEBIAN_FRONTEND=noninteractive
-
-            # Retry apt-get update in case unattended-upgrades holds the lists lock at boot.
-            # DPkg::Lock::Timeout covers the dpkg lock for install commands.
-            for i in $(seq 1 30); do
-              apt-get update -y && break
-              echo "apt-get update failed (attempt $i/30), retrying in 10s..."
-              sleep 10
-            done
-            APT_OPTS="-o DPkg::Lock::Timeout=300"
-
-            # Install AWS CLI v2 (not pre-installed on Ubuntu)
-            apt-get $APT_OPTS -y install unzip curl
-            ARCH=$(uname -m)
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-$ARCH.zip" -o /tmp/awscliv2.zip
-            unzip -q /tmp/awscliv2.zip -d /tmp
-            /tmp/aws/install
-            rm -rf /tmp/aws /tmp/awscliv2.zip
-
-            # Mount EFS if requested (requires building amazon-efs-utils from source)
-            EFS_ID="${EfsFileSystemId}"
-            if [ -n "$EFS_ID" ]; then
-              # Build deps: rustc/cargo for efs-proxy, Go/cmake for aws-lc-fips-sys
-              apt-get $APT_OPTS -y install git binutils rustc cargo pkg-config libssl-dev cmake golang-go
-              cd /tmp
-              git clone https://github.com/aws/efs-utils.git
-              cd efs-utils
-              ./build-deb.sh
-              apt-get $APT_OPTS -y install ./build/amazon-efs-utils*deb
-              mkdir -p /mnt/efs
-              mount -t efs -o tls $EFS_ID:/ /mnt/efs
-              echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
-            fi
-        - !If
-          - MountEfsAL2023
-          - Fn::Base64: !Sub |
+        - Fn::Base64: !Sub
+            - |
               #!/bin/bash -xe
-              # AL2023: Mount EFS with TLS via amazon-efs-utils (pre-packaged)
-              yum install -y amazon-efs-utils
-              mkdir -p /mnt/efs
-              mount -t efs -o tls ${EfsFileSystemId}:/ /mnt/efs
-              echo "${EfsFileSystemId}:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+              export DEBIAN_FRONTEND=noninteractive
+
+              for i in $(seq 1 30); do
+                apt-get update -y && break
+                echo "apt-get update failed (attempt $i/30), retrying in 10s..."
+                sleep 10
+              done
+              APT_OPTS="-o DPkg::Lock::Timeout=300"
+
+              apt-get $APT_OPTS -y install unzip curl
+              ARCH=$(uname -m)
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-$ARCH.zip" -o /tmp/awscliv2.zip
+              unzip -q /tmp/awscliv2.zip -d /tmp
+              /tmp/aws/install
+              rm -rf /tmp/aws /tmp/awscliv2.zip
+
+              EFS_ID="${EfsFileSystemId}"
+              S3FILES_ID="${ResolvedS3FilesId}"
+              if [ -n "$EFS_ID" ] || [ -n "$S3FILES_ID" ]; then
+                apt-get $APT_OPTS -y install git binutils rustc cargo pkg-config libssl-dev cmake golang-go
+                cd /tmp
+                git clone https://github.com/aws/efs-utils.git
+                cd efs-utils
+                ./build-deb.sh
+                apt-get $APT_OPTS -y install ./build/amazon-efs-utils*deb
+              fi
+
+              if [ -n "$EFS_ID" ]; then
+                mkdir -p /mnt/efs
+                mount -t efs -o tls $EFS_ID:/ /mnt/efs
+                echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+              fi
+
+              if [ -n "$S3FILES_ID" ]; then
+                mkdir -p /mnt/s3files
+                for i in $(seq 1 20); do mount -t s3files $S3FILES_ID:/ /mnt/s3files && break; echo "S3 Files mount retry $i/20, waiting 15s..."; sleep 15; done
+                echo "$S3FILES_ID:/ /mnt/s3files s3files _netdev 0 0" >> /etc/fstab
+              fi
+            - ResolvedS3FilesId: !If
+                - AutoCreateS3Files
+                - !Select [1, !Split ['file-system/', !Ref AutoS3FilesFileSystem]]
+                - !Ref S3FilesFileSystemId
+        - !If
+          - NeedsAL2023UserData
+          - Fn::Base64: !Sub
+              - |
+                #!/bin/bash -xe
+                yum install -y amazon-efs-utils
+
+                EFS_ID="${EfsFileSystemId}"
+                if [ -n "$EFS_ID" ]; then
+                  mkdir -p /mnt/efs
+                  mount -t efs -o tls $EFS_ID:/ /mnt/efs
+                  echo "$EFS_ID:/ /mnt/efs efs _netdev,tls 0 0" >> /etc/fstab
+                fi
+
+                S3FILES_ID="${ResolvedS3FilesId}"
+                if [ -n "$S3FILES_ID" ]; then
+                  mkdir -p /mnt/s3files
+                  for i in $(seq 1 20); do mount -t s3files $S3FILES_ID:/ /mnt/s3files && break; echo "S3 Files mount retry $i/20, waiting 15s..."; sleep 15; done
+                  echo "$S3FILES_ID:/ /mnt/s3files s3files _netdev 0 0" >> /etc/fstab
+                fi
+              - ResolvedS3FilesId: !If
+                - AutoCreateS3Files
+                - !Select [1, !Split ['file-system/', !Ref AutoS3FilesFileSystem]]
+                - !Ref S3FilesFileSystemId
           - !Ref 'AWS::NoValue'
       Tags:
         - Key: Name
@@ -322,6 +548,28 @@ Resources:
           Value: ResearchStack
         - Key: Environment
           Value: Research
+
+  IdleShutdownAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IdleShutdownEnabled
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-idle-shutdown'
+      AlarmDescription: !Sub 'Stops instance after ${IdleMinutesBeforeStop} minutes of idle CPU (< 5%)'
+      ActionsEnabled: true
+      AlarmActions:
+        - !Sub 'arn:${AWS::Partition}:automate:${AWS::Region}:ec2:stop'
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref Instance
+      Statistic: Average
+      Period: 60
+      EvaluationPeriods: !Ref IdleMinutesBeforeStop
+      DatapointsToAlarm: !Ref IdleMinutesBeforeStop
+      Threshold: 5
+      ComparisonOperator: LessThanThreshold
+      TreatMissingData: breaching
 
 Outputs:
   InstanceId:
@@ -346,7 +594,20 @@ Outputs:
     Description: 'Connect to the instance via SSM Session Manager (no SSH key needed)'
     Value: !Sub 'aws ssm start-session --target ${Instance} [--profile your-profile-name]'
 
+  StartInstanceCommand:
+    Description: 'Start the instance after it has been stopped (by idle shutdown or manually)'
+    Value: !Sub 'aws ec2 start-instances --instance-ids ${Instance} [--profile your-profile-name]'
+
+  StopInstanceCommand:
+    Description: 'Stop the instance to save costs (EBS data is preserved, RAM is lost)'
+    Value: !Sub 'aws ec2 stop-instances --instance-ids ${Instance} [--profile your-profile-name]'
+
   SSHConnectCommand:
     Condition: HasKeyPair
     Description: 'Connect via SSH (requires key pair and instance in a public subnet with a public IP or Elastic IP)'
     Value: !Sub 'ssh -i ~/.ssh/${KeyPairName}.pem ec2-user@INSTANCE_PUBLIC_IP'
+
+  IdleShutdownInfo:
+    Condition: IdleShutdownEnabled
+    Description: 'This instance will auto-stop after the configured idle period. Use the StartInstanceCommand to restart it.'
+    Value: !Sub 'Auto-stop enabled: instance stops after ${IdleMinutesBeforeStop} minutes of idle CPU (< 5%)'
