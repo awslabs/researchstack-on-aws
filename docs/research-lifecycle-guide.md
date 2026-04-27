@@ -98,7 +98,7 @@ With EC2, the cycle is: run → check → fix → rerun. No queue. If you need t
 
 ### Cost Tips
 - **Start small**: Use a smaller instance type (e.g., `m7i.xlarge`) and scale up only if you're hitting CPU or memory limits
-- **Idle shutdown is on by default**: EC2 templates automatically stop instances after 90 minutes of low CPU usage — this catches forgotten instances
+- **Idle shutdown is on by default**: EC2 templates automatically stop instances after 120 minutes of low CPU usage — this catches forgotten instances
 - **Use Spot for batch experiments**: If your work can tolerate interruption (e.g., parameter sweeps where you can rerun failed jobs), [Spot Instances](https://aws.amazon.com/ec2/spot/) save up to 70%. ParallelCluster supports Spot natively.
 - **Delete what you don't need**: Failed experiments, old EBS snapshots, and test instances accumulate cost if left running
 

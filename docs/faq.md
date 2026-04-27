@@ -74,7 +74,7 @@ Every resource deployed by ResearchStack is automatically tagged with `Project`,
 Deploy the `budget-alert.yaml` template with your cost center and monthly budget amount. You'll get email alerts at 50%, 80%, and 100% of your budget. See the [Cost Optimization Guide](cost-optimization-guide.md#budget-alerts) for deployment instructions.
 
 **Will my instances stop automatically if I forget?**
-EC2 templates include idle shutdown by default — instances are automatically stopped after 90 minutes of low CPU utilization. ParallelCluster compute nodes auto-terminate after 10 minutes idle. The ParallelCluster head node does not auto-stop (it runs the Slurm scheduler) — stop it manually when the cluster isn't in use.
+EC2 templates include idle shutdown by default — instances are automatically stopped after 120 minutes of low CPU utilization (configurable). ParallelCluster compute nodes auto-terminate after 10 minutes idle. The ParallelCluster head node does not auto-stop (it runs the Slurm scheduler) — stop it manually when the cluster isn't in use.
 
 **Does F&A overhead apply to cloud costs?**
 This is changing. The Consolidated Appropriations Act, 2026 (P.L. 119-75) directs OMB to exclude cloud computing from F&A, matching on-premises equipment treatment. Check with your grants office for your institution's current policy. See [F&A and Cloud Computing](cost-optimization-guide.md#fa-and-cloud-computing) for details.
@@ -85,7 +85,7 @@ This is changing. The Consolidated Appropriations Act, 2026 (P.L. 119-75) direct
 Yes. The EC2 templates use [SSM parameter paths](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) for AMI lookup. You can store a custom AMI ID in SSM at a convention path and add it to the template's `AllowedValues` list. The SSM value can be updated anytime without redeploying the template.
 
 **Can I use Spot Instances?**
-ParallelCluster supports Spot natively — set `ComputePricingModel` to `SPOT` for up to 70% savings on compute nodes. Standalone EC2 templates don't currently support Spot (this is on the roadmap). See the [Cost Optimization Guide](cost-optimization-guide.md#compute-optimization) for Spot guidance.
+Yes. EC2 templates include a `PricingModel` parameter — set it to `spot` for up to 70% savings. The instance stops (not terminates) on interruption, preserving your data. There's also a dedicated Spot Fleet template (`ec2-spot-fleet.yaml`) that spreads across multiple instance types and AZs for better availability. ParallelCluster supports Spot natively — set `ComputePricingModel` to `SPOT`. See the [Cost Optimization Guide](cost-optimization-guide.md#compute-optimization) for Spot guidance.
 
 **What if I need an instance type that's not in the allowed pattern?**
 The templates use regex patterns (e.g., `^m[0-9]+[a-z]*\.`) to allow any current or future instance within a family. If you need a different family entirely, use the template that matches your workload (C-series for compute, R-series for memory, G-series for GPU). For instance types outside these families, you'd need to modify the template's `AllowedPattern`.

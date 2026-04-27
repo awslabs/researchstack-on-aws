@@ -43,7 +43,7 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 
 **Stop Instances When Not in Use**
 - **SageMaker**: SageMaker Studio apps (JupyterLab, Code Editor) auto-stop when idle — compute only runs during active sessions, training jobs, or inference. No manual action needed for most workloads.
-- **EC2**: ResearchStack EC2 templates include an idle shutdown feature that automatically stops instances when CPU utilization stays below 5% for a configurable period (default: 90 minutes). This catches the common case of a researcher finishing for the day and forgetting to stop the instance. You can disable it or adjust the duration via template parameters.
+- **EC2**: ResearchStack EC2 templates include an idle shutdown feature that automatically stops instances when CPU utilization stays below 5% for a configurable period (default: 120 minutes). This catches the common case of a researcher finishing for the day and forgetting to stop the instance. You can disable it or adjust the duration via template parameters.
 - **ParallelCluster**: Compute nodes auto-terminate after idle timeout (default: 10 minutes). The head node stays running — stop it manually via the EC2 console or CLI when the cluster isn't in use.
 - Savings: 50-70% for intermittent workloads
 
@@ -156,9 +156,7 @@ aws cloudformation create-stack \
     ParameterKey=NotificationEmail,ParameterValue=pi@university.edu
 ```
 
-For per-instance cost enforcement, EC2 templates include an optional `EnableInstanceBudget` parameter. When set to `enforce`, the instance is automatically stopped if its project's monthly spend exceeds the configured budget. See the EC2 template parameters for details.
-
-Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts and enforcement are safety nets, not real-time spending caps.
+Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts are safety nets, not real-time spending caps.
 
 ## F&A and Cloud Computing
 
