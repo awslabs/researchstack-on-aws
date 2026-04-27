@@ -63,9 +63,15 @@ See [params/README.md](params/README.md) for all available configs and commands 
 
 For institutions managing multiple AWS accounts with governed self-service. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed. See the [Service Catalog Guide](docs/service-catalog-guide.md).
 
-### Connecting to Instances
+### Accessing Your Resources
 
-EC2 instances use [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) — no SSH keys or open ports needed. The connect command is in the stack outputs after deployment.
+After deployment, check the CloudFormation stack outputs for connection details, resource IDs, and next steps specific to your template. In the console: CloudFormation → your stack → Outputs tab. Via CLI:
+
+```bash
+aws cloudformation describe-stacks --stack-name my-stack --query 'Stacks[0].Outputs' --output table
+```
+
+For Service Catalog deployments, outputs are under Provisioned Products → your product → Outputs.
 
 ### Deleting Resources
 
