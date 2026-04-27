@@ -50,11 +50,9 @@ Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manage
 SSM is more secure (no inbound ports, no key management, no public IP required) and works through the AWS CLI without any network configuration. SSH is available as an option if you need it for file transfers (SCP/SFTP), VS Code Remote development, or port forwarding — just provide a key pair and allowed IP range when deploying.
 
 **How do I transfer files to/from my instance?**
-Several options:
-- **S3**: Grant the instance access to an S3 bucket (via the `S3BucketName` parameter), then use `aws s3 cp` from the instance
-- **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) accessible from multiple instances
-- **SCP/SFTP**: Provide a key pair when deploying, then use `scp` or `sftp` from your local machine
-- **SSM port forwarding**: `aws ssm start-session --target INSTANCE_ID --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=2222` then `scp -P 2222 file.txt localhost:`
+- **S3 (recommended for large data)**: Grant the instance access to an S3 bucket (via the `S3BucketName` parameter), then use `aws s3 cp` or `aws s3 sync` from the instance. See "Getting Data Into AWS" above for uploading data to S3 from your local machine.
+- **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) accessible from multiple instances — files are available immediately on all connected instances
+- **SCP/SFTP**: Provide a key pair when deploying, then use `scp` or `sftp` from your local machine for direct file transfers
 
 **How do I access SageMaker Studio?**
 SageMaker Studio is a managed Jupyter environment — you access it through the [SageMaker console](https://console.aws.amazon.com/sagemaker/), not via SSH or SSM. After deploying the template, an admin assigns users or [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) groups to the domain in the SageMaker console under **Domains** → your domain → **User profiles**. Assigned users then see a "Launch" button next to the domain.
@@ -82,7 +80,7 @@ This is changing. The Consolidated Appropriations Act, 2026 (P.L. 119-75) direct
 ## Templates and Configuration
 
 **Can I use my own AMI?**
-Yes. The EC2 templates use [SSM parameter paths](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html) for AMI lookup. You can store a custom AMI ID in SSM at a convention path and add it to the template's `AllowedValues` list. The SSM value can be updated anytime without redeploying the template.
+Yes. All EC2 templates have a `CustomAmiId` parameter — provide your AMI ID (e.g., `ami-0123456789abcdef0`) and it overrides the default OS/AMI selection. For ParallelCluster, the custom AMI must be built with `pcluster build-image` from a ParallelCluster base AMI, and the OS parameter must match the OS the AMI was built from.
 
 **Can I use Spot Instances?**
 Yes. EC2 templates include a `PricingModel` parameter — set it to `spot` for up to 70% savings. The instance stops (not terminates) on interruption, preserving your data. There's also a dedicated Spot Fleet template (`ec2-spot-fleet.yaml`) that spreads across multiple instance types and AZs for better availability. ParallelCluster supports Spot natively — set `ComputePricingModel` to `SPOT`. See the [Cost Optimization Guide](cost-optimization-guide.md#compute-optimization) for Spot guidance.
