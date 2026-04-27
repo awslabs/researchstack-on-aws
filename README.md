@@ -32,7 +32,11 @@ Not sure which template fits your work? See the [Research Lifecycle Guide](docs/
 
 ## Quick Start
 
-### Deploy via AWS Console
+**Prerequisites**: An AWS account with administrator or [PowerUserAccess](https://docs.aws.amazon.com/aws-managed-policy/latest/reference/PowerUserAccess.html) permissions. If your institution manages accounts via [AWS Organizations](https://aws.amazon.com/organizations/), ask your cloud team which account to use. For CLI deployments, install the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [configure credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+
+### Deploy via AWS Console (recommended)
+
+The console provides dropdowns for VPCs, subnets, and instance types — easiest for most users.
 
 1. Open the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home#/stacks/create)
 2. Upload a template YAML from `templates/`
@@ -41,9 +45,9 @@ Not sure which template fits your work? See the [Research Lifecycle Guide](docs/
 
 Most templates require a VPC. Deploy `research-vpc.yaml` first if you don't have one.
 
-### Deploy via CLI
+### Deploy via CLI (repeatable deployments)
 
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
+For scripted or repeatable deployments using parameter files:
 
 ```bash
 # 1. Copy a parameter file and fill in your values
