@@ -1,0 +1,9 @@
+{
+  "_description": "Research VPC — deploy this first to get VPC/subnet IDs for other templates",
+  "template": "vpc",
+  "stack_name": "research-vpc",
+  "parameters": {
+    "ProjectName": "shared-infra",
+    "CostCenter": "REPLACE_ME"
+  }
+}

@@ -65,7 +65,25 @@ After deploying EC2 instances, connect via [SSM Session Manager](https://docs.aw
 
 ### Deploy via AWS CLI
 
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). Add --profile your-profile-name to the commands if using named AWS CLI profiles.
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). Add `--profile your-profile-name` to commands if using named AWS CLI profiles.
+
+The fastest path is the deploy helper with a parameter file:
+
+```bash
+# 1. Copy a parameter file and fill in your values
+cp params/compute-general-ec2.json params/my-project.json
+# Edit my-project.json — replace REPLACE_ME with your VPC, subnet, project name, etc.
+
+# 2. Preview the deployment
+./deploy.sh --config params/my-project.json --dry-run
+
+# 3. Deploy
+./deploy.sh --config params/my-project.json
+```
+
+See [params/README.md](params/README.md) for all available configs and commands to find your VPC/subnet IDs.
+
+Or deploy directly with the AWS CLI:
 
 ```bash
 # Deploy a VPC first (if you don't have one)
@@ -133,6 +151,8 @@ researchstack/
 │   ├── networking/          # VPC
 │   ├── governance/          # Budget alerts
 │   └── data/                # (future: RDS, Athena)
+├── params/                   # Example parameter files for deploy.sh
+├── deploy.sh                 # CLI deploy helper (wraps aws cloudformation create-stack)
 ├── service-catalog/          # CDK code for Service Catalog governance layer
 ├── docs/                    # Documentation
 ├── ADRs/                    # Architecture Decision Records

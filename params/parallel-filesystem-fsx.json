@@ -1,0 +1,12 @@
+{
+  "_description": "FSx for Lustre — high-throughput parallel filesystem for compute-intensive I/O, optional S3 data repository",
+  "template": "fsx",
+  "stack_name": "REPLACE_ME-fsx",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetId": "subnet-REPLACE_ME",
+    "StorageCapacity": "1200"
+  }
+}

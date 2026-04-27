@@ -1,0 +1,11 @@
+{
+  "_description": "Shared EFS filesystem — mount across multiple EC2 instances for shared data access",
+  "template": "efs",
+  "stack_name": "REPLACE_ME-efs",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetIds": "subnet-REPLACE_ME_AZ1,subnet-REPLACE_ME_AZ2"
+  }
+}

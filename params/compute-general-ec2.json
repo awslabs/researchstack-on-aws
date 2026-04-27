@@ -1,0 +1,11 @@
+{
+  "_description": "EC2 general purpose (M-series) — balanced compute for data processing, dev environments, everyday research",
+  "template": "ec2-gp",
+  "stack_name": "REPLACE_ME-ec2",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetId": "subnet-REPLACE_ME"
+  }
+}

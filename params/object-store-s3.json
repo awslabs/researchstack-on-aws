@@ -1,0 +1,9 @@
+{
+  "_description": "S3 research bucket — encrypted, versioned, with intelligent tiering for cost optimization",
+  "template": "s3",
+  "stack_name": "REPLACE_ME-s3",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME"
+  }
+}

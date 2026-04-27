@@ -1,0 +1,17 @@
+{
+  "_description": "ParallelCluster — Slurm HPC cluster with DCV remote desktop, auto-scaling compute nodes, shared EFS",
+  "template": "pcluster",
+  "stack_name": "REPLACE_ME-cluster",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "ClusterName": "REPLACE_ME-cluster",
+    "HeadNodeSubnetId": "subnet-REPLACE_ME_PUBLIC",
+    "ComputeSubnetId": "subnet-REPLACE_ME_PRIVATE",
+    "ComputeInstanceType": "c7i.8xlarge",
+    "MaxComputeNodes": "10",
+    "EnableDCV": "yes",
+    "AllowedIps": "0.0.0.0/0",
+    "DCVPassword": "REPLACE_ME"
+  }
+}

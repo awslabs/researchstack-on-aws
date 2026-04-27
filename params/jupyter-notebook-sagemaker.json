@@ -1,0 +1,12 @@
+{
+  "_description": "SageMaker Studio — managed Jupyter environment with GPU support, requires IAM Identity Center",
+  "template": "sagemaker",
+  "stack_name": "REPLACE_ME-studio",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "DomainName": "REPLACE_ME-studio",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetId": "subnet-REPLACE_ME"
+  }
+}

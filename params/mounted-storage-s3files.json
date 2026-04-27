@@ -1,0 +1,11 @@
+{
+  "_description": "S3 Files — mount S3 as a POSIX filesystem via NFS, ~13x cheaper than EFS",
+  "template": "s3files",
+  "stack_name": "REPLACE_ME-s3files",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetIds": "subnet-REPLACE_ME_AZ1,subnet-REPLACE_ME_AZ2"
+  }
+}

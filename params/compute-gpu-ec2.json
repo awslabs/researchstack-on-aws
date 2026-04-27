@@ -1,0 +1,13 @@
+{
+  "_description": "EC2 GPU (G-series) — NVIDIA GPU with Deep Learning AMI for ML training, inference, GPU-accelerated research",
+  "template": "ec2-gpu",
+  "stack_name": "REPLACE_ME-ec2-gpu",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "InstanceType": "g6.2xlarge",
+    "VolumeSize": "200",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetId": "subnet-REPLACE_ME"
+  }
+}

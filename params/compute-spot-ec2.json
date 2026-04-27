@@ -1,0 +1,13 @@
+{
+  "_description": "EC2 Spot Fleet — cost-optimized compute across multiple instance types and AZs, up to 70% savings",
+  "template": "ec2-spot",
+  "stack_name": "REPLACE_ME-spot",
+  "parameters": {
+    "ProjectName": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME",
+    "InstanceFamily": "compute-optimized",
+    "InstanceSize": "2xlarge",
+    "VpcId": "vpc-REPLACE_ME",
+    "SubnetIds": "subnet-REPLACE_ME_AZ1,subnet-REPLACE_ME_AZ2"
+  }
+}
