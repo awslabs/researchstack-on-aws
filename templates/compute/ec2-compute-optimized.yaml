@@ -191,7 +191,7 @@ Parameters:
   KeyPairName:
     Type: String
     Default: ''
-    Description: 'EC2 key pair name for SSH access (optional). If blank, use Session Manager to connect (no SSH keys needed). Create a key pair in the EC2 console if you need SSH for file transfers, VS Code Remote, or port forwarding.'
+    Description: 'EC2 key pair name for SSH access (optional). If blank, use Session Manager to connect (no SSH keys needed). Requires a public subnet for SSH from outside the VPC. Create a key pair in the EC2 console if you need SSH for file transfers, VS Code Remote, or port forwarding.'
 
   SSHAllowedIps:
     Type: String

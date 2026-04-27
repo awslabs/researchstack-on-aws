@@ -52,7 +52,7 @@ SSM is more secure (no inbound ports, no key management, no public IP required) 
 **How do I transfer files to/from my instance?**
 - **S3 (recommended for large data)**: Grant the instance access to an S3 bucket (via the `S3BucketName` parameter), then use `aws s3 cp` or `aws s3 sync` from the instance. See "Getting Data Into AWS" above for uploading data to S3 from your local machine.
 - **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) accessible from multiple instances — files are available immediately on all connected instances
-- **SCP/SFTP**: Provide a key pair when deploying, then use `scp` or `sftp` from your local machine for direct file transfers
+- **SCP/SFTP**: Provide a key pair when deploying and use a public subnet — port 22 opens automatically when a key pair is set. Then use `scp` or `sftp` from your local machine. Without a key pair, port 22 stays closed.
 
 **How do I access SageMaker Studio?**
 SageMaker Studio is a managed Jupyter environment — you access it through the [SageMaker console](https://console.aws.amazon.com/sagemaker/), not via SSH or SSM. After deploying the template, an admin assigns users or [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) groups to the domain in the SageMaker console under **Domains** → your domain → **User profiles**. Assigned users then see a "Launch" button next to the domain.
