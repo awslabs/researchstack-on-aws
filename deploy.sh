@@ -155,7 +155,9 @@ while IFS= read -r line; do
     kv="${line#PARAM:}"
     key="${kv%%=*}"
     value="${kv#*=}"
-    PARAMS+=("ParameterKey=${key},ParameterValue=${value}")
+    # Escape commas in values — AWS CLI shorthand syntax uses commas as delimiters
+    escaped_value="${value//,/\\,}"
+    PARAMS+=("ParameterKey=${key},ParameterValue=${escaped_value}")
   fi
 done < <(read_config)
 
