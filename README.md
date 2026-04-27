@@ -8,26 +8,6 @@ Production-ready [CloudFormation](https://aws.amazon.com/cloudformation/) templa
 - **IT admins**: Give researchers self-service access to standardized, security-hardened infrastructure. Every deployment follows the same architecture, making troubleshooting repeatable.
 - **FinOps teams**: Every resource is automatically tagged with project, cost center, and owner — ready for [Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/) and grant chargeback without manual tagging.
 
-## Architecture
-
-<!-- TODO: Add high-level architecture diagram -->
-
-ResearchStack supports two deployment paths:
-
-- **Standalone**: deploy templates directly via the CloudFormation console or [AWS CLI](https://aws.amazon.com/cli/) into any AWS account — simplest for single accounts and small teams
-- **[Service Catalog](https://aws.amazon.com/servicecatalog/)**: deploy a governance layer to share templates across multiple accounts via a hub-and-spoke model with per-product deployment permissions and OU-level sharing — best for institutions managing multiple researcher accounts
-
-Both paths use the same templates and produce the same tagged resources.
-
-## What's Included
-
-- **CloudFormation templates** for compute, storage, ML, networking, and cost governance
-- **Service Catalog integration** for multi-account governance with launch roles and OU sharing
-- **Cost tracking** via tags on every resource (Project, CostCenter, Owner)
-- **Budget alerts** with optional per-instance enforcement
-- **Idle shutdown** on EC2 instances (stops forgotten instances automatically)
-- **Documentation** for every template, the research lifecycle, cost optimization, and HPC clusters
-
 ## Templates
 
 | Category | Template | What it does |
@@ -46,28 +26,24 @@ Both paths use the same templates and produce the same tagged resources.
 | ML | sagemaker-studio.yaml | Managed Jupyter environment with GPU support |
 | Governance | budget-alert.yaml | Monthly budget tracking by cost center with email alerts |
 
-See the [Templates README](templates/README.md) for detailed descriptions, instance type guidance, and OS options.
+All templates include idle shutdown (EC2), cost tracking tags, encryption, and security defaults. See the [Templates README](templates/README.md) for parameter details, instance type guidance, and OS options.
 
-Not sure which template fits your work? The [Research Lifecycle Guide](docs/research-lifecycle-guide.md) maps each phase of a research project to the right templates and cost strategies. For budgeting, Savings Plans, and F&A guidance, see the [Cost Optimization Guide](docs/cost-optimization-guide.md).
+Not sure which template fits your work? See the [Research Lifecycle Guide](docs/research-lifecycle-guide.md) or the [Cost Optimization Guide](docs/cost-optimization-guide.md).
 
 ## Quick Start
 
-### Deploy via AWS Console (simplest)
+### Deploy via AWS Console
 
 1. Open the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home#/stacks/create)
-2. Choose "Upload a template file" and select a template YAML from `templates/`
-3. Fill in parameters — at minimum: ProjectName, CostCenter, and any resource-specific settings
-4. Click through to "Create stack"
+2. Upload a template YAML from `templates/`
+3. Fill in parameters (at minimum: ProjectName, CostCenter, VPC, subnet)
+4. Create stack
 
-Most templates require a VPC and subnet. Deploy `research-vpc.yaml` first if you don't have one.
+Most templates require a VPC. Deploy `research-vpc.yaml` first if you don't have one.
 
-After deploying EC2 instances, connect via [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) — no SSH keys or open ports needed. The instance ID and connect command are in the stack outputs. See the [Templates README](templates/README.md#connecting-to-instances) for details.
+### Deploy via CLI
 
-### Deploy via AWS CLI
-
-Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html). Add `--profile your-profile-name` to commands if using named AWS CLI profiles.
-
-The fastest path is the deploy helper with a parameter file:
+Requires the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) with [credentials configured](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html).
 
 ```bash
 # 1. Copy a parameter file and fill in your values
@@ -83,62 +59,32 @@ cp params/compute-general-ec2.json params/my-project.json
 
 See [params/README.md](params/README.md) for all available configs and commands to find your VPC/subnet IDs.
 
-Or deploy directly with the AWS CLI:
+### Deploy via Service Catalog
 
-```bash
-# Deploy a VPC first (if you don't have one)
-aws cloudformation create-stack \
-  --stack-name research-vpc \
-  --template-body file://templates/networking/research-vpc.yaml \
-  --parameters \
-    ParameterKey=ProjectName,ParameterValue=my-project \
-    ParameterKey=CostCenter,ParameterValue=grant-12345
+For institutions managing multiple AWS accounts with governed self-service. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed. See the [Service Catalog Guide](docs/service-catalog-guide.md).
 
-# Then deploy resources into that VPC (get VPC/subnet IDs from the stack outputs)
-aws cloudformation create-stack \
-  --stack-name my-ec2 \
-  --template-body file://templates/compute/ec2-general-purpose.yaml \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameters \
-    ParameterKey=ProjectName,ParameterValue=my-project \
-    ParameterKey=CostCenter,ParameterValue=grant-12345 \
-    ParameterKey=VpcId,ParameterValue=vpc-xxxxxxxx \
-    ParameterKey=SubnetId,ParameterValue=subnet-xxxxxxxx
-```
+### Connecting to Instances
 
-### Deploy via Service Catalog (multi-account governance)
-
-For institutions managing multiple AWS accounts with governed self-service. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed.
-
-See the [Service Catalog Deployment Guide](docs/service-catalog-guide.md) for full setup.
+EC2 instances use [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) — no SSH keys or open ports needed. The connect command is in the stack outputs after deployment.
 
 ### Deleting Resources
 
-When you're done with a resource, delete the CloudFormation stack to clean up all associated AWS resources and stop incurring costs.
-
-**Via AWS Console**: Go to [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select the stack → **Delete**.
-
-**Via AWS CLI**:
-```bash
-aws cloudformation delete-stack --stack-name my-ec2
-```
-
-Delete resources in reverse order of creation — delete compute/storage stacks first, then the VPC stack (since other resources depend on the VPC).
-
-Have questions about connecting, costs, data transfer, or security? See the [FAQ](docs/faq.md).
+Delete the CloudFormation stack to clean up all resources and stop costs. Delete compute/storage stacks before the VPC stack.
 
 ## Cost Tracking and Access Control
 
-All templates automatically tag resources for cost allocation:
-- **Project**: Research project name
-- **CostCenter**: Department or grant number
-- **Owner**: PI or researcher email
-- **ManagedBy**: ResearchStack
-- **Environment**: Research
+All resources are tagged automatically: Project, CostCenter, Owner, ManagedBy, Environment. Use these in [Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for per-grant chargeback. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for budgets, Savings Plans, and F&A guidance.
 
-Use these tags in [AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for per-grant chargeback. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for activating cost allocation tags, setting up budgets, and grant budgeting strategies.
+For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
 
-For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — it provides single sign-on across all your AWS accounts and is the [AWS-recommended approach](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html) for managing user access in Organizations. The simplest model is account-level isolation — one AWS account per lab or research group, with IDC permission sets granting access. Researchers get broad permissions within their account because everything in it belongs to their project. The account boundary is the access control. For institutions using shared accounts, IDC groups can be mapped to permission sets with tag-scoped policies, though this has limitations for researchers on multiple projects. For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access) for configuring who can launch products.
+## Architecture
+
+ResearchStack supports two deployment paths:
+
+- **Standalone**: deploy templates directly via the CloudFormation console or CLI — simplest for single accounts
+- **[Service Catalog](https://aws.amazon.com/servicecatalog/)**: governance layer with launch roles, OU sharing, and self-service catalog — best for multi-account institutions
+
+Both paths use the same templates and produce the same tagged resources.
 
 ## Repository Structure
 
@@ -146,36 +92,35 @@ For access control, we recommend [IAM Identity Center](https://aws.amazon.com/ia
 researchstack/
 ├── templates/                # CloudFormation templates (the core product)
 │   ├── compute/             # EC2, ParallelCluster
-│   ├── storage/             # S3, EFS, FSx Lustre
+│   ├── storage/             # S3, EFS, S3 Files, FSx Lustre
 │   ├── ml/                  # SageMaker
 │   ├── networking/          # VPC
-│   ├── governance/          # Budget alerts
-│   └── data/                # (future: RDS, Athena)
-├── params/                   # Example parameter files for deploy.sh
-├── deploy.sh                 # CLI deploy helper (wraps aws cloudformation create-stack)
+│   └── governance/          # Budget alerts
+├── params/                   # Parameter files for deploy.sh
+├── deploy.sh                 # CLI deploy helper
 ├── service-catalog/          # CDK code for Service Catalog governance layer
-├── docs/                    # Documentation
-├── ADRs/                    # Architecture Decision Records
-└── CONTRIBUTING.md
+├── docs/                    # Guides and documentation
+└── ADRs/                    # Architecture Decision Records
 ```
 
 ## Documentation
 
-- [Templates README](templates/README.md) — Template details, instance types, OS options, deployment instructions
-- [Research Lifecycle Guide](docs/research-lifecycle-guide.md) — Map your research phase to the right templates
-- [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, F&A guidance, cost tracking
-- [FAQ](docs/faq.md) — Common questions about connecting, costs, security, and configuration
-- [ParallelCluster Guide](docs/parallelcluster-guide.md) — Deploy, connect, run jobs, and customize HPC clusters
-- [Service Catalog Deployment Guide](docs/service-catalog-guide.md) — Multi-account governance setup
-- [Service Catalog Developer Guide](service-catalog/README.md) — Code architecture for contributors
+- [Templates README](templates/README.md) — Template details, instance types, OS options
+- [Parameter Files](params/README.md) — Deploy configs and resource lookup commands
+- [Research Lifecycle Guide](docs/research-lifecycle-guide.md) — Map research phases to templates
+- [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, F&A
+- [FAQ](docs/faq.md) — Connecting, costs, security, configuration
+- [ParallelCluster Guide](docs/parallelcluster-guide.md) — HPC cluster deployment and customization
+- [Service Catalog Guide](docs/service-catalog-guide.md) — Multi-account governance setup
 - [Contributing Guide](CONTRIBUTING.md) — Template standards and submission process
 
 ## Support
 
+<!-- TODO: Update URLs once repo is in its final location -->
 - **Issues**: [GitHub Issues](https://github.com/your-org/researchstack/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-org/researchstack/discussions)
 - **AWS Support**: Contact your AWS account team
 
 ## License
 
-This project is licensed under the Apache License 2.0 — see the [LICENSE](LICENSE) file for details.
+Apache License 2.0 — see [LICENSE](LICENSE).
