@@ -15,22 +15,20 @@ Metadata:
         Parameters:
           - ClusterName
           - OperatingSystem
-      - Label:
-          default: 'Head Node'
-        Parameters:
           - HeadNodeInstanceType
-      - Label:
-          default: 'Compute Nodes'
-        Parameters:
           - ComputeInstanceType
-          - ComputePricingModel
           - MaxComputeNodes
-          - CapacityBlockId
       - Label:
           default: 'Networking'
         Parameters:
           - HeadNodeSubnetId
           - ComputeSubnetId
+      - Label:
+          default: 'Access'
+        Parameters:
+          - EnableDCV
+          - AllowedIps
+          - DCVPassword
       - Label:
           default: 'Storage (optional)'
         Parameters:
@@ -38,12 +36,12 @@ Metadata:
           - S3BucketName
           - FsxLustreFileSystemId
       - Label:
-          default: 'Access'
+          default: 'Advanced Configuration (optional)'
         Parameters:
+          - CustomAmiId
+          - ComputePricingModel
+          - CapacityBlockId
           - KeyPairName
-          - EnableDCV
-          - AllowedIps
-          - DCVPassword
     ParameterLabels:
       ProjectName:
         default: 'Project Name'
@@ -59,30 +57,32 @@ Metadata:
         default: 'Head Node Instance Type'
       ComputeInstanceType:
         default: 'Compute Instance Type'
-      ComputePricingModel:
-        default: 'Compute Pricing Model'
       MaxComputeNodes:
         default: 'Maximum Compute Nodes'
-      CapacityBlockId:
-        default: 'Capacity Block Reservation ID (optional)'
       HeadNodeSubnetId:
         default: 'Head Node Subnet (public)'
       ComputeSubnetId:
         default: 'Compute Node Subnet (private recommended)'
-      EfsFileSystemId:
-        default: 'Existing EFS Filesystem ID (optional)'
-      S3BucketName:
-        default: 'S3 Bucket Name (optional)'
-      FsxLustreFileSystemId:
-        default: 'Existing FSx for Lustre ID (optional)'
-      KeyPairName:
-        default: 'SSH Key Pair (optional)'
       EnableDCV:
         default: 'Enable DCV Remote Desktop'
       AllowedIps:
         default: 'Allowed IP Range (SSH + DCV)'
       DCVPassword:
         default: 'DCV Desktop Password'
+      EfsFileSystemId:
+        default: 'Existing EFS Filesystem ID (optional)'
+      S3BucketName:
+        default: 'S3 Bucket Name (optional)'
+      FsxLustreFileSystemId:
+        default: 'Existing FSx for Lustre ID (optional)'
+      CustomAmiId:
+        default: 'Custom AMI ID (optional)'
+      ComputePricingModel:
+        default: 'Compute Pricing Model'
+      CapacityBlockId:
+        default: 'Capacity Block Reservation ID (optional)'
+      KeyPairName:
+        default: 'SSH Key Pair (optional)'
 
 Parameters:
   ProjectName:
@@ -114,6 +114,13 @@ Parameters:
     Description: 'Operating system for cluster nodes. Amazon Linux 2023 recommended for broadest compatibility.'
     AllowedValues: ['alinux2023', 'ubuntu2204', 'ubuntu2404']
     Default: 'alinux2023'
+
+  CustomAmiId:
+    Type: String
+    Default: ''
+    Description: 'Custom ParallelCluster AMI ID for head and compute nodes (e.g., ami-0123456789abcdef0). Must be built with "pcluster build-image" from a ParallelCluster base AMI — standard EC2 AMIs will not work. The OS parameter above must match the OS the AMI was built from. Architecture (x86/ARM) must match your instance types. Leave blank to use the official AMI.'
+    AllowedPattern: '^$|^ami-[a-f0-9]+'
+    ConstraintDescription: 'Must be a valid AMI ID (ami-xxxx) or blank'
 
   HeadNodeInstanceType:
     Type: String
@@ -218,6 +225,7 @@ Rules:
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]
+  HasCustomAmi: !Not [!Equals [!Ref CustomAmiId, '']]
   HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
   HasCapacityBlock: !Not [!Equals [!Ref CapacityBlockId, '']]
   HasExistingEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
@@ -636,6 +644,7 @@ Resources:
       ClusterConfiguration:
         Image:
           Os: !Ref OperatingSystem
+          CustomAmi: !If [HasCustomAmi, !Ref CustomAmiId, !Ref 'AWS::NoValue']
         Tags:
           - Key: Project
             Value: !Ref ProjectName
