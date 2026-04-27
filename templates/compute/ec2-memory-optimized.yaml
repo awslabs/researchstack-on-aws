@@ -336,8 +336,8 @@ Resources:
   AutoS3Bucket:
     Type: AWS::S3::Bucket
     Condition: AutoCreateS3Files
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       BucketName: !Sub '${ProjectName}-data-${AWS::AccountId}-${AWS::Region}'
       BucketEncryption:

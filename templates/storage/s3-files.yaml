@@ -73,8 +73,8 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Condition: CreateBucket
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
     Properties:
       BucketName: !Sub '${ProjectName}-s3files-${AWS::AccountId}-${AWS::Region}'
       BucketEncryption:

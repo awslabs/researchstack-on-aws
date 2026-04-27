@@ -89,7 +89,9 @@ Yes. EC2 templates include a `PricingModel` parameter — set it to `spot` for u
 The templates use regex patterns (e.g., `^m[0-9]+[a-z]*\.`) to allow any current or future instance within a family. If you need a different family entirely, use the template that matches your workload (C-series for compute, R-series for memory, G-series for GPU). For instance types outside these families, you'd need to modify the template's `AllowedPattern`.
 
 **How do I delete my resources?**
-Delete the CloudFormation stack — this removes all resources the template created. Via console: [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select stack → Delete. Via CLI: `aws cloudformation delete-stack --stack-name STACK_NAME`. For Service Catalog products, go to **Provisioned products** → select → **Actions** → **Terminate**. See the [main README](../README.md#deleting-resources) for more.
+Delete the CloudFormation stack — this removes all resources the template created. Via console: [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select stack → Delete. Via CLI: `aws cloudformation delete-stack --stack-name STACK_NAME`. For Service Catalog products, go to **Provisioned products** → select → **Actions** → **Terminate**.
+
+Note: S3 buckets cannot be deleted if they contain data. If the stack deletion fails on an S3 bucket, empty it first with `aws s3 rm s3://BUCKET_NAME --recursive`, then retry the deletion. See the [Templates README](../templates/README.md#deleting-resources) for full instructions including versioned buckets.
 
 ## Security and Access
 

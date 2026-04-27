@@ -70,6 +70,11 @@ launch_role_policies = ["AmazonS3FullAccess", "AmazonEC2FullAccess", "AWSLambda_
   actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole"]
   resources = ["*"]
 
+  # S3 Files service actions (not covered by AmazonS3FullAccess)
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
+  resources = ["*"]
+
 [[portfolio.products]]
 name = "ec2-general-purpose"
 display_name = "General Purpose Compute (EC2)"
@@ -79,7 +84,12 @@ launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "
 
   # Instance role, instance profile, S3 Files role (conditional)
   [[portfolio.products.custom_policy]]
-  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile"]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile", "iam:ListInstanceProfilesForRole"]
+  resources = ["*"]
+
+  # S3 Files resources (conditional, when AutoCreateStorage = s3-files)
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
   resources = ["*"]
 
 [[portfolio.products]]
@@ -90,7 +100,11 @@ template = "../templates/compute/ec2-compute-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
   [[portfolio.products.custom_policy]]
-  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile"]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile", "iam:ListInstanceProfilesForRole"]
+  resources = ["*"]
+
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
   resources = ["*"]
 
 [[portfolio.products]]
@@ -101,7 +115,11 @@ template = "../templates/compute/ec2-memory-optimized.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
   [[portfolio.products.custom_policy]]
-  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile"]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile", "iam:ListInstanceProfilesForRole"]
+  resources = ["*"]
+
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
   resources = ["*"]
 
 [[portfolio.products]]
@@ -112,7 +130,11 @@ template = "../templates/compute/ec2-accelerated-gpu.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
   [[portfolio.products.custom_policy]]
-  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile"]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile", "iam:ListInstanceProfilesForRole"]
+  resources = ["*"]
+
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
   resources = ["*"]
 
 [[portfolio.products]]
@@ -123,7 +145,11 @@ template = "../templates/compute/ec2-spot-fleet.yaml"
 launch_role_policies = ["AmazonEC2FullAccess", "AmazonSSMManagedInstanceCore", "AmazonS3FullAccess", "CloudWatchFullAccess"]
 
   [[portfolio.products.custom_policy]]
-  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile"]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:GetRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:ListRolePolicies", "iam:ListAttachedRolePolicies", "iam:PassRole", "iam:TagRole", "iam:UntagRole", "iam:ListRoleTags", "iam:CreateInstanceProfile", "iam:DeleteInstanceProfile", "iam:AddRoleToInstanceProfile", "iam:RemoveRoleFromInstanceProfile", "iam:GetInstanceProfile", "iam:ListInstanceProfilesForRole"]
+  resources = ["*"]
+
+  [[portfolio.products.custom_policy]]
+  actions = ["s3files:*"]
   resources = ["*"]
 
 [[portfolio.products]]
