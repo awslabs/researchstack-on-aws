@@ -158,18 +158,7 @@ See the [Service Catalog Deployment Guide](../docs/service-catalog-guide.md) for
 
 Deleting a CloudFormation stack removes all resources the template created. Via console: [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select stack → Delete. Via CLI: `aws cloudformation delete-stack --stack-name STACK_NAME`. For Service Catalog: Provisioned products → select → Actions → Terminate.
 
-S3 buckets cannot be deleted by CloudFormation if they contain data — the stack deletion will fail on the bucket resource. To complete the deletion, empty the bucket first:
-
-```bash
-# Empty the bucket (deletes all objects and versions)
-aws s3 rm s3://BUCKET_NAME --recursive
-# If versioning is enabled (all ResearchStack buckets have versioning), also delete version markers:
-aws s3api list-object-versions --bucket BUCKET_NAME --query '{Objects: Versions[].{Key:Key,VersionId:VersionId}}' --output json | aws s3api delete-objects --bucket BUCKET_NAME --delete file:///dev/stdin
-# Then retry the stack deletion
-aws cloudformation delete-stack --stack-name STACK_NAME
-```
-
-See the [AWS documentation on deleting S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/delete-bucket.html) for more options. Delete stacks in reverse order of creation — compute/storage before the VPC.
+S3 buckets with data cannot be deleted by CloudFormation — the stack deletion will fail on the bucket. [Empty the bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/empty-bucket.html) first, then retry the deletion. For versioned buckets (all ResearchStack buckets have versioning), you'll also need to [delete version markers](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html). Delete stacks in reverse order — compute/storage before the VPC.
 
 ## Contributing
 

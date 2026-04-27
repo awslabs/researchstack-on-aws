@@ -79,7 +79,7 @@ For Service Catalog deployments, outputs are under Provisioned Products → your
 
 ### Deleting Resources
 
-Delete the CloudFormation stack to clean up all resources and stop costs. Delete compute/storage stacks before the VPC stack.
+Delete the CloudFormation stack to clean up all resources and stop costs. S3 buckets with data must be [emptied first](https://docs.aws.amazon.com/AmazonS3/latest/userguide/empty-bucket.html) — CloudFormation cannot delete a non-empty bucket. Delete compute/storage stacks before the VPC stack.
 
 ## Cost Tracking and Access Control
 
