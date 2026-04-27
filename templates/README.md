@@ -113,33 +113,43 @@ Each EC2 template offers these AMIs via SSM parameter lookup (always resolves to
 
 Amazon Linux 2023 is the default and recommended for most workloads — EFS auto-mounts with TLS encryption and SSM works out of the box. Ubuntu 24.04 is supported for teams that prefer it, but EFS must be mounted manually post-boot because `amazon-efs-utils` now requires a Rust toolchain to build on Ubuntu. See the [efs-utils GitHub repo](https://github.com/aws/efs-utils) for manual install instructions.
 
-## Connecting to Instances
+## Accessing Your Resources
 
-All EC2 templates use [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) for access — no SSH keys, no inbound ports, no public IP required. Connect via:
+After deployment, check the CloudFormation stack outputs for connection details, resource IDs, and next steps. In the console: CloudFormation → your stack → Outputs tab. Via CLI:
 
 ```bash
-aws ssm start-session --target i-0123456789abcdef0 [--profile your-profile-name]
+aws cloudformation describe-stacks --stack-name my-stack --query 'Stacks[0].Outputs' --output table
 ```
 
-The instance ID and connect command are in the stack outputs after deployment. Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the AWS CLI.
+EC2 instances use [SSM Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html) by default — no SSH keys or open ports needed. The connect command is in the stack outputs. Requires the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) for the AWS CLI.
 
 ## Deploying
 
-### Via AWS Console
-1. Go to CloudFormation → Create Stack
+### Via AWS Console (recommended)
+
+The console provides dropdowns for VPCs, subnets, and instance types — easiest for most users.
+
+1. Go to [CloudFormation → Create Stack](https://console.aws.amazon.com/cloudformation/home#/stacks/create)
 2. Upload the template YAML
-3. Fill in parameters (Project, CostCenter, etc.)
+3. Fill in parameters (at minimum: ProjectName, CostCenter, VPC, subnet)
 4. Create stack
 
-### Via AWS CLI
+### Via CLI (repeatable deployments)
+
+Use the deploy helper with a [parameter file](../params/README.md):
+
 ```bash
-aws cloudformation create-stack \
-  --stack-name my-research-bucket \
-  --template-body file://storage/s3-research-bucket.yaml \
-  --parameters \
-    ParameterKey=ProjectName,ParameterValue=my-project \
-    ParameterKey=CostCenter,ParameterValue=dept-123
+# Copy a config and fill in your values
+cp params/compute-general-ec2.json params/my-project.json
+
+# Preview
+./deploy.sh --config params/my-project.json --dry-run
+
+# Deploy
+./deploy.sh --config params/my-project.json
 ```
+
+See [params/README.md](../params/README.md) for all available configs and commands to find your VPC/subnet IDs.
 
 ### Via Service Catalog
 See the [Service Catalog Deployment Guide](../docs/service-catalog-guide.md) for multi-account governed deployment.
