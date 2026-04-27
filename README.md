@@ -39,11 +39,11 @@ Not sure which template fits your work? See the [Research Lifecycle Guide](docs/
 The console provides dropdowns for VPCs, subnets, and instance types — easiest for most users.
 
 1. Open the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home#/stacks/create)
-2. Upload a template YAML from `templates/`
+2. Upload a template YAML from [`templates/`](templates/README.md)
 3. Fill in parameters (at minimum: ProjectName, CostCenter, VPC, subnet)
 4. Create stack
 
-Most templates require a VPC. Deploy `research-vpc.yaml` first if you don't have one.
+Most templates require a VPC. Deploy the [Research VPC](#templates) template first if you don't have one.
 
 ### Deploy via CLI (repeatable deployments)
 
