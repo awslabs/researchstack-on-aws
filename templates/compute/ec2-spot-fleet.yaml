@@ -179,7 +179,7 @@ Parameters:
   KeyPairName:
     Type: String
     Default: ''
-    Description: 'EC2 key pair for SSH access (optional). If blank, use Session Manager.'
+    Description: 'EC2 key pair name for SSH access (optional). If blank, use Session Manager to connect (no SSH keys needed). Requires a public subnet for SSH from outside the VPC.'
 
   SSHAllowedIps:
     Type: String
