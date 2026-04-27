@@ -3,9 +3,9 @@
   "template": "budget",
   "stack_name": "REPLACE_ME-budget",
   "parameters": {
-    "ProjectName": "REPLACE_ME",
-    "CostCenter": "REPLACE_ME",
-    "MonthlyBudgetUSD": "500",
-    "NotificationEmail": "REPLACE_ME"
+    "BudgetName": "REPLACE_ME-budget",
+    "BudgetAmountUSD": "500",
+    "NotificationEmail": "REPLACE_ME",
+    "CostCenter": "REPLACE_ME"
   }
 }

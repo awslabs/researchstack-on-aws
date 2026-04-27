@@ -7,6 +7,6 @@
     "CostCenter": "REPLACE_ME",
     "DomainName": "REPLACE_ME-studio",
     "VpcId": "vpc-REPLACE_ME",
-    "SubnetId": "subnet-REPLACE_ME"
+    "SubnetIds": "subnet-REPLACE_ME"
   }
 }
