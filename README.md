@@ -1,6 +1,8 @@
 # ResearchStack on AWS
 
-Production-ready [CloudFormation](https://aws.amazon.com/cloudformation/) templates for research computing — deploy EC2, S3, EFS, SageMaker, ParallelCluster, and more with built-in security, cost tracking, and governance. From a single researcher to a multi-account institution.
+[CloudFormation](https://aws.amazon.com/cloudformation/) templates for research computing — deploy EC2, S3, EFS, SageMaker, ParallelCluster, and more with built-in security, cost tracking, and governance. From a single researcher to a multi-account institution.
+
+> **Note:** Review templates against your institution's security and compliance requirements before production use. These templates follow AWS security best practices (encryption, IMDSv2, least-privilege IAM) but have not undergone a formal AWS security review.
 
 ## Why ResearchStack?
 

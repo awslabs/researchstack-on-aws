@@ -4,7 +4,7 @@ Deploy and operate a Slurm HPC cluster on AWS using the ResearchStack's Parallel
 
 ## What the Template Provides
 
-The template deploys a production-ready HPC cluster with one CloudFormation stack:
+The template deploys a fully configured HPC cluster with one CloudFormation stack:
 
 - **Slurm scheduler** with one auto-scaling compute queue (nodes launch on job submission, terminate when idle)
 - **Shared EFS storage** at `/shared` — a managed network file system (NFS) accessible from all cluster nodes. Auto-created with the cluster, or bring an existing EFS.
