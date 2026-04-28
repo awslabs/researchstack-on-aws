@@ -8,26 +8,7 @@ This guide walks through setting up the [AWS Service Catalog](https://aws.amazon
 
 The Service Catalog layer adds governance on top of the same templates you can deploy standalone. Here's how the pieces fit together:
 
-<!-- TODO: Add Service Catalog architecture diagram -->
-<!-- Diagram should show:
-  - Hub Account (center):
-    - CDK deploys: Assets S3 Bucket, SC Portfolio, Products (linked to CFN templates)
-    - Per-product Launch Roles created locally in hub
-  - StackSets (arrows from hub to spoke accounts):
-    - Launch Role StackSets push per-product IAM roles into spoke accounts
-  - Spoke Accounts (in target OUs, e.g., ou-xxxx-research, ou-yyyy-sandbox):
-    - Receive portfolio share via OU sharing
-    - Launch roles exist locally (created by StackSets)
-    - Users provision products → CloudFormation creates resources with tags
-  - AWS Organizations context:
-    - Management Account delegates SC + StackSets admin to Hub Account
-    - OUs contain spoke accounts
-  - Flow: CDK deploy → Assets Bucket + Portfolio + StackSets → OU Share → Spoke users see portfolio → Provision product → Launch role scopes permissions → CFN creates tagged resources
-  - IDC note: Recommend IAM Identity Center as the default identity approach.
-    Two starting permission sets: AWSServiceCatalogEndUserAccess (researchers) and
-    AdministratorAccess (IT admins). IDC permission sets auto-create matching IAM roles
-    in every assigned account, enabling automated principal sharing via access_principals in the TOML.
--->
+![Service Catalog Architecture](images/service-catalog-architecture.svg)
 
 **Hub account** — A designated AWS account (not the management account) where [CDK](https://aws.amazon.com/cdk/) deploys the Service Catalog portfolio, products, and an S3 bucket for template artifacts. This account is registered as a [delegated administrator](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_integrate_services_list.html) for Service Catalog and CloudFormation StackSets, so it can manage resources across the organization without using the management account (which should be reserved for billing and [Organizations](https://aws.amazon.com/organizations/) administration only — keeping workloads out of the management account is an [AWS security best practice](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_best-practices_mgmt-acct.html)).
 
