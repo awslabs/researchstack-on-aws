@@ -51,7 +51,7 @@ For scripted or repeatable deployments using parameter files:
 
 ```bash
 # 1. Copy a parameter file and fill in your values
-cp params/compute-general-ec2.json params/my-project.json
+cp params/compute-ec2.json params/my-project.json
 # Edit my-project.json — replace REPLACE_ME with your VPC, subnet, project name, etc.
 
 # 2. Preview the deployment

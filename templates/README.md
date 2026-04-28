@@ -113,6 +113,14 @@ Each EC2 template offers these AMIs via SSM parameter lookup (always resolves to
 
 Amazon Linux 2023 is the default and recommended for most workloads — EFS auto-mounts with TLS encryption and SSM works out of the box. Ubuntu 24.04 is supported for teams that prefer it, but EFS must be mounted manually post-boot because `amazon-efs-utils` now requires a Rust toolchain to build on Ubuntu. See the [efs-utils GitHub repo](https://github.com/aws/efs-utils) for manual install instructions.
 
+### Custom AMIs
+
+All EC2 templates have a `CustomAmiId` parameter to use your own AMI instead of the default.
+
+**EC2 instances:** Launch an instance from a standard AMI, install your software, then [create an AMI](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/creating-an-ami-ebs.html) from it. Use the resulting AMI ID in the `CustomAmiId` parameter. Architecture (x86/ARM) must match your instance type.
+
+**ParallelCluster:** Custom AMIs must be built with [`pcluster build-image`](https://docs.aws.amazon.com/parallelcluster/latest/ug/building-custom-ami-v3.html) from a ParallelCluster base AMI — standard EC2 AMIs won't work (they're missing Slurm, DCV, and other cluster components). The `Os` parameter must match the OS the AMI was built from.
+
 ## Accessing Your Resources
 
 After deployment, check the CloudFormation stack outputs for connection details, resource IDs, and next steps. In the console: CloudFormation → your stack → Outputs tab. Via CLI:
@@ -140,7 +148,7 @@ Use the deploy helper with a [parameter file](../params/README.md):
 
 ```bash
 # Copy a config and fill in your values
-cp params/compute-general-ec2.json params/my-project.json
+cp params/compute-ec2.json params/my-project.json
 
 # Preview
 ./deploy.sh --config params/my-project.json --dry-run

@@ -3,7 +3,7 @@
 One config file per template. Copy the one you need, replace `REPLACE_ME` values, and deploy:
 
 ```bash
-cp params/compute-general-ec2.json params/my-project.json
+cp params/compute-ec2.json params/my-project.json
 # Edit my-project.json with your values
 ./deploy.sh --config params/my-project.json
 ```
@@ -58,10 +58,7 @@ aws cloudformation describe-stacks \
 | `shared-filesystem-efs.json` | Network filesystem shared across multiple instances |
 | `mounted-storage-s3files.json` | Mount S3 as a POSIX filesystem (~13x cheaper than EFS) |
 | `parallel-filesystem-fsx.json` | High-throughput Lustre filesystem for compute-intensive I/O |
-| `compute-general-ec2.json` | Balanced compute (M-series) for everyday research |
-| `compute-cpu-ec2.json` | CPU-optimized (C-series) for simulations and batch processing |
-| `compute-memory-ec2.json` | Memory-optimized (R-series) for genomics and large datasets |
-| `compute-gpu-ec2.json` | GPU compute (G-series) for ML training and inference |
+| `compute-ec2.json` | EC2 instance — change `template` key for family: `ec2-gp` (balanced), `ec2-cpu` (compute), `ec2-mem` (memory), `ec2-gpu` (GPU) |
 | `compute-spot-ec2.json` | Cost-optimized Spot across multiple instance types (up to 70% savings) |
 | `hpc-cluster-parallelcluster.json` | Slurm HPC cluster with DCV desktop and auto-scaling |
 | `jupyter-notebook-sagemaker.json` | Managed Jupyter environment with GPU support |
