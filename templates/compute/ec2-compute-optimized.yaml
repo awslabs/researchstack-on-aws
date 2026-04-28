@@ -576,7 +576,7 @@ Resources:
       DatapointsToAlarm: !Ref IdleMinutesBeforeStop
       Threshold: 5
       ComparisonOperator: LessThanThreshold
-      TreatMissingData: breaching
+      TreatMissingData: missing
 
 Outputs:
   InstanceId:
