@@ -94,17 +94,18 @@ ResearchStack supports two deployment paths:
 ```mermaid
 graph LR
     subgraph Standalone
-        A[Researcher] -->|"CFN console / deploy.sh"| T
+        R1[Researcher] -->|Log in| Acct[Individual Account]
     end
 
     subgraph "Service Catalog"
-        B[IT Admin] -->|"cdk deploy"| Hub[Hub Account]
+        Admin[IT Admin] -->|"cdk deploy"| Hub[Hub Account]
         Hub -->|"OU sharing + StackSets"| Spoke[Spoke Accounts]
-        C[Researcher] -->|"Browse & Launch"| Spoke
-        Spoke --> T
+        R2[Researcher] -->|Log in| Spoke
     end
 
-    T[ResearchStack Templates] --> R["Tagged Resources
+    Acct -->|"CFN console / deploy.sh"| T[ResearchStack Templates]
+    Spoke -->|"Browse & Launch"| T
+    T --> R["Deployed & Tagged Resources
     EC2 · S3 · EFS · SageMaker · PCluster · VPC"]
 
     style T fill:#e3f2fd,stroke:#1565c0
