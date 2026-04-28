@@ -442,6 +442,9 @@ Resources:
     Condition: HasCapacityReservation
     Properties:
       LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
         CapacityReservationSpecification:
           CapacityReservationTarget:
             CapacityReservationId: !Ref CapacityReservationId
@@ -451,6 +454,9 @@ Resources:
     Condition: UseSpot
     Properties:
       LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
         InstanceMarketOptions:
           MarketType: spot
           SpotOptions:

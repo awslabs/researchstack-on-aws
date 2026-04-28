@@ -432,6 +432,9 @@ Resources:
     Condition: IsSpot
     Properties:
       LaunchTemplateData:
+        MetadataOptions:
+          HttpTokens: required
+          HttpEndpoint: enabled
         InstanceMarketOptions:
           MarketType: spot
           SpotOptions:

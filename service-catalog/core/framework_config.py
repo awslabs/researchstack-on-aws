@@ -62,7 +62,7 @@ class FrameworkConfigLoader:
             )
 
         try:
-            with open(self.config_path, "r") as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 raw = yaml.safe_load(f) or {}
         except yaml.YAMLError as e:
             raise FrameworkConfigError("Invalid YAML syntax", "Check framework_config.yaml syntax", str(e))
