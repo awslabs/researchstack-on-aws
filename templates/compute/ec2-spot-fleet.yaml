@@ -24,18 +24,18 @@ Metadata:
           - VpcId
           - SubnetIds
       - Label:
-          default: 'Shared Storage'
+          default: 'Storage'
         Parameters:
           - AutoCreateStorage
+          - EfsFileSystemId
+          - S3FilesFileSystemId
+          - S3BucketName
       - Label:
           default: 'Advanced Configuration (optional)'
         Parameters:
           - CustomAmiId
           - KeyPairName
           - SSHAllowedIps
-          - EfsFileSystemId
-          - S3FilesFileSystemId
-          - S3BucketName
     ParameterLabels:
       ProjectName:
         default: 'Project Name'
@@ -151,7 +151,7 @@ Parameters:
 
   AutoCreateStorage:
     Type: String
-    Default: none
+    Default: s3-files
     AllowedValues: [s3-files, none]
     Description: 'Automatically create shared storage mounted at /mnt/s3files. s3-files creates an S3 bucket with filesystem access - ~$0.023/GB/month, no cost until you store data. Note: mount takes 5-10 minutes after first boot for DNS propagation.'
 
