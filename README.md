@@ -92,33 +92,23 @@ For access control, we recommend [IAM Identity Center](https://aws.amazon.com/ia
 ResearchStack supports two deployment paths:
 
 ```mermaid
-graph TB
-    subgraph "Standalone Path"
-        R1[Researcher / IT Admin] -->|"deploy.sh or CFN console"| CFN[CloudFormation]
-        CFN --> T[ResearchStack Templates]
+graph LR
+    subgraph Standalone
+        A[Researcher] -->|"CFN console / deploy.sh"| T
     end
 
-    subgraph "Service Catalog Path"
-        Admin[IT Admin] -->|"cdk deploy"| Hub[Hub Account]
-        Hub -->|Portfolio + Products| SC[Service Catalog]
-        Hub -->|StackSets| Spoke[Spoke Accounts]
-        Spoke -->|Launch Roles| SC
-        R2[Researcher] -->|"Browse & Launch"| SC
-        SC --> T
+    subgraph "Service Catalog"
+        B[IT Admin] -->|"cdk deploy"| Hub[Hub Account]
+        Hub -->|"OU sharing + StackSets"| Spoke[Spoke Accounts]
+        C[Researcher] -->|"Browse & Launch"| Spoke
+        Spoke --> T
     end
 
-    subgraph "Identity"
-        IDC[IAM Identity Center] -.->|SSO| R1
-        IDC -.->|SSO + Permission Sets| R2
-    end
+    T[ResearchStack Templates] --> R["Tagged Resources
+    EC2 · S3 · EFS · SageMaker · PCluster · VPC"]
 
-    T -->|Creates| Resources["Tagged AWS Resources
-    EC2 · S3 · EFS · SageMaker
-    ParallelCluster · VPC"]
-
-    style Resources fill:#e8f5e9,stroke:#2e7d32
     style T fill:#e3f2fd,stroke:#1565c0
-    style IDC fill:#fff3e0,stroke:#e65100
+    style R fill:#e8f5e9,stroke:#2e7d32
 ```
 
 - **Standalone**: deploy templates directly via the CloudFormation console or CLI — simplest for single accounts
