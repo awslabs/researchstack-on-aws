@@ -22,7 +22,7 @@ The Service Catalog layer adds governance on top of the same templates you can d
 
 **OU sharing** — The portfolio is shared at the [OU](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_ous.html) level, so every account in the OU sees it. Researchers in spoke accounts browse the shared portfolio and launch products using the launch roles that StackSets deployed into their account.
 
-**[Access principals](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html)** — IAM role ARN patterns that determine who can see and launch products from the portfolio. Typically mapped to [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) permission sets so access is granted automatically across all spoke accounts.
+**[Access principals](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/catalogs_portfolios_users.html)** — IAM role ARN patterns that control who can see and launch products. When a principal pattern is associated with the portfolio and sharing is enabled (`share_principals = true`), any user in any spoke account whose IAM role matches the pattern gets access automatically. This means an IDC permission set assigned across multiple accounts grants portfolio access in all of them — no per-account configuration needed.
 
 ## Why CDK?
 
