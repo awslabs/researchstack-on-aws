@@ -85,7 +85,7 @@ Delete the CloudFormation stack to clean up all resources and stop costs. S3 buc
 
 All resources are tagged automatically: Project, CostCenter, Owner, ManagedBy, Environment. Use these in [Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for per-grant chargeback. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for budgets, Savings Plans, and F&A guidance.
 
-For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
+For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. See [`examples/researcher-policy.json`](examples/README.md) for a ready-to-use researcher IAM policy. For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
 
 ## Architecture
 
@@ -107,6 +107,7 @@ researchstack/
 │   ├── networking/          # VPC
 │   └── governance/          # Budget alerts
 ├── params/                   # Parameter files for deploy.sh
+├── examples/                 # Sample IAM policies
 ├── deploy.sh                 # CLI deploy helper
 ├── service-catalog/          # CDK code for Service Catalog governance layer
 ├── docs/                    # Guides and documentation
@@ -117,6 +118,7 @@ researchstack/
 
 - [Templates README](templates/README.md) — Template details, instance types, OS options
 - [Parameter Files](params/README.md) — Deploy configs and resource lookup commands
+- [Examples](examples/README.md) — Researcher IAM policy
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) — Map research phases to templates
 - [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, F&A
 - [FAQ](docs/faq.md) — Connecting, costs, security, configuration

@@ -281,6 +281,25 @@ Complete reference for every configurable field. Fields marked (required) must b
 | `launch_role_policies` | List of strings | No | `[]` | [AWS managed policy](https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_managed-vs-inline.html) names for the launch role. Follow least privilege — only include the policies the product needs to create its resources. The sample TOML provides suggestions using policies that exist by default in all AWS accounts. `AWSCloudFormationFullAccess` is always added automatically. |
 | `custom_policy` | List of inline statements | No | `[]` | Custom IAM policy statements added to the launch role as an inline policy. Use to fill gaps in AWS managed policies (e.g., `AmazonSageMakerFullAccess` excludes domain-level actions) or to replace broad managed policies with scoped-down permissions for tighter security. Each entry has `actions` (list of IAM actions) and `resources` (list of ARN patterns). See the sagemaker-studio product in the sample TOML for an example. |
 
+## Enforcing Tag Values with TagOptions
+
+ResearchStack templates require `CostCenter` and `ProjectName` as free-text parameters — researchers can type anything. For institutions that need to enforce a list of valid values (e.g., only approved grant numbers), Service Catalog [TagOptions](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html) provide dropdown-style enforcement at provisioning time.
+
+**Why use TagOptions:** Prevents typos in cost tracking tags. A researcher selecting "grant-12345" from a dropdown is more reliable than typing it. Invalid tags mean costs can't be traced back to grants — a real problem for chargeback reporting.
+
+**Tradeoff:** You maintain the list of valid values. Every new grant number needs to be added to TagOptions. This is an ongoing operational task, not a one-time setup.
+
+**How to set up (manual, via SC console):**
+
+1. Go to [Service Catalog → TagOptions](https://console.aws.amazon.com/servicecatalog/home#/tagOptions)
+2. Create a TagOption: Key = `CostCenter`, Value = your grant number (e.g., `grant-12345`)
+3. Repeat for each valid cost center
+4. Associate the TagOptions with your portfolio — researchers see a dropdown when launching products
+
+The portfolio TOML has `share_tag_options = true`, so TagOptions propagate to spoke accounts automatically when the portfolio is shared.
+
+For more details, see the [AWS TagOptions documentation](https://docs.aws.amazon.com/servicecatalog/latest/adminguide/tagoptions.html).
+
 ## Troubleshooting
 
 | Issue | Solution |

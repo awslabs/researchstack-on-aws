@@ -158,6 +158,8 @@ aws cloudformation create-stack \
 
 Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts are safety nets, not real-time spending caps.
 
+For Service Catalog deployments, you can also enforce valid cost center values at provisioning time using [TagOptions](service-catalog-guide.md#enforcing-tag-values-with-tagoptions) — researchers select from a dropdown instead of typing free text.
+
 ## F&A and Cloud Computing
 
 Historically, most U.S. research institutions classify cloud computing as a "service" in the Modified Total Direct Cost (MTDC) base, which means the full negotiated F&A rate (typically 50-70% at R1 institutions) is applied to every dollar of cloud spending on a federal grant. A researcher spending $500,000 on cloud at a 60% F&A rate must budget an additional $300,000 in indirect costs. By contrast, on-premises hardware purchases over $5,000 qualify as "equipment" and are excluded from MTDC — no F&A is charged.

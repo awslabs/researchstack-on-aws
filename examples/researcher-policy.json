@@ -1,0 +1,86 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ServiceCatalogEndUser",
+      "Effect": "Allow",
+      "Action": [
+        "servicecatalog:ListPortfolios",
+        "servicecatalog:DescribeProduct",
+        "servicecatalog:DescribeProductView",
+        "servicecatalog:DescribeProvisioningParameters",
+        "servicecatalog:ProvisionProduct",
+        "servicecatalog:TerminateProvisionedProduct",
+        "servicecatalog:UpdateProvisionedProduct",
+        "servicecatalog:DescribeProvisionedProduct",
+        "servicecatalog:ListProvisionedProductPlans",
+        "servicecatalog:DescribeRecord",
+        "servicecatalog:ScanProvisionedProducts",
+        "servicecatalog:SearchProducts",
+        "servicecatalog:ListLaunchPaths",
+        "servicecatalog:ListServiceActionsForProvisioningArtifact"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudFormationReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplate"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SSMSessionManager",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:StartSession",
+        "ssm:TerminateSession",
+        "ssm:ResumeSession",
+        "ssm:DescribeSessions",
+        "ssm:GetConnectionStatus"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EC2ReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeKeyPairs"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3DataAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket",
+        "s3:DeleteObject"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/ManagedBy": "ResearchStack"
+        }
+      }
+    },
+    {
+      "Sid": "CostVisibility",
+      "Effect": "Allow",
+      "Action": [
+        "ce:GetCostAndUsage",
+        "ce:GetCostForecast",
+        "budgets:ViewBudget"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
