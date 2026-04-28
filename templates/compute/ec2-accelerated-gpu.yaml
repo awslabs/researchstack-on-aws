@@ -476,6 +476,9 @@ Resources:
       SubnetId: !Ref SubnetId
       SecurityGroupIds:
         - !Ref SecurityGroup
+      MetadataOptions:
+        HttpTokens: required
+        HttpEndpoint: enabled
       BlockDeviceMappings:
         - DeviceName: !If [IsUbuntu, /dev/sda1, /dev/xvda]
           Ebs:
