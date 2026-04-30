@@ -123,9 +123,9 @@ There are two common approaches to attributing cloud costs to grants, and Resear
 
 **Tags per resource (shared accounts):** Multiple researchers or grants share an AWS account. The `CostCenter` tag on each resource identifies which grant pays for it. Use Cost Explorer tag filters for per-grant reporting. This is the default ResearchStack model — every template requires a `CostCenter` parameter.
 
-**Account per grant (isolated accounts):** Each grant or lab gets its own AWS account within an [AWS Organization](https://aws.amazon.com/organizations/). All spend in the account belongs to one grant — no tagging needed for attribution because the account IS the cost boundary. When the grant ends, freeze or close the account. This is the model ResearchStack recommends for institutions using [Service Catalog](service-catalog-guide.md) with OU-level sharing.
+**Account per grant (isolated accounts):** Each grant gets its own AWS account within an [AWS Organization](https://aws.amazon.com/organizations/). All spend in the account belongs to one grant — no resource-level tagging needed for attribution because the account IS the cost boundary. Use [account tags](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_tagging.html) to label the account with its cost center. When the grant ends, reassign the account to a new grant (update the account tag), or freeze/close the account if no longer needed. This model works well with Service Catalog OU-level sharing but is distinct from ResearchStack's default per-resource tagging approach.
 
-Both models work with ResearchStack templates. If you use account-per-grant, the `CostCenter` tag is redundant but harmless (and useful if you later consolidate accounts). If you share accounts, the tag is essential for chargeback.
+Both models work with ResearchStack templates. The default is per-resource tagging (every template requires `CostCenter`). If you use account-per-grant, the `CostCenter` tag on resources is redundant but harmless — and useful if you later consolidate accounts or need project-level granularity within a single-grant account.
 
 ### Activating Cost Allocation Tags
 
