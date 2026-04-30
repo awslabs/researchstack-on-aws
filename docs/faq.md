@@ -93,6 +93,9 @@ Delete the CloudFormation stack — this removes all resources the template crea
 
 Note: S3 buckets cannot be deleted if they contain data. If the stack deletion fails on an S3 bucket, empty it first with `aws s3 rm s3://BUCKET_NAME --recursive`, then retry the deletion. See the [Templates README](../templates/README.md#deleting-resources) for full instructions including versioned buckets.
 
+**What if a researcher leaves or I need to clean up an entire account?**
+ResearchStack is designed for visibility and prevention — idle shutdown, budget alerts, and cost tracking tags help avoid waste before it happens. For cleanup, every deployment is a CloudFormation stack (or Service Catalog provisioned product), so deleting the stack removes all resources it created. For accounts with resources created outside of templates (console clicks, manual experiments), consider [aws-nuke](https://github.com/ekristen/aws-nuke) (third-party tool, not maintained by AWS) for account-wide cleanup. Always review what will be deleted before running account-level cleanup tools.
+
 ## Security and Access
 
 **Who can access resources I deploy?**

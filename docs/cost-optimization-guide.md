@@ -117,6 +117,16 @@ All ResearchStack templates automatically tag resources for cost allocation:
 
 These tags enable filtering in [Cost Explorer](https://aws.amazon.com/aws-cost-management/aws-cost-explorer/), [Budgets](https://aws.amazon.com/aws-cost-management/aws-budgets/), and [Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) for per-project and per-grant chargeback reporting.
 
+### Cost Attribution Models
+
+There are two common approaches to attributing cloud costs to grants, and ResearchStack supports both:
+
+**Tags per resource (shared accounts):** Multiple researchers or grants share an AWS account. The `CostCenter` tag on each resource identifies which grant pays for it. Use Cost Explorer tag filters for per-grant reporting. This is the default ResearchStack model — every template requires a `CostCenter` parameter.
+
+**Account per grant (isolated accounts):** Each grant or lab gets its own AWS account within an [AWS Organization](https://aws.amazon.com/organizations/). All spend in the account belongs to one grant — no tagging needed for attribution because the account IS the cost boundary. When the grant ends, freeze or close the account. This is the model ResearchStack recommends for institutions using [Service Catalog](service-catalog-guide.md) with OU-level sharing.
+
+Both models work with ResearchStack templates. If you use account-per-grant, the `CostCenter` tag is redundant but harmless (and useful if you later consolidate accounts). If you share accounts, the tag is essential for chargeback.
+
 ### Activating Cost Allocation Tags
 
 AWS resources are tagged automatically by ResearchStack templates, but tags don't appear in Cost Explorer or Budgets until you activate them as **cost allocation tags** in the Billing console. This is a one-time setup per account (or per management account if using AWS Organizations).
