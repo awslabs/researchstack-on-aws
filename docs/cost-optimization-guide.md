@@ -119,13 +119,13 @@ These tags enable filtering in [Cost Explorer](https://aws.amazon.com/aws-cost-m
 
 ### Cost Attribution Models
 
-There are two common approaches to attributing cloud costs to grants, and ResearchStack supports both:
+There are two common approaches to attributing cloud costs to grants. ResearchStack supports both — choose based on your institution's account structure:
 
-**Tags per resource (shared accounts):** Multiple researchers or grants share an AWS account. The `CostCenter` tag on each resource identifies which grant pays for it. Use Cost Explorer tag filters for per-grant reporting. This is the default ResearchStack model — every template requires a `CostCenter` parameter.
+**Tags per resource (shared accounts):** Multiple researchers or grants share an AWS account. The `CostCenter` tag on each resource identifies which grant pays for it. Use Cost Explorer tag filters for per-grant reporting. Best for institutions with a small number of accounts or where researchers share infrastructure. Requires tagging discipline — every resource must be tagged correctly.
 
-**Account per grant (isolated accounts):** Each grant gets its own AWS account within an [AWS Organization](https://aws.amazon.com/organizations/). All spend in the account belongs to one grant — no resource-level tagging needed for attribution because the account IS the cost boundary. Use [account tags](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_tagging.html) to label the account with its cost center. When the grant ends, reassign the account to a new grant (update the account tag), or freeze/close the account if no longer needed. This model works well with Service Catalog OU-level sharing but is distinct from ResearchStack's default per-resource tagging approach.
+**Account per grant (isolated accounts):** Each grant gets its own AWS account within an [AWS Organization](https://aws.amazon.com/organizations/). All spend in the account belongs to one grant — no resource-level tagging needed for attribution because the account IS the cost boundary. Use [account tags](https://docs.aws.amazon.com/organizations/latest/userguide/orgs_tagging.html) to label the account with its cost center. When the grant ends, reassign the account to a new grant (update the account tag), or freeze/close the account if no longer needed. Simpler and more reliable than per-resource tagging, but requires account lifecycle management.
 
-Both models work with ResearchStack templates. The default is per-resource tagging (every template requires `CostCenter`). If you use account-per-grant, the `CostCenter` tag on resources is redundant but harmless — and useful if you later consolidate accounts or need project-level granularity within a single-grant account.
+Both models work with ResearchStack templates. All templates require `CostCenter` as a parameter — in the account-per-grant model this is redundant but harmless, and useful if you later need project-level granularity within a single-grant account.
 
 ### Activating Cost Allocation Tags
 
