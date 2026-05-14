@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-14
+
 ### Added
 - EC2 idle shutdown — CloudWatch alarm auto-stops instances after configurable idle period (CPU < 5%). Default 2 hours, user-configurable 15 min to 24 hours. Enabled by default on all EC2 templates.
 - EC2 custom AMI support — optional `CustomAmiId` parameter on all EC2 templates and ParallelCluster. Use for golden AMIs with pre-installed software.
@@ -22,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Service Catalog architecture diagram
 - TagOptions enforcement guide in Service Catalog deployment guide
 - Custom AMI guide in templates README
+- Cost allocation tag activation guide in cost optimization docs
+- F&A and Cloud Computing section in cost optimization guide (P.L. 119-75, Feb 2026)
+- AWS Open Data Sponsorship Program reference in research lifecycle guide
 
 ### Changed
 - IAMFullAccess removed from 7 of 8 Service Catalog launch roles — replaced with scoped least-privilege policies. PCluster retains IAMFullAccess (provider manages IAM internally).
@@ -29,23 +34,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Idle shutdown no longer stops instances prematurely on fresh launches
 - EC2 parameter groups reorganized — Storage group with all storage options, Advanced group for power-user settings
 - ParallelCluster parameter groups reorganized — Cluster Configuration, Networking, Access, Storage, Advanced
-- Documentation overhauled — main README, templates README, FAQ, cost optimization guide, research lifecycle guide, Service Catalog guide
+- Documentation overhauled — main README, templates README, FAQ, cost optimization guide, research lifecycle guide, Service Catalog guide, CONTRIBUTING.md
+- Parameter validation added across all templates
+- SageMaker Studio: Owner parameter made optional
 
 ### Fixed
 - SageMaker Studio launch role scoped to `sagemaker:*` custom policy
 - ParallelCluster DCV secrets policy prefix corrected
 - SSH key pair descriptions note public subnet requirement
-
-### Added (earlier)
-- Governance budget alert template — monthly budget tracking by CostCenter tag
-- Cost allocation tag activation guide in cost optimization docs
-- F&A and Cloud Computing section in cost optimization guide (P.L. 119-75, Feb 2026)
-- AWS Open Data Sponsorship Program reference in research lifecycle guide
-
-### Changed (earlier)
-- Documentation overhauled — research lifecycle guide, cost optimization guide, Service Catalog guide, CONTRIBUTING.md
-- Parameter validation added across all templates
-- SageMaker Studio: Owner parameter made optional
 
 ### Removed
 - Empty `examples/` and `scripts/` placeholder directories
