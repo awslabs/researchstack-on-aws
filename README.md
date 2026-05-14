@@ -110,12 +110,13 @@ graph LR
     T --> R["Deployed & Tagged Resources
     EC2 · S3 · EFS · SageMaker · PCluster · VPC"]
 
-    style T fill:#e3f2fd,stroke:#1565c0
-    style R fill:#e8f5e9,stroke:#2e7d32
+
 ```
 
 - **Standalone**: deploy templates directly via the CloudFormation console or CLI — simplest for single accounts
 - **[Service Catalog](https://aws.amazon.com/servicecatalog/)**: governance layer with launch roles, OU sharing, and self-service catalog — best for multi-account institutions
+
+Both paths use the same templates and produce the same tagged resources.
 
 Both paths use the same templates and produce the same tagged resources.
 
