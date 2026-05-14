@@ -1,0 +1,4 @@
+templates:
+  - templates/**/*.yaml
+ignore_checks:
+  - W1030  # Ref values cannot be validated at lint time (runtime parameters)
