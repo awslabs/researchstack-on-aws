@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """ResearchStack on AWS - Service Catalog deployment entrypoint.
 
 Reads framework_config.yaml and portfolio TOML configs, then synthesizes:

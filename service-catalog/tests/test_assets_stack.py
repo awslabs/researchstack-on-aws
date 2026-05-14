@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Tests for assets_stack.py — S3 bucket for SC template artifacts."""
 
 import pytest

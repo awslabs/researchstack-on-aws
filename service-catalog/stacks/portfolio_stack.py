@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Service Catalog portfolio stack.
 
 Creates a portfolio, adds products (from CloudFormation template files),

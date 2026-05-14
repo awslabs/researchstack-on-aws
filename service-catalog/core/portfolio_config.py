@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Portfolio configuration loader for ResearchStack Service Catalog.
 
 Loads portfolio TOML configs with inline product definitions.

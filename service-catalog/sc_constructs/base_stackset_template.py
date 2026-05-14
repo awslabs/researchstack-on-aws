@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Base class for stackset templates synthesized by StacksetFactory."""
 
 from typing import Any, Dict, Optional

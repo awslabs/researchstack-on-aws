@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """StackSet template that deploys a launch role into target accounts."""
 
 from typing import Dict, List, Optional

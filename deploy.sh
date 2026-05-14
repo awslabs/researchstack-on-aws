@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 # ResearchStack Deploy Helper
 # Deploys CloudFormation templates from a config file.
 # No dependencies beyond the AWS CLI and Python 3.

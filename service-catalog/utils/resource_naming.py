@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Standardized resource naming for CloudFormation stacks and SC launch roles."""
 
 import re

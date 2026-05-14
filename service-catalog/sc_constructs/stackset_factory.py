@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Factory for creating CloudFormation StackSets to deploy launch roles.
 
 Synthesizes a launch role template into a StackSet that targets OUs or accounts.

@@ -29,6 +29,9 @@ logs/
 
 # Kiro workspace config
 .kiro/
+# Threat model (internal)
+.threatmodel/
+
 # ASH scan results
 .ash/
 scan-results*/

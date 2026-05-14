@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EC2 General Purpose Instance (M-series) - Balanced compute, memory, and network for everyday research workloads'
 
@@ -360,6 +362,25 @@ Resources:
           Value: !Ref CostCenter
         - Key: ManagedBy
           Value: ResearchStack
+
+  AutoS3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: AutoCreateS3Files
+    Properties:
+      Bucket: !Ref AutoS3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyUnencryptedTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt AutoS3Bucket.Arn
+              - !Sub '${AutoS3Bucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
 
   AutoS3FilesRole:
     Type: AWS::IAM::Role

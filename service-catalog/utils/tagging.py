@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Apply standard tags to all CDK stacks."""
 
 from aws_cdk import Stack, Tags

@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """IAM launch role for a Service Catalog product.
 
 Creates a role that SC assumes to launch CloudFormation stacks on behalf of users.

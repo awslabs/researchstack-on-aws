@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Amazon S3 Files — Mount an S3 bucket as a POSIX filesystem via NFS. ~13x cheaper than EFS for storage, with full read/write support.'
 
@@ -98,6 +100,25 @@ Resources:
         - Key: Environment
           Value: Research
 
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: CreateBucket
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyUnencryptedTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt S3Bucket.Arn
+              - !Sub '${S3Bucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
+
   # IAM role for S3 Files to access the bucket
   S3FilesRole:
     Type: AWS::IAM::Role
@@ -166,7 +187,7 @@ Resources:
   VpcCidrLookupFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.14
       Handler: index.handler
       Role: !GetAtt VpcCidrLookupRole.Arn
       Timeout: 30

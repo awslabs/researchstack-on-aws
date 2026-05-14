@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Framework configuration loader for ResearchStack Service Catalog.
 
 Loads deployment settings, available OUs, and tagging config from framework_config.yaml.

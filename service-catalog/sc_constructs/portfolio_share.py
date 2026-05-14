@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """Share a Service Catalog portfolio with an AWS Organizations OU.
 
 Uses a CDK custom resource to call the SC API directly, since the L2

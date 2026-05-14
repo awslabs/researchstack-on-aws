@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'EFS Shared Storage - Network file system for shared access across compute resources'
 
@@ -195,7 +197,7 @@ Resources:
   VpcCidrLookupFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.14
       Handler: index.handler
       Role: !GetAtt VpcCidrLookupRole.Arn
       Timeout: 30

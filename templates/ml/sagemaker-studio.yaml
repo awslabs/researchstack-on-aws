@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'SageMaker Studio Domain — managed Jupyter environment with GPU support for ML development and data science'
 
@@ -133,6 +135,25 @@ Resources:
           Value: ResearchStack
         - Key: Environment
           Value: Research
+
+  ResearchDataBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: CreateNewBucket
+    Properties:
+      Bucket: !Ref ResearchDataBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyUnencryptedTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt ResearchDataBucket.Arn
+              - !Sub '${ResearchDataBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false'
 
   SageMakerExecutionRole:
     Type: AWS::IAM::Role

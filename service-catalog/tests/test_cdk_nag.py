@@ -1,3 +1,5 @@
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# SPDX-License-Identifier: Apache-2.0
 """cdk-nag compliance tests for Service Catalog stacks.
 
 Validates that synthesized stacks follow AWS Solutions best practices.
