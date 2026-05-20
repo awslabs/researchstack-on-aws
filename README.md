@@ -49,7 +49,7 @@ Most templates require a VPC. Deploy the [Research VPC](templates/README.md#netw
 
 ### Deploy via CLI (repeatable deployments)
 
-For scripted or repeatable deployments, use `deploy.sh` with a parameter file. Pre-built configs for every template are in [`params/`](params/README.md) — copy one, fill in your values (VPC, subnet, project name), and deploy:
+For scripted or repeatable deployments, use `deploy.sh` with a parameter file. Pre-built configs for every template are in `params/` — copy one, fill in your values (VPC, subnet, project name), and deploy:
 
 ```bash
 # 1. Copy a parameter file and fill in your values
@@ -87,7 +87,7 @@ Delete the CloudFormation stack to clean up all resources and stop costs. S3 buc
 
 All resources are tagged automatically: Project, CostCenter, Owner, ManagedBy, Environment. Use these in [Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for quick visibility or [Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) for detailed CSV-based per-grant chargeback. If you're just testing, any value works for ProjectName and CostCenter — they're resource tags, not billing constructs. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for budgets, Savings Plans, and F&A guidance.
 
-For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. See [`examples/researcher-policy.json`](examples/researcher-policy.json) for a ready-to-use least-privilege IAM policy (Service Catalog, SSM, S3, Cost Explorer access). For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
+For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. See [`examples/researcher-policy.json`](examples/researcher-policy.json) for a ready-to-use least-privilege IAM policy (Service Catalog, SSM, EC2 start/stop, S3, SageMaker Studio, and Cost Explorer access). For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
 
 ## Architecture
 

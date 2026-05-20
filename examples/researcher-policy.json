@@ -2,35 +2,99 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "ServiceCatalogEndUser",
+      "Sid": "ServiceCatalogBrowseAndLaunch",
       "Effect": "Allow",
       "Action": [
-        "servicecatalog:ListPortfolios",
         "servicecatalog:DescribeProduct",
         "servicecatalog:DescribeProductView",
         "servicecatalog:DescribeProvisioningParameters",
-        "servicecatalog:ProvisionProduct",
-        "servicecatalog:TerminateProvisionedProduct",
-        "servicecatalog:UpdateProvisionedProduct",
-        "servicecatalog:DescribeProvisionedProduct",
-        "servicecatalog:ListProvisionedProductPlans",
-        "servicecatalog:DescribeRecord",
-        "servicecatalog:ScanProvisionedProducts",
-        "servicecatalog:SearchProducts",
         "servicecatalog:ListLaunchPaths",
-        "servicecatalog:ListServiceActionsForProvisioningArtifact"
+        "servicecatalog:ProvisionProduct",
+        "servicecatalog:SearchProducts",
+        "cloudformation:GetTemplateSummary",
+        "config:DescribeConfigurationRecorders",
+        "config:DescribeConfigurationRecorderStatus"
       ],
       "Resource": "*"
     },
     {
-      "Sid": "CloudFormationReadOnly",
+      "Sid": "ServiceCatalogManageOwnProducts",
       "Effect": "Allow",
       "Action": [
-        "cloudformation:DescribeStacks",
+        "servicecatalog:DescribeProvisionedProduct",
+        "servicecatalog:DescribeRecord",
+        "servicecatalog:ListRecordHistory",
+        "servicecatalog:ListStackInstancesForProvisionedProduct",
+        "servicecatalog:ScanProvisionedProducts",
+        "servicecatalog:SearchProvisionedProducts",
+        "servicecatalog:TerminateProvisionedProduct",
+        "servicecatalog:UpdateProvisionedProduct",
+        "servicecatalog:CreateProvisionedProductPlan",
+        "servicecatalog:DescribeProvisionedProductPlan",
+        "servicecatalog:ExecuteProvisionedProductPlan",
+        "servicecatalog:DeleteProvisionedProductPlan",
+        "servicecatalog:ListProvisionedProductPlans",
+        "servicecatalog:ListServiceActionsForProvisioningArtifact",
+        "servicecatalog:ExecuteProvisionedProductServiceAction",
+        "servicecatalog:DescribeServiceActionExecutionParameters"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "servicecatalog:userLevel": "self"
+        }
+      }
+    },
+    {
+      "Sid": "CloudFormationForServiceCatalog",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:DeleteStack",
         "cloudformation:DescribeStackEvents",
-        "cloudformation:GetTemplate"
+        "cloudformation:DescribeStacks",
+        "cloudformation:SetStackPolicy",
+        "cloudformation:ValidateTemplate",
+        "cloudformation:UpdateStack",
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:ListChangeSets",
+        "cloudformation:DeleteChangeSet",
+        "cloudformation:TagResource",
+        "cloudformation:ListStackResources"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:*:*:stack/SC-*",
+        "arn:aws:cloudformation:*:*:changeSet/SC-*"
+      ]
+    },
+    {
+      "Sid": "EC2Describe",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeInstances",
+        "ec2:DescribeInstanceStatus",
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeKeyPairs"
       ],
       "Resource": "*"
+    },
+    {
+      "Sid": "EC2StartStop",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:StartInstances",
+        "ec2:StopInstances"
+      ],
+      "Resource": "arn:aws:ec2:*:*:instance/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/ManagedBy": "ResearchStack"
+        }
+      }
     },
     {
       "Sid": "SSMSessionManager",
@@ -40,19 +104,8 @@
         "ssm:TerminateSession",
         "ssm:ResumeSession",
         "ssm:DescribeSessions",
-        "ssm:GetConnectionStatus"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "EC2ReadOnly",
-      "Effect": "Allow",
-      "Action": [
-        "ec2:DescribeInstances",
-        "ec2:DescribeVpcs",
-        "ec2:DescribeSubnets",
-        "ec2:DescribeSecurityGroups",
-        "ec2:DescribeKeyPairs"
+        "ssm:GetConnectionStatus",
+        "ssm:DescribeInstanceInformation"
       ],
       "Resource": "*"
     },
@@ -62,15 +115,30 @@
       "Action": [
         "s3:GetObject",
         "s3:PutObject",
+        "s3:DeleteObject",
         "s3:ListBucket",
-        "s3:DeleteObject"
+        "s3:GetBucketLocation"
       ],
-      "Resource": "*",
-      "Condition": {
-        "StringEquals": {
-          "aws:ResourceTag/ManagedBy": "ResearchStack"
-        }
-      }
+      "Resource": [
+        "arn:aws:s3:::researchstack-*",
+        "arn:aws:s3:::researchstack-*/*"
+      ]
+    },
+    {
+      "Sid": "SageMakerStudioAccess",
+      "Effect": "Allow",
+      "Action": [
+        "sagemaker:CreatePresignedDomainUrl",
+        "sagemaker:DescribeDomain",
+        "sagemaker:DescribeUserProfile",
+        "sagemaker:ListApps",
+        "sagemaker:ListDomains",
+        "sagemaker:ListUserProfiles",
+        "sagemaker:CreateApp",
+        "sagemaker:DeleteApp",
+        "sagemaker:DescribeApp"
+      ],
+      "Resource": "*"
     },
     {
       "Sid": "CostVisibility",
@@ -78,7 +146,8 @@
       "Action": [
         "ce:GetCostAndUsage",
         "ce:GetCostForecast",
-        "budgets:ViewBudget"
+        "budgets:ViewBudget",
+        "budgets:DescribeBudgetActionsForBudget"
       ],
       "Resource": "*"
     }
