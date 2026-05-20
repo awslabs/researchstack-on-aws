@@ -70,7 +70,7 @@
       ]
     },
     {
-      "Sid": "EC2Describe",
+      "Sid": "EC2Access",
       "Effect": "Allow",
       "Action": [
         "ec2:DescribeInstances",
@@ -78,23 +78,11 @@
         "ec2:DescribeVpcs",
         "ec2:DescribeSubnets",
         "ec2:DescribeSecurityGroups",
-        "ec2:DescribeKeyPairs"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "EC2StartStop",
-      "Effect": "Allow",
-      "Action": [
+        "ec2:DescribeKeyPairs",
         "ec2:StartInstances",
         "ec2:StopInstances"
       ],
-      "Resource": "arn:aws:ec2:*:*:instance/*",
-      "Condition": {
-        "StringEquals": {
-          "aws:ResourceTag/ManagedBy": "ResearchStack"
-        }
-      }
+      "Resource": "*"
     },
     {
       "Sid": "SSMSessionManager",
@@ -119,10 +107,7 @@
         "s3:ListBucket",
         "s3:GetBucketLocation"
       ],
-      "Resource": [
-        "arn:aws:s3:::researchstack-*",
-        "arn:aws:s3:::researchstack-*/*"
-      ]
+      "Resource": "*"
     },
     {
       "Sid": "SageMakerStudioAccess",
