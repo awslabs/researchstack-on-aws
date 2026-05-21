@@ -75,7 +75,8 @@
       "Action": [
         "ec2:Describe*",
         "ec2:StartInstances",
-        "ec2:StopInstances"
+        "ec2:StopInstances",
+        "compute-optimizer:Get*"
       ],
       "Resource": "*"
     },
