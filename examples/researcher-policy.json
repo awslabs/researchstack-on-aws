@@ -108,7 +108,8 @@
         "s3:ListBucket",
         "s3:ListBucketVersions",
         "s3:ListAllMyBuckets",
-        "s3:GetBucketLocation"
+        "s3:GetBucketLocation",
+        "s3:GetBucketVersioning"
       ],
       "Resource": "*"
     },
