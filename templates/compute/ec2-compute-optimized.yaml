@@ -121,7 +121,7 @@ Parameters:
     Type: String
     Default: on-demand
     AllowedValues: [on-demand, spot]
-    Description: 'On-Demand (default) guarantees availability. Spot saves up to 70% — you pay the current Spot price (capped at On-Demand price, never more). Instance can be interrupted with 2 minutes notice and will stop (not terminate) preserving your data. Use Spot for fault-tolerant batch jobs, not interactive work. Spot capacity varies by instance type and AZ — GPU instances may fail to launch. Retry in a different AZ or switch to On-Demand if needed.'
+    Description: 'on-demand: guaranteed availability. spot: up to 70% savings but instance can be interrupted (stops gracefully, data preserved). Use Spot for batch jobs, On-Demand for interactive work.'
 
   OperatingSystem:
     Type: String
