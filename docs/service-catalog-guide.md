@@ -219,15 +219,17 @@ This does not affect resources that researchers have already provisioned — tho
 
 ### Removing Orphaned Portfolios
 
-If you renamed a portfolio (changed `name` in the TOML) or redeployed with different config, the old CDK stacks become orphaned — `cdk destroy` only removes the current stacks, not previous ones with different names. To clean up:
+If you changed `default_env_name` in `framework_config.yaml` (e.g., from `test` to `dev`) or changed the portfolio `name` in your TOML, CDK created new stacks under the new name and the old stacks became orphaned. `cdk destroy` only removes stacks matching the *current* config.
 
-1. Temporarily replace your current TOML in `portfolios/` with one that has the old portfolio `name` (the machine identifier, not `display_name`). It doesn't need products — just the `[portfolio]` section with the original `name` and `share_target_ous`.
-2. Run `cdk destroy --all` — CDK will find and tear down the stacks matching that name, handling StackSets, shares, and dependencies in the correct order.
-3. Restore your current TOML and redeploy: `cdk deploy --all`.
+To clean up old stacks:
 
-Alternatively, if the old portfolio has no provisioned products depending on it, delete it directly in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/): Portfolios → select the orphaned portfolio → remove shares → remove products → delete portfolio.
+1. Temporarily set `default_env_name` back to the old value (e.g., `test`) in `framework_config.yaml`.
+2. Run `cdk destroy --all` — this targets the old stacks and tears them down cleanly.
+3. Restore `default_env_name` to your current value and redeploy: `cdk deploy --all`.
 
-If you don't remember the old name, check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) in the hub account for stacks prefixed with your project slug (e.g., `rs-dev-*`).
+To find orphaned stacks, check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) for stacks prefixed with your project slug and the old env name (e.g., `rs-test-*` vs your current `rs-dev-*`).
+
+**Avoiding this in the future:** Treat `default_env_name` and portfolio `name` as immutable identifiers once deployed. Changing either creates new stacks rather than updating existing ones. If you need to change them, destroy first, then redeploy with the new values.
 
 ## Configuration Reference
 
