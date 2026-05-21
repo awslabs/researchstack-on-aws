@@ -217,6 +217,22 @@ cdk destroy --all
 
 This does not affect resources that researchers have already provisioned — those are independent CloudFormation stacks in spoke accounts. Researchers (or IT admins) must terminate provisioned products separately before or after tearing down the SC infrastructure.
 
+### Removing Orphaned Portfolios
+
+If you renamed a portfolio (changed `name` in the TOML) or redeployed with different config, the old CDK stacks become orphaned — `cdk destroy` only removes the current stacks, not previous ones with different names. To clean up:
+
+1. **Find orphaned stacks** — In the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) in the hub account, look for stacks with the old portfolio name prefix (e.g., `rs-dev-old-portfolio-name-*`).
+2. **Delete StackSet instances first** — If the stack created StackSets (launch roles in spoke accounts), go to [CloudFormation → StackSets](https://console.aws.amazon.com/cloudformation/home#/stacksets), select the orphaned StackSet, delete all stack instances (this removes launch roles from spoke accounts), then delete the StackSet itself.
+3. **Disassociate portfolio shares** — In the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/) → Portfolios → select the orphaned portfolio → Sharing → remove all shares.
+4. **Delete the portfolio** — Remove all products from the portfolio, then delete the portfolio itself in the SC console.
+5. **Delete the CloudFormation stacks** — Delete the orphaned stacks in CloudFormation.
+
+Alternatively, if you know the old stack names, you can delete them via CLI:
+
+```bash
+aws cloudformation delete-stack --stack-name rs-dev-old-portfolio-name
+```
+
 ## Configuration Reference
 
 Complete reference for every configurable field. Fields marked (required) must be set before deploying.
