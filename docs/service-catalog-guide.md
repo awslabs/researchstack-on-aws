@@ -217,19 +217,25 @@ cdk destroy --all
 
 This does not affect resources that researchers have already provisioned — those are independent CloudFormation stacks in spoke accounts. Researchers (or IT admins) must terminate provisioned products separately before or after tearing down the SC infrastructure.
 
-### Removing Orphaned Portfolios
+### Deleting a Portfolio
 
-If you changed `default_env_name` in `framework_config.yaml` (e.g., from `test` to `dev`) or changed the portfolio `name` in your TOML, CDK created new stacks under the new name and the old stacks became orphaned. `cdk destroy` only removes stacks matching the *current* config.
+To remove a specific portfolio, run `cdk destroy` with the stack name **before** removing the TOML file:
 
-To clean up old stacks:
+```bash
+cdk destroy rs-dev-research-computing-portfolio-stack
+```
 
-1. Temporarily set `default_env_name` back to the old value (e.g., `test`) in `framework_config.yaml`.
-2. Run `cdk destroy --all` — this targets the old stacks and tears them down cleanly.
-3. Restore `default_env_name` to your current value and redeploy: `cdk deploy --all`.
+If you already removed the TOML, CDK can't find the stack. Use CloudFormation directly:
 
-To find orphaned stacks, check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) for stacks prefixed with your project slug and the old env name (e.g., `rs-test-*` vs your current `rs-dev-*`).
+```bash
+aws cloudformation delete-stack --stack-name rs-dev-research-computing-portfolio-stack
+```
 
-**Avoiding this in the future:** Treat `default_env_name` and portfolio `name` as immutable identifiers once deployed. Changing either creates new stacks rather than updating existing ones. If you need to change them, destroy first, then redeploy with the new values.
+Stack names follow the pattern `{slug}-{env}-{portfolio-name}-portfolio-stack`. Check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) if you're unsure of the exact name.
+
+### A Note on `default_env_name`
+
+The `default_env_name` in `framework_config.yaml` is baked into every stack name (e.g., `rs-dev-*` vs `rs-test-*`). Changing it after deploying doesn't update existing stacks — it creates a parallel set of stacks under the new name. This is by design if you want separate environments (e.g., `dev` and `prod` side by side), but if you're just renaming, destroy the old stacks first to avoid duplicates.
 
 ## Configuration Reference
 
