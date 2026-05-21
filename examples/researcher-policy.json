@@ -129,9 +129,9 @@
       "Sid": "CostVisibility",
       "Effect": "Allow",
       "Action": [
-        "ce:GetCostAndUsage",
-        "ce:GetCostForecast",
-        "ce:DescribeReport",
+        "ce:Get*",
+        "ce:List*",
+        "ce:Describe*",
         "budgets:ViewBudget",
         "budgets:DescribeBudgetActionsForBudget"
       ],
