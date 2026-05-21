@@ -132,12 +132,17 @@
         "ce:Get*",
         "ce:List*",
         "ce:Describe*",
+        "budgets:ViewBudget",
+        "budgets:Describe*",
         "cost-optimization-hub:List*",
         "cost-optimization-hub:Get*",
         "bcm-recommended-actions:List*",
         "bcm-recommended-actions:Get*",
-        "budgets:ViewBudget",
-        "budgets:DescribeBudgetActionsForBudget"
+        "billing:Get*",
+        "billing:List*",
+        "freetier:Get*",
+        "freetier:List*",
+        "sustainability:GetCarbonFootprintSummary"
       ],
       "Resource": "*"
     }
