@@ -221,9 +221,11 @@ This does not affect resources that researchers have already provisioned — tho
 
 If you renamed a portfolio (changed `name` in the TOML) or redeployed with different config, the old CDK stacks become orphaned — `cdk destroy` only removes the current stacks, not previous ones with different names. To clean up:
 
-1. Create a temporary TOML in `portfolios/` with the old portfolio `name` (the machine identifier, not `display_name`). It doesn't need products — just the `[portfolio]` section with the original `name` and `share_target_ous`.
+1. Temporarily replace your current TOML in `portfolios/` with one that has the old portfolio `name` (the machine identifier, not `display_name`). It doesn't need products — just the `[portfolio]` section with the original `name` and `share_target_ous`.
 2. Run `cdk destroy --all` — CDK will find and tear down the stacks matching that name, handling StackSets, shares, and dependencies in the correct order.
-3. Delete the temporary TOML and redeploy with your current config: `cdk deploy --all`.
+3. Restore your current TOML and redeploy: `cdk deploy --all`.
+
+Alternatively, if the old portfolio has no provisioned products depending on it, delete it directly in the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/): Portfolios → select the orphaned portfolio → remove shares → remove products → delete portfolio.
 
 If you don't remember the old name, check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) in the hub account for stacks prefixed with your project slug (e.g., `rs-dev-*`).
 
