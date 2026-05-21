@@ -65,7 +65,7 @@ Parameters:
 
   DomainName:
     Type: String
-    Description: 'Name for the SageMaker Studio domain (lowercase, numbers, hyphens only). Used in resource naming — must be unique per account/region.'
+    Description: 'Name for the SageMaker Studio domain (lowercase, numbers, hyphens only). Used in resource naming - must be unique per account/region.'
     AllowedPattern: '^[a-z0-9-]{1,40}$'
     ConstraintDescription: 'Must be lowercase letters, numbers, and hyphens only (max 40 characters)'
 
@@ -75,7 +75,7 @@ Parameters:
 
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
-    Description: 'Subnets for SageMaker Studio — select 2-3 in different AZs for high availability. Must be in the same VPC.'
+    Description: 'Subnets for SageMaker Studio — select 2-3 in different AZs for high availability. Must be in the same VPC. Private subnets (with NAT gateway) recommended; public subnets also work.'
 
   ExistingS3BucketName:
     Type: String
