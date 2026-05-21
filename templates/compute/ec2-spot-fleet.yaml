@@ -174,7 +174,7 @@ Parameters:
   S3FilesFileSystemId:
     Type: String
     Default: ''
-    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if Shared Storage is set to s3-files or if not needed.'
+    Description: 'Optional. Existing S3 Files filesystem ID to mount at /mnt/s3files. Not needed if Shared Storage is set to s3-files.'
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
 

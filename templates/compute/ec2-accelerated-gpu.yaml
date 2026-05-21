@@ -175,26 +175,26 @@ Parameters:
     Type: String
     Default: s3-files
     AllowedValues: [s3-files, none]
-    Description: 'Automatically create shared storage mounted at /mnt/s3files. s3-files creates an S3 bucket (named {ProjectName}-data-{AccountId}-{Region}) with filesystem access - ~$0.023/GB/month, no cost until you store data. Note: mount takes 5-10 minutes after first boot for DNS propagation. For immediate access, deploy the S3 Files template separately first and provide the filesystem ID below.'
+    Description: 'Auto-create shared storage at /mnt/s3files. Creates an S3 bucket (named {ProjectName}-data-{AccountId}-{Region}) with filesystem access. No cost until you store data. Mount takes 5-10 min after first boot; for immediate access, deploy S3 Files separately and provide the filesystem ID below.'
 
   EfsFileSystemId:
     Type: String
     Default: ''
-    Description: 'EFS filesystem ID to mount at /mnt/efs (from the EFS template stack outputs). Auto-mounts with TLS on both AL2023 and Ubuntu - Ubuntu takes 3-5 min longer at boot to build efs-utils. Leave blank if not using shared storage.'
+    Description: 'Optional. EFS filesystem ID to mount at /mnt/efs. Auto-mounts with TLS encryption.'
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
   S3BucketName:
     Type: String
     Default: ''
-    Description: 'S3 bucket name to grant this instance read/write access (from the S3 template stack outputs). Leave blank if not needed.'
+    Description: 'Optional. S3 bucket name to grant this instance read/write access via CLI.'
     AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
     ConstraintDescription: 'Must be a valid S3 bucket name (3-63 chars, lowercase, numbers, hyphens, periods) or blank'
 
   S3FilesFileSystemId:
     Type: String
     Default: ''
-    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if Shared Storage is set to s3-files or if not needed.'
+    Description: 'Optional. Existing S3 Files filesystem ID to mount at /mnt/s3files. Not needed if Shared Storage is set to s3-files.'
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
 
