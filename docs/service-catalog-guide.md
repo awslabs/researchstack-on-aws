@@ -221,17 +221,11 @@ This does not affect resources that researchers have already provisioned — tho
 
 If you renamed a portfolio (changed `name` in the TOML) or redeployed with different config, the old CDK stacks become orphaned — `cdk destroy` only removes the current stacks, not previous ones with different names. To clean up:
 
-1. **Find orphaned stacks** — In the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) in the hub account, look for stacks with the old portfolio name prefix (e.g., `rs-dev-old-portfolio-name-*`).
-2. **Delete StackSet instances first** — If the stack created StackSets (launch roles in spoke accounts), go to [CloudFormation → StackSets](https://console.aws.amazon.com/cloudformation/home#/stacksets), select the orphaned StackSet, delete all stack instances (this removes launch roles from spoke accounts), then delete the StackSet itself.
-3. **Disassociate portfolio shares** — In the [Service Catalog console](https://console.aws.amazon.com/servicecatalog/) → Portfolios → select the orphaned portfolio → Sharing → remove all shares.
-4. **Delete the portfolio** — Remove all products from the portfolio, then delete the portfolio itself in the SC console.
-5. **Delete the CloudFormation stacks** — Delete the orphaned stacks in CloudFormation.
+1. Create a temporary TOML in `portfolios/` with the old portfolio `name` (the machine identifier, not `display_name`). It doesn't need products — just the `[portfolio]` section with the original `name` and `share_target_ous`.
+2. Run `cdk destroy --all` — CDK will find and tear down the stacks matching that name, handling StackSets, shares, and dependencies in the correct order.
+3. Delete the temporary TOML and redeploy with your current config: `cdk deploy --all`.
 
-Alternatively, if you know the old stack names, you can delete them via CLI:
-
-```bash
-aws cloudformation delete-stack --stack-name rs-dev-old-portfolio-name
-```
+If you don't remember the old name, check the [CloudFormation console](https://console.aws.amazon.com/cloudformation/) in the hub account for stacks prefixed with your project slug (e.g., `rs-dev-*`).
 
 ## Configuration Reference
 
