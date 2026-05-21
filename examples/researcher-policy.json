@@ -140,7 +140,6 @@
         "cost-optimization-hub:List*",
         "cost-optimization-hub:Get*",
         "bcm-recommended-actions:List*",
-        "bcm-recommended-actions:Get*",
         "billing:Get*",
         "billing:List*",
         "freetier:Get*",
