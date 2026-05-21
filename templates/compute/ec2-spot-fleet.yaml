@@ -70,7 +70,7 @@ Metadata:
       EfsFileSystemId:
         default: 'Existing EFS Filesystem ID'
       S3FilesFileSystemId:
-        default: 'Existing S3 Files Mount Target IP'
+        default: 'Existing S3 Files Filesystem ID'
       S3BucketName:
         default: 'Existing S3 Bucket Name (CLI access only)'
 
@@ -174,7 +174,7 @@ Parameters:
   S3FilesFileSystemId:
     Type: String
     Default: ''
-    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if using AutoCreateStorage or if not needed.'
+    Description: 'Existing S3 Files filesystem ID to mount at /mnt/s3files (from the S3 Files template stack outputs). Leave blank if Shared Storage is set to s3-files or if not needed.'
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
 
@@ -604,3 +604,8 @@ Outputs:
   SSMConnectNote:
     Description: 'Connect via SSM once the instance launches'
     Value: 'Run: aws ec2 describe-spot-fleet-instances --spot-fleet-request-id <fleet-id> to find the instance ID, then: aws ssm start-session --target <instance-id>'
+
+  SharedStorageBucket:
+    Condition: AutoCreateS3Files
+    Description: 'S3 bucket backing the shared storage at /mnt/s3files. Browse in the S3 console or access via CLI.'
+    Value: !Ref AutoS3Bucket
