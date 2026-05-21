@@ -131,6 +131,7 @@
       "Action": [
         "ce:GetCostAndUsage",
         "ce:GetCostForecast",
+        "ce:DescribeReport",
         "budgets:ViewBudget",
         "budgets:DescribeBudgetActionsForBudget"
       ],

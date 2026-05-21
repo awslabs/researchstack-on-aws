@@ -24,7 +24,12 @@ share_target_ous = [
 # IAM principal ARN patterns to grant portfolio access (propagated to spoke accounts via principal sharing).
 # Supports wildcards — useful for IDC roles where the suffix varies.
 # IDC roles live under the path aws-reserved/sso.amazonaws.com/.
-# Example: "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSServiceCatalogEndUserAccess*"
+#
+# The default uses the AWS-managed AWSServiceCatalogEndUserAccess permission set.
+# For a richer researcher experience (EC2 start/stop, S3 data access, SageMaker Studio,
+# cost visibility), create a custom "Researcher" permission set in IAM Identity Center
+# using the policy in examples/researcher-policy.json, then reference it here:
+#   "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Researcher*",
 access_principals = [
     "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess*",
     "arn:aws:iam:::role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AWSServiceCatalogEndUserAccess*",
