@@ -19,7 +19,6 @@ Metadata:
           - InstanceSize
           - OperatingSystem
           - AMI
-          - VolumeSize
       - Label:
           default: 'Network Configuration'
         Parameters:
@@ -28,13 +27,14 @@ Metadata:
       - Label:
           default: 'Storage'
         Parameters:
-          - AutoCreateStorage
-          - EfsFileSystemId
-          - S3FilesFileSystemId
-          - S3BucketName
+          - SharedStorageBucketName
       - Label:
           default: 'Advanced Configuration (optional)'
         Parameters:
+          - VolumeSize
+          - EfsFileSystemId
+          - S3FilesFileSystemId
+          - S3BucketName
           - CustomAmiId
           - KeyPairName
           - SSHAllowedIps
@@ -59,8 +59,8 @@ Metadata:
         default: 'VPC ID'
       SubnetIds:
         default: 'Subnets (multiple AZs recommended)'
-      AutoCreateStorage:
-        default: 'Shared Storage'
+      SharedStorageBucketName:
+        default: 'Shared Storage Bucket Name'
       CustomAmiId:
         default: 'Custom AMI ID (overrides OS/AMI)'
       KeyPairName:
@@ -151,11 +151,12 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
     Description: 'Select subnets in multiple AZs for best Spot availability. Must be in the same VPC.'
 
-  AutoCreateStorage:
+  SharedStorageBucketName:
     Type: String
-    Default: s3-files
-    AllowedValues: [s3-files, none]
-    Description: 'Automatically create shared storage mounted at /mnt/s3files. s3-files creates an S3 bucket with filesystem access - ~$0.023/GB/month, no cost until you store data. Note: mount takes 5-10 minutes after first boot for DNS propagation.'
+    Default: ''
+    Description: 'Name for the shared storage bucket, mounted at /mnt/s3files. Bucket will be named {your-value}-{AccountId}-{Region}. Leave blank for no shared storage.'
+    AllowedPattern: '^$|^[a-z0-9][a-z0-9-]{1,40}$'
+    ConstraintDescription: 'Lowercase letters, numbers, and hyphens only (max 40 chars), or blank for no storage'
 
   EfsFileSystemId:
     Type: String
@@ -217,7 +218,7 @@ Conditions:
   HasEfs: !Not [!Equals [!Ref EfsFileSystemId, '']]
   HasS3: !Not [!Equals [!Ref S3BucketName, '']]
   HasS3Files: !Not [!Equals [!Ref S3FilesFileSystemId, '']]
-  AutoCreateS3Files: !Equals [!Ref AutoCreateStorage, 's3-files']
+  AutoCreateS3Files: !Not [!Equals [!Ref SharedStorageBucketName, '']]
   HasKeyPair: !Not [!Equals [!Ref KeyPairName, '']]
   IsUbuntu: !Equals [!Ref OperatingSystem, 'ubuntu-2404']
   IsAL2023: !Not [!Condition IsUbuntu]
@@ -329,7 +330,7 @@ Resources:
     DeletionPolicy: Delete
     UpdateReplacePolicy: Delete
     Properties:
-      BucketName: !Sub '${ProjectName}-data-${AWS::AccountId}-${AWS::Region}'
+      BucketName: !Sub '${SharedStorageBucketName}-${AWS::AccountId}-${AWS::Region}'
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
