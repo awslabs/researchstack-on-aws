@@ -10,10 +10,7 @@ For cost optimization strategies at each phase, see the [Cost Optimization Guide
 
 Research projects follow a predictable pattern of infrastructure needs. Early phases are lightweight (planning, small-scale exploration). Middle phases are compute-intensive (production runs, large-scale analysis). Late phases shift to storage-focused (archival, data sharing). Understanding where you are in this lifecycle helps you choose the right resources and avoid overspending.
 
-```
-Phase 1: Planning ──→ Phase 2A: Data Collection ──→ Phase 2B: Exploration ──→ Phase 2C: Production ──→ Phase 3: Archival
-  (minimal compute)     (storage-heavy)              (iterative, bursty)      (sustained, intensive)    (storage-only)
-```
+![Research Infrastructure Lifecycle](images/research_infrastructure_lifecycle.png)
 
 ## Phase 1: Planning and Grant Preparation
 
