@@ -2,6 +2,8 @@
 
 Map your research phase to the right AWS templates and cost strategies. This guide helps researchers, PIs, and IT admins understand what infrastructure is needed at each stage of a research project — from grant planning through long-term archival.
 
+> **Scope**: This guide covers the *infrastructure lens* of the research lifecycle — compute, storage, networking, and cost. For the *intellectual productivity lens* (literature synthesis, domain Q&A, data querying, workflow automation), see AI-powered tools like Amazon Quick Suite, which sit on top of this infrastructure layer.
+
 For cost optimization strategies at each phase, see the [Cost Optimization Guide](cost-optimization-guide.md). For template details and parameters, see the [Templates README](../templates/README.md).
 
 ## The Research Lifecycle
