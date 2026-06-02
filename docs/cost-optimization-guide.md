@@ -29,7 +29,7 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 - **The ResearchStack EFS template enables this by default** (`TransitionToIA: AFTER_30_DAYS`)
 
 **S3 Files (Filesystem on S3)**
-- Mount an S3 bucket as a POSIX filesystem — read/write files directly at ~$0.023/GB/month (~13x cheaper than EFS Standard)
+- Mount an S3 bucket as a POSIX filesystem — read/write files directly at the cost of S3 (~13x cheaper than EFS Standard)
 - Best for single-instance workloads or read-heavy access patterns
 - EC2 templates default to auto-creating S3 Files storage — no extra setup needed
 - Use EFS instead when multiple instances need concurrent write access to the same files
@@ -176,42 +176,6 @@ Historically, most U.S. research institutions classify cloud computing as a "ser
 
 This is changing. The Consolidated Appropriations Act, 2026 ([P.L. 119-75](https://www.congress.gov/bill/119th-congress/house-bill/7148)), signed by President Trump on February 3, 2026, directs the OMB Director to "clarify that technology investments, whether for hardware or cloud computing, procured in support of projects funded by Federal grants should be subject to the same cost treatment and not subject to Facilities and Administration costs." This language has the force of law.
 
-Once OMB publishes the clarification, cloud costs on federal grants will carry zero F&A — the same treatment as equipment purchases. The timing of OMB action is uncertain, but the direction is enacted and bipartisan (identical language appeared in FY2025 appropriations and the FY2025 NDAA before being enacted in FY2026).
+On May 29, 2026, OMB published a [proposed rule](https://www.federalregister.gov/documents/2026/05/29) overhauling the Uniform Guidance (2 C.F.R. Part 200) — rebranding it as the "Uniform Grants Regulation." This proposed rule implements changes directed by P.L. 119-75 and several executive orders. Public comments are due July 13, 2026, with a proposed effective date of October 1, 2026. The final rule will determine the exact mechanism for cloud F&A exclusion.
 
-For grant budgeting: check with your grants office for your institution's current F&A treatment of cloud, but model multi-year budgets with the expectation that F&A on cloud is being eliminated.
-
-## Cost Estimation Tools
-
-**[AWS Pricing Calculator](https://calculator.aws/)**
-- Estimate costs before deployment — model instance types, storage, and data transfer
-- Export estimates as PDF or CSV for grant proposals
-
-**[AWS Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer)**
-- Track actual spending in real time
-- Identify cost trends and anomalies
-- Filter by tags (`CostCenter`, `Project`) for per-grant visibility
-- Available in the [Billing and Cost Management console](https://console.aws.amazon.com/cost-management/)
-
-**[AWS Compute Optimizer](https://console.aws.amazon.com/compute-optimizer/)**
-- Right-sizing recommendations based on actual CPU, memory, and network utilization
-- Identifies over-provisioned and under-provisioned instances
-- Free service — just [enable it](https://docs.aws.amazon.com/compute-optimizer/latest/ug/getting-started.html) in the console
-
-## Common Cost Pitfalls
-
-1. **Leaving instances running 24/7** — EC2 templates include idle shutdown by default, but verify it's enabled. Stop ParallelCluster head nodes when not in use.
-2. **Not using S3 Intelligent Tiering** — all ResearchStack S3 templates enable this by default
-3. **Ignoring data transfer costs** — keep data and compute in the same region. Use VPC endpoints for S3.
-4. **Not deleting failed experiments** — unused EBS volumes, old snapshots, and abandoned stacks accumulate cost silently
-5. **Over-provisioning** — start small, use Compute Optimizer to right-size, scale up only when needed
-6. **Not monitoring costs** — set up budget alerts using the Budget Alert template. Activate cost allocation tags.
-7. **Not activating cost allocation tags** — tags exist on resources but won't appear in Cost Explorer or Budgets until [activated](#activating-cost-allocation-tags)
-
-## Grant Budgeting Tips
-
-1. Use [AWS Pricing Calculator](https://calculator.aws/) for initial estimates
-2. Add 20-30% buffer for usage variability
-3. Include F&A overhead if your institution still applies it to cloud — but note that [P.L. 119-75](#fa-and-cloud-computing) (Feb 2026) directs OMB to exclude cloud from F&A. Model accordingly.
-4. Plan for [data egress costs](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer) if sharing data outside AWS
-5. Consider [Savings Plans](https://aws.amazon.com/savingsplans/) for multi-year grants (up to 72% savings)
-6. Document cost optimization strategies in your proposal — reviewers appreciate cost awareness
+For grant budgeting: check with your grants office for your institution's current F&A treatment of cloud. For multi-year budgets, model with the expectation that F&A on cloud is being eliminated — the law is enacted, and OMB rulemaking is underway.
