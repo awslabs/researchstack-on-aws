@@ -98,7 +98,7 @@ Use these in the `template` field:
 | `ec2-gp` | EC2 General Purpose (M-series) |
 | `ec2-cpu` | EC2 Compute Optimized (C-series) |
 | `ec2-mem` | EC2 Memory Optimized (R-series) |
-| `ec2-gpu` | EC2 GPU (G-series) |
+| `ec2-gpu` | EC2 GPU (G/P-series) |
 | `ec2-spot` | EC2 Spot Fleet |
 | `pcluster` | ParallelCluster (Slurm HPC) |
 | `sagemaker` | SageMaker Studio |
