@@ -61,12 +61,12 @@ SSM is more secure (no inbound ports, no key management, no public IP required) 
 
 - **S3 Files (default)**: EC2 templates auto-create an S3-backed filesystem at `/mnt/s3files`. Upload data to the S3 bucket and it appears on the mount. Write files to the mount and they sync to S3.
 - **S3 via CLI**: Grant the instance access to an S3 bucket (via the `S3BucketName` parameter), then use `aws s3 cp` or `aws s3 sync` from the instance.
-- **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) accessible from multiple instances — files are available immediately on all connected instances.
+- **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) — any instance that mounts the same EFS filesystem sees the same files with real-time consistency.
 - **SCP/SFTP**: Provide a key pair when deploying and use a public subnet — port 22 opens automatically when a key pair is set. Then use `scp` or `sftp` from your local machine. Without a key pair, port 22 stays closed.
 
 **How do I access SageMaker Studio?**
 
-SageMaker Studio requires [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) — it won't work without it. After deploying the template, the Studio domain appears as an application in your IDC portal. An admin assigns users or IDC groups to the domain via the [SageMaker console](https://console.aws.amazon.com/sagemaker/) — see the [user profile docs](https://docs.aws.amazon.com/sagemaker/latest/dg/domain-user-profile-add-remove.html) for instructions. Assigned users can then launch Studio from the IDC portal or from the SageMaker console directly.
+The ResearchStack SageMaker Studio template is configured specifically for [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) authentication — it won't work without IDC enabled in your account. After deploying the template, an admin assigns users or IDC groups to the domain via the [SageMaker console](https://console.aws.amazon.com/sagemaker/) — see the [user profile docs](https://docs.aws.amazon.com/sagemaker/latest/dg/domain-user-profile-add-remove.html) for instructions. Once assigned, users will see Studio as an application in their IDC portal and can launch it from there or from the SageMaker console directly.
 
 **What is SageMaker Studio?**
 
