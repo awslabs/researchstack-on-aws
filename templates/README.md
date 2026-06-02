@@ -17,22 +17,22 @@ Have questions about connecting, costs, data transfer, or security? See the [FAQ
 
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
-- **efs-shared-storage.yaml** — Network file system for shared access across multiple instances. EC2 instances must have the EFS security group (from stack outputs) attached to mount the filesystem.
+- **efs-shared-storage.yaml** — Network file system for shared access across multiple instances.
 - **s3-files.yaml** — Mount an S3 bucket as a POSIX filesystem via NFS. ~13x cheaper than EFS for storage, full read/write support. Auto-creates a bucket or uses an existing one.
-- **fsx-lustre.yaml** — High-throughput parallel filesystem for compute-intensive workloads. Supports S3 data repository associations for transparent access to S3 data.
+- **fsx-lustre.yaml** — High-throughput parallel filesystem for compute-intensive workloads. Optionally links to an S3 bucket so files appear automatically on the filesystem without manual copying — see [Data Repository Associations](https://docs.aws.amazon.com/fsx/latest/LustreGuide/fsx-data-repositories.html).
 
 ### Compute (`compute/`)
 - **ec2-general-purpose.yaml** — M-series instances for balanced workloads (data processing, web apps, dev environments)
 - **ec2-compute-optimized.yaml** — C-series instances for compute-intensive tasks (simulations, batch processing, modeling)
 - **ec2-memory-optimized.yaml** — R-series instances for memory-intensive workloads (genomics, large datasets, in-memory DBs)
-- **ec2-accelerated-gpu.yaml** — GPU (G/P-series) and Trainium/Inferentia for ML training and inference
+- **ec2-accelerated-gpu.yaml** — GPU (G/P-series) instances for ML training and inference
 - **ec2-spot-fleet.yaml** — Cost-optimized Spot instances across multiple instance generations and AZs. Pick a family (general/compute/memory) and size — the fleet automatically selects the best available Spot pool. Up to 70% savings vs On-Demand.
 - **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and optional DCV remote desktop. See the [ParallelCluster Guide](../docs/parallelcluster-guide.md) for deployment, job submission, and post-deploy customization (adding queues, multi-user, login nodes).
 
-All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. EC2 templates auto-create S3 Files shared storage by default (mounted at `/mnt/s3files`, ~$0.023/GB/month, no cost until you store data). Set `AutoCreateStorage` to `none` to opt out. ParallelCluster auto-creates an EFS volume at `/shared` unless you provide an existing `EfsFileSystemId`. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
+All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. EC2 templates auto-create S3 Files shared storage by default (mounted at `/mnt/s3files`, no cost until you store data). Set `AutoCreateStorage` to `none` to opt out. ParallelCluster auto-creates an EFS volume at `/shared` unless you provide an existing `EfsFileSystemId`. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
 
 ### Machine Learning (`ml/`)
-- **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support. Configured for [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (SSO) authentication — requires IDC to be enabled in your account. After deployment, assign users or IDC groups to the domain in the [SageMaker console](https://console.aws.amazon.com/sagemaker/) under **Domains** → your domain → **User profiles**.
+- **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support. Configured for [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) authentication — requires IDC to be enabled in your account. After deployment, [assign users or IDC groups to the domain](https://docs.aws.amazon.com/sagemaker/latest/dg/domain-user-profile-add-remove.html).
 
 ### Governance (`governance/`)
 - **budget-alert.yaml** — Monthly budget tracking by CostCenter tag with email alerts at 50%, 80%, and 100% thresholds. Optionally scoped to a specific project. Requires cost allocation tags to be activated first — see the [Cost Optimization Guide](../docs/cost-optimization-guide.md).
@@ -41,14 +41,14 @@ All EC2 templates require a VPC and subnet — deploy the Research VPC template 
 
 All templates follow these conventions:
 
-- **Required parameters**: ProjectName, CostCenter (Owner is optional)
-- **Required tags**: Project, CostCenter, ManagedBy (ResearchStack), Environment (Research)
+- **Required parameters**: ProjectName, CostCenter (Owner is optional but recommended for FinOps traceability)
+- **Auto-applied tags**: Every resource gets tagged with Project, CostCenter, ManagedBy (`ResearchStack`), and Environment (`Research`). Project and CostCenter come from your parameters; ManagedBy and Environment are set automatically.
 - **Security defaults**: Encryption enabled, public access blocked, least privilege where applicable
-- **Naming**: Resources include account ID and region for uniqueness
+- **Naming**: S3 buckets include account ID and region for global uniqueness. Other resources (security groups, IAM roles) use the CloudFormation stack name as a prefix.
 
 ## EC2 Parameter Reference
 
-All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GPU) share the same parameters, plus a separate Spot Fleet template for cost-optimized multi-type deployments. Fill in the required ones; the rest have sensible defaults.
+All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GPU) share the same parameters, plus a separate Spot Fleet template for cost-optimized multi-type deployments. Fill in the required parameters; the rest have sensible defaults.
 
 **Required:**
 
@@ -66,7 +66,7 @@ All four EC2 templates (general-purpose, compute-optimized, memory-optimized, GP
 | Owner | (blank) | PI or researcher email — helps FinOps trace resources to a person |
 | InstanceName | `{ProjectName}-instance` | When running multiple instances for the same project |
 | InstanceType | Varies by template | Scale up/down based on workload. See [Choosing an Instance Type](#choosing-an-instance-type). |
-| PricingModel | on-demand | Set to `spot` for up to 70% savings. Instance can be interrupted — use for batch jobs, not interactive work. |
+| PricingModel | on-demand | Set to `spot` for up to 70% savings. Instance can be interrupted — use for batch jobs, not interactive work. Note: unlike the Spot Fleet template, this requests a single specific instance type in one AZ, so Spot capacity may be unavailable. If launch fails, try the Spot Fleet template or switch to on-demand. |
 | OperatingSystem | Amazon Linux 2023 | Ubuntu 24.04 if your software requires it |
 | AMI | Latest AL2023 x86_64 | Match to your OS + architecture (arm64 for Graviton) |
 | CustomAmiId | (blank) | Provide a custom AMI ID (e.g., `ami-xxx`) to override the OS/AMI selection. Use for golden AMIs with pre-installed software. |
@@ -111,7 +111,7 @@ Each EC2 template offers these AMIs via SSM parameter lookup (always resolves to
 | `ubuntu/server/noble/.../amd64` | Ubuntu 24.04 LTS | x86_64 (Intel/AMD) |
 | `ubuntu/server/noble/.../arm64` | Ubuntu 24.04 LTS | arm64 (Graviton) |
 
-Amazon Linux 2023 is the default and recommended for most workloads — EFS auto-mounts with TLS encryption and SSM works out of the box. Ubuntu 24.04 is supported for teams that prefer it, but EFS must be mounted manually post-boot because `amazon-efs-utils` now requires a Rust toolchain to build on Ubuntu. See the [efs-utils GitHub repo](https://github.com/aws/efs-utils) for manual install instructions.
+Amazon Linux 2023 is the default and recommended for most workloads — EFS auto-mounts with TLS encryption and SSM works out of the box. Ubuntu 24.04 is supported for teams that prefer it — EFS also auto-mounts with TLS, but boot takes 3-5 minutes longer because the template builds `amazon-efs-utils` from source (it requires a Rust toolchain on Ubuntu). See the [efs-utils GitHub repo](https://github.com/aws/efs-utils) for details.
 
 ### Custom AMIs
 
@@ -166,7 +166,7 @@ See the [Service Catalog Deployment Guide](../docs/service-catalog-guide.md) for
 
 Deleting a CloudFormation stack removes all resources the template created. Via console: [CloudFormation](https://console.aws.amazon.com/cloudformation/) → select stack → Delete. Via CLI: `aws cloudformation delete-stack --stack-name STACK_NAME`. For Service Catalog: Provisioned products → select → Actions → Terminate.
 
-S3 buckets with data cannot be deleted by CloudFormation — the stack deletion will fail on the bucket. [Empty the bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/empty-bucket.html) first, then retry the deletion. For versioned buckets (all ResearchStack buckets have versioning), you'll also need to [delete version markers](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html). Delete stacks in reverse order — compute/storage before the VPC.
+S3 buckets with data cannot be deleted by CloudFormation — the stack deletion will fail on the bucket to prevent accidental data deletion. [Empty the bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/empty-bucket.html) first (including [deleting all object versions](https://docs.aws.amazon.com/AmazonS3/latest/userguide/DeletingObjectVersions.html) since all ResearchStack buckets have versioning enabled), then retry the deletion. Delete stacks in reverse order — compute/storage before the VPC.
 
 ## Contributing
 
