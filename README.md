@@ -14,11 +14,11 @@ Deploy research computing infrastructure on AWS in minutes — EC2, S3, EFS, Sag
 
 | Category | Template | What it does |
 |----------|----------|-------------|
-| Compute | ec2-general-purpose.yaml | M-series instances for balanced workloads |
-| Compute | ec2-compute-optimized.yaml | C-series instances for simulations and batch processing |
-| Compute | ec2-memory-optimized.yaml | R-series instances for genomics and large datasets |
-| Compute | ec2-accelerated-gpu.yaml | GPU instances (G-series) for ML training and inference |
-| Compute | ec2-spot-fleet.yaml | Cost-optimized Spot instances across multiple types and AZs (up to 70% savings) |
+| Compute | ec2-general-purpose.yaml | General-purpose (M-series) instances for balanced compute, memory, and networking |
+| Compute | ec2-compute-optimized.yaml | Compute-optimized (C-series) instances for simulations and batch processing |
+| Compute | ec2-memory-optimized.yaml | Memory-optimized (R-series) instances for genomics and large in-memory datasets |
+| Compute | ec2-accelerated-gpu.yaml | GPU instances (G-series for inference, P-series for training via [Capacity Blocks](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-capacity-blocks.html)) |
+| Compute | ec2-spot-fleet.yaml | Cost-optimized [Spot](https://aws.amazon.com/ec2/spot/) instances across multiple types and AZs (up to 70% savings) |
 | Compute | parallelcluster-hpc.yaml | Slurm HPC cluster with auto-scaling and optional remote desktop |
 | Storage | s3-research-bucket.yaml | Encrypted S3 bucket with versioning and intelligent tiering |
 | Storage | efs-shared-storage.yaml | Shared network filesystem (NFS) across multiple instances |
@@ -28,7 +28,7 @@ Deploy research computing infrastructure on AWS in minutes — EC2, S3, EFS, Sag
 | Governance | budget-alert.yaml | Monthly budget tracking by cost center with email alerts |
 | Networking | research-vpc.yaml | VPC with public/private subnets, NAT gateway, S3 endpoint |
 
-All templates include idle shutdown (EC2), cost tracking tags, encryption, and security defaults. See the [Templates README](templates/README.md) for parameter details, instance type guidance, and OS options.
+All templates include cost tracking tags, encryption, and security defaults. EC2 templates also include idle shutdown. See the [Templates README](templates/README.md) for parameter details, instance type guidance, and OS options.
 
 Not sure which template fits your work? See the [Research Lifecycle Guide](docs/research-lifecycle-guide.md) or the [Cost Optimization Guide](docs/cost-optimization-guide.md).
 

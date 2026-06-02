@@ -59,7 +59,7 @@ Metadata:
       PricingModel:
         default: 'Pricing Model'
       CapacityReservationId:
-        default: 'Capacity Reservation ID (optional, for P-series GPU)'
+        default: 'Capacity Block Reservation ID (required for P-series)'
       OperatingSystem:
         default: 'Operating System'
       AMI:
@@ -116,9 +116,9 @@ Parameters:
   InstanceType:
     Type: String
     Default: g6.xlarge
-    Description: 'G-series GPU instance type. g6 = NVIDIA L4, g6e = NVIDIA L40S, g5 = NVIDIA A10G. See the templates README for help choosing a size.'
-    AllowedPattern: '^g[0-9]+[a-z]*\.(xlarge|[0-9]*xlarge)$'
-    ConstraintDescription: 'Must be a G-series instance type (e.g., g6.xlarge, g6e.2xlarge, g5.4xlarge)'
+    Description: 'GPU instance type. G-series for inference/fine-tuning (g6=L4, g6e=L40S, g5=A10G). P-series for large-scale training (p5=H100, p6-b200=B200, p6-b300=B300 Ultra) — requires a Capacity Block reservation. See the templates README for help choosing.'
+    AllowedPattern: '^[gp][0-9][a-z0-9-]*\.(xlarge|[0-9]*xlarge|metal)$'
+    ConstraintDescription: 'Must be a G-series or P-series instance type (e.g., g6.xlarge, g6e.2xlarge, p5.48xlarge, p6-b200.48xlarge)'
 
   PricingModel:
     Type: String
@@ -129,9 +129,9 @@ Parameters:
   CapacityReservationId:
     Type: String
     Default: ''
-    Description: 'EC2 Capacity Reservation ID for P-series GPU instances (e.g., cr-0123456789abcdef0). Required for p4d/p5 since they cannot be launched on-demand without a reservation. Overrides PricingModel when provided. Leave blank for G-series.'
+    Description: 'EC2 Capacity Block reservation ID (e.g., cr-0123456789abcdef0). Required for P-series instances (p5, p6-b200, p6-b300, p6e-gb200) since they cannot be launched on-demand. Overrides PricingModel when provided. Leave blank for G-series.'
     AllowedPattern: '^$|^cr-[a-f0-9]+$'
-    ConstraintDescription: 'Must be a valid Capacity Reservation ID (cr-xxxx) or blank'
+    ConstraintDescription: 'Must be a valid Capacity Block reservation ID (cr-xxxx) or blank'
 
   OperatingSystem:
     Type: String
