@@ -1,8 +1,10 @@
 # Service Catalog Deployment Guide
 
-Deploy governed, self-service research computing across multiple AWS accounts. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed. IT admins control what's available, who can launch it, and what permissions each product gets.
+Add governed, least-privilege deployment to ResearchStack across multiple AWS accounts. Service Catalog is an optional layer that IT admins deploy on top of the same CloudFormation templates used for direct deployments. It adds per-product IAM launch roles, automatic sharing to new accounts via StackSets, and standardized permissions — ensuring every researcher deployment follows security best practices without manual oversight.
 
-This guide walks through setting up the [AWS Service Catalog](https://aws.amazon.com/servicecatalog/) layer on top of ResearchStack's CloudFormation templates. It follows a hub-and-spoke model: one central account manages portfolios and shares them to researcher accounts across your organization.
+ResearchStack templates work without Service Catalog (via the console, CLI, or AI assistant). Service Catalog is recommended when your institution needs to enforce consistent permissions and cost-tagging across many accounts, or when you want researchers to deploy without needing CloudFormation or IAM knowledge themselves.
+
+This guide walks through setting up the [AWS Service Catalog](https://aws.amazon.com/servicecatalog/) layer. It follows a hub-and-spoke model: one central account manages portfolios and shares them to researcher accounts across your organization.
 
 ## Architecture
 

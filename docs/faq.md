@@ -35,9 +35,9 @@ See the [AWS data transfer documentation](https://aws.amazon.com/cloud-data-migr
 
 Most compute templates require a VPC and subnet. If your institution doesn't provide one, deploy `research-vpc.yaml` first — it creates a ready-to-use network. You'll also need the [AWS CLI](https://aws.amazon.com/cli/) installed (or use the [CloudFormation console](https://console.aws.amazon.com/cloudformation/home#/stacks/create) directly). See the [Templates README](../templates/README.md#getting-started) for details.
 
-**What's the difference between deploying standalone vs Service Catalog?**
+**What's the difference between deploying directly vs with Service Catalog?**
 
-Standalone means you deploy templates directly via the CloudFormation console or CLI — simplest for single accounts and small teams. Service Catalog adds a governance layer for multi-account institutions: IT admins publish templates as products in a catalog, researchers browse and click "Launch" without needing CloudFormation knowledge. Both use the same templates. See the [Service Catalog Deployment Guide](service-catalog-guide.md) if you need multi-account governance.
+Direct deployment means you deploy templates via the CloudFormation console, CLI, or AI assistant — simplest for single accounts and small teams. Service Catalog is an optional governance layer for multi-account institutions: IT admins publish templates as products with per-product launch roles, OU-level sharing, and standardized permissions — ensuring every deployment follows security best practices without manual oversight. Both use the same templates. See the [Service Catalog Guide](service-catalog-guide.md) if you need multi-account governance.
 
 **Which template should I start with?**
 
@@ -89,10 +89,6 @@ Deploy the `budget-alert.yaml` template with your cost center and monthly budget
 **Will my instances stop automatically if I forget?**
 
 EC2 templates include idle shutdown by default — instances are automatically stopped after 120 minutes of low CPU utilization (configurable). ParallelCluster compute nodes auto-terminate after 10 minutes idle. The ParallelCluster head node does not auto-stop (it runs the Slurm scheduler) — stop it manually when the cluster isn't in use.
-
-**Does F&A overhead apply to cloud costs?**
-
-This is changing. The Consolidated Appropriations Act, 2026 (P.L. 119-75) directs OMB to exclude cloud computing from F&A, matching on-premises equipment treatment. Check with your grants office for your institution's current policy. See [F&A and Cloud Computing](cost-optimization-guide.md#fa-and-cloud-computing) for details.
 
 ## Templates and Configuration
 

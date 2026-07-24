@@ -24,13 +24,12 @@ Minimal — this phase is about planning, not computing. The main infrastructure
 ### Recommended Templates
 None needed yet. Use these tools for planning:
 - [AWS Pricing Calculator](https://calculator.aws/) — estimate costs for the compute and storage you'll need
-- [Cost Optimization Guide](cost-optimization-guide.md) — strategies for budgeting, including F&A considerations and Savings Plans
+- [Cost Optimization Guide](cost-optimization-guide.md) — strategies for budgeting and Savings Plans
 
 ### Grant Budgeting Tips
 - Budget AWS for the phases where it provides the most value — typically burst compute (Phase 2C) and long-term archival (Phase 3)
 - Be specific in budget justifications: "200 GPU hours for model training at $3/hour" is stronger than "cloud computing costs"
 - Include a 20-30% buffer for usage variability
-- Check your institution's F&A treatment of cloud costs — see [F&A and Cloud Computing](cost-optimization-guide.md#fa-and-cloud-computing)
 - If your project involves multi-institution collaboration, AWS is often the simplest shared infrastructure — call this out in the budget narrative
 
 ## Phase 2A: Data Collection and Ingress

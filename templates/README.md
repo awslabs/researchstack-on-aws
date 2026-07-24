@@ -1,6 +1,6 @@
 # ResearchStack on AWS Templates
 
-CloudFormation templates optimized for research workloads. Each template can be deployed standalone via the AWS Console or CLI, or governed via [Service Catalog](../docs/service-catalog-guide.md).
+CloudFormation templates optimized for research workloads. Each template can be deployed directly via the AWS Console or CLI, or governed via the optional [Service Catalog](../docs/service-catalog-guide.md) layer.
 
 ## Getting Started
 
@@ -159,8 +159,8 @@ cp params/compute-ec2.json params/my-project.json
 
 See [params/README.md](../params/README.md) for all available configs and commands to find your VPC/subnet IDs.
 
-### Via Service Catalog
-See the [Service Catalog Deployment Guide](../docs/service-catalog-guide.md) for multi-account governed deployment.
+### Via Service Catalog (optional governance layer)
+For institutions managing multiple accounts that need standardized IAM permissions and automated sharing. Service Catalog wraps these same templates with per-product launch roles and OU-level access — ensuring security compliance without per-deployment oversight. Not required to use these templates. See the [Service Catalog Guide](../docs/service-catalog-guide.md).
 
 ## Deleting Resources
 

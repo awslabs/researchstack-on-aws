@@ -8,7 +8,6 @@ AWS costs vary by region, usage patterns, and pricing changes. Instead of static
 - **Compute**: [EC2](https://aws.amazon.com/ec2/pricing/), [SageMaker](https://aws.amazon.com/sagemaker/pricing/), [ParallelCluster](https://aws.amazon.com/hpc/parallelcluster/) (uses EC2 pricing)
 - **Storage**: [S3](https://aws.amazon.com/s3/pricing/), [EFS](https://aws.amazon.com/efs/pricing/), [EBS volumes](https://aws.amazon.com/ebs/pricing/)
 - **Networking**: [Data transfer](https://aws.amazon.com/ec2/pricing/on-demand/#Data_Transfer), [NAT gateways](https://aws.amazon.com/vpc/pricing/)
-- **F&A Overhead**: Currently 50-70% at most institutions, but enacted law (P.L. 119-75, Feb 2026) directs OMB to exclude cloud from F&A — see [F&A and Cloud Computing](#fa-and-cloud-computing) below
 
 ## Cost Optimization Strategies
 
@@ -169,11 +168,3 @@ aws cloudformation create-stack \
 Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts are safety nets, not real-time spending caps.
 
 For Service Catalog deployments, you can also enforce valid cost center values at provisioning time using [TagOptions](service-catalog-guide.md#enforcing-tag-values-with-tagoptions) — researchers select from a dropdown instead of typing free text.
-
-## F&A and Cloud Computing
-
-Historically, most U.S. research institutions classify cloud computing as a "service" in the Modified Total Direct Cost (MTDC) base, which means the full negotiated F&A rate (typically 50-70% at R1 institutions) is applied to every dollar of cloud spending on a federal grant. A researcher spending $500,000 on cloud at a 60% F&A rate must budget an additional $300,000 in indirect costs. By contrast, on-premises hardware purchases over $5,000 qualify as "equipment" and are excluded from MTDC — no F&A is charged.
-
-This is changing. The Consolidated Appropriations Act, 2026 ([P.L. 119-75](https://www.congress.gov/bill/119th-congress/house-bill/7148)) directs OMB to exclude cloud computing from F&A, giving it the same cost treatment as equipment. OMB rulemaking to implement this is in progress. Once finalized, cloud costs on federal grants would carry zero F&A.
-
-For grant budgeting: check with your grants office for your institution's current F&A treatment of cloud. The legislative direction is clear, but implementation timelines may shift.

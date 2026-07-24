@@ -65,9 +65,9 @@ cp params/compute-ec2.json params/my-project.json
 
 See [params/README.md](params/README.md) for all available configs and commands to find your VPC/subnet IDs.
 
-### Deploy via Service Catalog
+### Deploy via Service Catalog (optional governance layer)
 
-For institutions managing multiple AWS accounts with governed self-service. Researchers browse a catalog and click "Launch" — no CloudFormation knowledge needed. See the [Service Catalog Guide](docs/service-catalog-guide.md).
+For institutions managing multiple AWS accounts that need standardized permissions and automated sharing. Adds IAM launch roles (least-privilege per template), automatic sharing to new accounts, and cost-tagging compliance across many accounts without per-deployment oversight. Not required to use ResearchStack templates. See the [Service Catalog Guide](docs/service-catalog-guide.md).
 
 ### Accessing Your Resources
 
@@ -85,13 +85,13 @@ Delete the CloudFormation stack to clean up all resources and stop costs. S3 buc
 
 ## Cost Tracking and Access Control
 
-All resources are tagged automatically: Project, CostCenter, Owner, ManagedBy, Environment. Use these in [Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for quick visibility or [Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) for detailed CSV-based per-grant chargeback. If you're just testing, any value works for ProjectName and CostCenter — they're resource tags, not billing constructs. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for budgets, Savings Plans, and F&A guidance.
+All resources are tagged automatically: Project, CostCenter, Owner, ManagedBy, Environment. Use these in [Cost Explorer](https://console.aws.amazon.com/cost-management/home#/cost-explorer) for quick visibility or [Data Exports](https://docs.aws.amazon.com/cur/latest/userguide/what-is-data-exports.html) for detailed CSV-based per-grant chargeback. If you're just testing, any value works for ProjectName and CostCenter — they're resource tags, not billing constructs. See the [Cost Optimization Guide](docs/cost-optimization-guide.md) for budgets, Savings Plans, and cost strategies.
 
 For access control, we recommend [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) as the identity foundation — single sign-on across all your AWS accounts. The simplest model is account-level isolation: one AWS account per lab or research group, with IDC permission sets granting access. The account boundary is the access control. See [`examples/researcher-policy.json`](examples/researcher-policy.json) for a ready-to-use least-privilege IAM policy (Service Catalog, SSM, EC2 start/stop, S3, SageMaker Studio, and Cost Explorer access). For Service Catalog deployments, see [Granting Portfolio Access](docs/service-catalog-guide.md#granting-portfolio-access).
 
 ## Architecture
 
-ResearchStack supports two deployment paths:
+ResearchStack supports multiple deployment paths:
 
 ```mermaid
 graph LR
@@ -113,8 +113,8 @@ graph LR
 
 ```
 
-- **Standalone**: deploy templates directly via the CloudFormation console or CLI — simplest for single accounts
-- **[Service Catalog](https://aws.amazon.com/servicecatalog/)**: governance layer with launch roles, OU sharing, and self-service catalog — best for multi-account institutions
+- **Direct deployment**: Deploy templates via the CloudFormation console, CLI, or AI assistant — simplest for single accounts and small teams
+- **[Service Catalog](https://aws.amazon.com/servicecatalog/)** (optional governance layer): Adds launch roles, OU sharing, and standardized permissions across multiple accounts. Recommended for institutions managing many researcher accounts — ensures every deployment uses least-privilege IAM and tagged resources without relying on individual researcher discipline. Not required to use ResearchStack templates.
 
 Both paths use the same templates and produce the same tagged resources.
 
@@ -141,7 +141,7 @@ researchstack/
 - [Templates README](templates/README.md) — Template details, instance types, OS options
 - [Parameter Files](params/README.md) — Deploy configs and resource lookup commands
 - [Research Lifecycle Guide](docs/research-lifecycle-guide.md) — Map research phases to templates
-- [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, F&A
+- [Cost Optimization Guide](docs/cost-optimization-guide.md) — Budgeting, Savings Plans, cost strategies
 - [FAQ](docs/faq.md) — Connecting, costs, security, configuration
 - [ParallelCluster Guide](docs/parallelcluster-guide.md) — HPC cluster deployment and customization
 - [Service Catalog Guide](docs/service-catalog-guide.md) — Multi-account governance setup

@@ -25,7 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - TagOptions enforcement guide in Service Catalog deployment guide
 - Custom AMI guide in templates README
 - Cost allocation tag activation guide in cost optimization docs
-- F&A and Cloud Computing section in cost optimization guide (P.L. 119-75, Feb 2026)
 - AWS Open Data Sponsorship Program reference in research lifecycle guide
 
 ### Changed
