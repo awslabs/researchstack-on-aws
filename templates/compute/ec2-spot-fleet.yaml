@@ -154,28 +154,50 @@ Parameters:
   SharedStorageBucketName:
     Type: String
     Default: ''
-    Description: 'Name for the shared storage bucket, mounted at /mnt/s3files. Bucket will be named {your-value}-{AccountId}-{Region}. Leave blank for no shared storage.'
+    Description: >-
+      GIVES YOU A MOUNTED FILESYSTEM at /mnt/s3files. Provide a name and this
+      template CREATES a new S3 Files filesystem (backing bucket named
+      {your-value}-{AccountId}-{Region}) and mounts it. This is the recommended
+      way to get shared storage you can read/write like a local folder. Leave
+      blank for no mounted storage. (To mount an EXISTING S3 Files filesystem
+      instead, use S3FilesFileSystemId. To only get CLI access to an existing
+      plain bucket with no mount, use S3BucketName.)
     AllowedPattern: '^$|^[a-z0-9][a-z0-9-]{1,40}$'
     ConstraintDescription: 'Lowercase letters, numbers, and hyphens only (max 40 chars), or blank for no storage'
 
   EfsFileSystemId:
     Type: String
     Default: ''
-    Description: 'EFS filesystem ID to mount at /mnt/efs (optional).'
+    Description: >-
+      MOUNTS AN EXISTING EFS filesystem at /mnt/efs (auto-mounts with TLS). Use
+      this when multiple instances need concurrent read/write to the same files.
+      Deploy the EFS template first to get the fs-xxxx ID. Leave blank if not
+      using EFS.
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid EFS filesystem ID (fs-xxxx) or blank'
 
   S3BucketName:
     Type: String
     Default: ''
-    Description: 'S3 bucket name to grant read/write access (optional).'
+    Description: >-
+      CLI ACCESS ONLY — does NOT create a mount. Grants this instance read/write
+      to an existing plain S3 bucket via the AWS CLI (aws s3 cp/sync); the bucket
+      does NOT appear as a mounted folder. Good for high-I/O jobs where you sync
+      data to fast local EBS, compute, then sync results back. If you want a
+      mounted filesystem at /mnt/s3files instead, use SharedStorageBucketName.
+      Leave blank if not granting bucket access.
     AllowedPattern: '^$|^[a-z0-9][a-z0-9.\-]{1,61}[a-z0-9]$'
     ConstraintDescription: 'Must be a valid S3 bucket name or blank'
 
   S3FilesFileSystemId:
     Type: String
     Default: ''
-    Description: 'Optional. Existing S3 Files filesystem ID to mount at /mnt/s3files. Not needed if Shared Storage is set to s3-files.'
+    Description: >-
+      MOUNTS AN EXISTING S3 Files filesystem at /mnt/s3files. Use this to reuse
+      an S3 Files filesystem you already deployed (via the s3-files template) —
+      e.g. to share it across instances. To CREATE a new mount instead, use
+      SharedStorageBucketName. Leave blank if not mounting an existing S3 Files
+      filesystem.
     AllowedPattern: '^$|^fs-[a-f0-9]+$'
     ConstraintDescription: 'Must be a valid S3 Files filesystem ID (fs-xxxx) or blank'
 

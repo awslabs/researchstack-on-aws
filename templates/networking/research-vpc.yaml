@@ -56,10 +56,10 @@ Parameters:
 
   AvailabilityZones:
     Type: Number
-    Default: 2
+    Default: 3
     MinValue: 2
     MaxValue: 3
-    Description: 'Number of Availability Zones (2 or 3 recommended for high availability)'
+    Description: 'Number of Availability Zones. Default 3 maximizes the chance of finding capacity for scarce instance types (e.g., GPU) since instances launch into a subnet''s AZ. Set to 2 for a smaller footprint if you do not need the extra AZ.'
 
 Conditions:
   HasOwner: !Not [!Equals [!Ref Owner, '']]

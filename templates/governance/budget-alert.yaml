@@ -2,10 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  Budget Alert — tracks monthly spend by CostCenter tag with email notifications
-  at 50%, 80%, and 100% thresholds. Optionally narrow to a specific Project.
-  Requires cost allocation tags to be activated in the Billing console first —
-  see the Cost Optimization Guide for setup instructions.
+  Budget Alert — monthly spend budget with email notifications at 50%, 80%, and
+  100% thresholds. By default (no CostCenter) it tracks ACCOUNT-WIDE spend with
+  no prerequisites. Optionally filter by CostCenter (and Project) tags for
+  per-grant tracking — tag filtering requires the cost allocation tags to be
+  activated in the management account's Billing console first (see the Cost
+  Optimization Guide).
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -59,21 +61,29 @@ Parameters:
 
   CostCenter:
     Type: String
+    Default: ''
     Description: >-
-      Cost center tag value to track (must match the CostCenter tag on your
-      resources). This is the primary budget filter.
-    MinLength: 1
+      Optional. Cost center tag value to track. Leave blank (the default) for an
+      ACCOUNT-WIDE budget that tracks total spend with no prerequisites — this is
+      the simplest option and works immediately. If you set a value, the budget
+      filters to resources tagged CostCenter=<value>, which REQUIRES that the
+      CostCenter cost allocation tag be activated in the management account's
+      Billing console first (activation takes ~24h and only captures spend after
+      activation — until then a filtered budget silently tracks $0).
 
   ProjectName:
     Type: String
     Default: ''
     Description: >-
-      Project tag value to narrow the budget to a specific project within the
-      cost center (AND filter). Leave blank to track all projects under the
-      cost center.
+      Optional. Project tag value to narrow the budget to a specific project
+      (AND filter with CostCenter). Only applies when CostCenter is also set.
+      Leave blank to track all projects under the cost center.
 
 Conditions:
-  HasProject: !Not [!Equals [!Ref ProjectName, '']]
+  HasCostCenter: !Not [!Equals [!Ref CostCenter, '']]
+  HasProject: !And
+    - !Not [!Equals [!Ref ProjectName, '']]
+    - !Not [!Equals [!Ref CostCenter, '']]
 
 Resources:
   BudgetSNSTopic:
@@ -84,7 +94,7 @@ Resources:
         - Key: Project
           Value: !If [HasProject, !Ref ProjectName, 'all-projects']
         - Key: CostCenter
-          Value: !Ref CostCenter
+          Value: !If [HasCostCenter, !Ref CostCenter, 'account-wide']
         - Key: ManagedBy
           Value: ResearchStack
         - Key: Environment
@@ -133,13 +143,20 @@ Resources:
         BudgetLimit:
           Amount: !Ref BudgetAmountUSD
           Unit: USD
+        # Three modes:
+        #   - CostCenter + Project: filter on both tags (AND)
+        #   - CostCenter only: filter on the CostCenter tag
+        #   - neither (default): no CostFilters -> account-wide total spend
         CostFilters: !If
-          - HasProject
-          - TagKeyValue:
-              - !Sub 'user:CostCenter$${CostCenter}'
-              - !Sub 'user:Project$${ProjectName}'
-          - TagKeyValue:
-              - !Sub 'user:CostCenter$${CostCenter}'
+          - HasCostCenter
+          - !If
+            - HasProject
+            - TagKeyValue:
+                - !Sub 'user:CostCenter$${CostCenter}'
+                - !Sub 'user:Project$${ProjectName}'
+            - TagKeyValue:
+                - !Sub 'user:CostCenter$${CostCenter}'
+          - !Ref 'AWS::NoValue'
       NotificationsWithSubscribers:
         - Notification:
             NotificationType: ACTUAL
@@ -187,10 +204,23 @@ Outputs:
     Description: 'Direct link to AWS Budgets console'
     Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/billing/home#/budgets'
 
-  CostCenterFilter:
-    Description: 'Cost center tag value this budget tracks'
-    Value: !Ref CostCenter
+  BudgetScope:
+    Description: 'What this budget tracks'
+    Value: !If
+      - HasCostCenter
+      - !If
+        - HasProject
+        - !Sub 'CostCenter=${CostCenter} AND Project=${ProjectName}'
+        - !Sub 'CostCenter=${CostCenter} (all projects)'
+      - 'Account-wide total spend (no tag filter)'
 
-  ProjectFilter:
-    Description: 'Project tag value this budget tracks (blank = all projects)'
-    Value: !If [HasProject, !Ref ProjectName, '(all projects)']
+  TagActivationRequired:
+    Condition: HasCostCenter
+    Description: >-
+      ACTION REQUIRED — this budget filters by a cost allocation tag. It will
+      silently track $0 until the tag is activated. Activate 'CostCenter' (and
+      'Project' if used) under Billing > Cost allocation tags in the MANAGEMENT
+      account. Activation takes ~24h and only captures spend incurred AFTER
+      activation. Until then, this budget is not measuring anything. Docs:
+      https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/activating-tags.html
+    Value: !Sub 'Activate cost allocation tag: CostCenter=${CostCenter}'

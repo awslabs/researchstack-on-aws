@@ -83,6 +83,23 @@ launch_role_policies = ["AmazonS3FullAccess", "AmazonEC2FullAccess", "AWSLambda_
   resources = ["*"]
 
 [[portfolio.products]]
+name = "fsx-lustre"
+display_name = "FSx for Lustre"
+description = "High-throughput parallel filesystem for compute-intensive I/O — HPC, ML training, genomics. Optionally links to an S3 bucket so files sync automatically."
+template = "../templates/storage/fsx-lustre.yaml"
+launch_role_policies = ["AmazonFSxFullAccess", "AmazonEC2FullAccess", "AWSLambda_FullAccess"]
+
+  # VPC CIDR lookup Lambda needs to create/delete its own IAM role
+  [[portfolio.products.custom_policy]]
+  actions = ["iam:CreateRole", "iam:DeleteRole", "iam:GetRole", "iam:PutRolePolicy", "iam:DeleteRolePolicy", "iam:AttachRolePolicy", "iam:DetachRolePolicy", "iam:PassRole", "iam:TagRole", "iam:UntagRole"]
+  resources = ["*"]
+
+  # Read access to the optional linked S3 bucket (Data Repository Association)
+  [[portfolio.products.custom_policy]]
+  actions = ["s3:GetObject", "s3:GetBucketLocation", "s3:ListBucket"]
+  resources = ["*"]
+
+[[portfolio.products]]
 name = "ec2-general-purpose"
 display_name = "General Purpose Compute (EC2)"
 description = "M-series instances for balanced CPU, memory, and networking workloads"
@@ -205,6 +222,6 @@ launch_role_policies = ["AmazonVPCFullAccess"]
 [[portfolio.products]]
 name = "budget-alert"
 display_name = "Budget Alert"
-description = "Monthly budget tracking by cost center with email alerts at 50%, 80%, and 100% thresholds. Optionally scoped to a specific project."
+description = "Monthly budget with email alerts at 50%, 80%, and 100% thresholds. Account-wide by default; optionally filter by cost center and project (requires cost allocation tags activated in the management account)."
 template = "../templates/governance/budget-alert.yaml"
 launch_role_policies = ["AWSBudgetsActionsWithAWSResourceControlAccess", "AmazonSNSFullAccess"]

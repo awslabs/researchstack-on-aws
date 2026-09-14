@@ -30,7 +30,7 @@ Cost optimization matters at every phase of the research lifecycle — from choo
 **S3 Files (Filesystem on S3)**
 - Mount an S3 bucket as a POSIX filesystem — read/write files directly at the cost of S3 (~13x cheaper than EFS Standard)
 - Best for single-instance workloads or read-heavy access patterns
-- EC2 templates default to auto-creating S3 Files storage — no extra setup needed
+- **The recommended storage choice for EC2** — set `SharedStorageBucketName` when deploying and the template creates an S3 Files filesystem mounted at `/mnt/s3files`. Storage is opt-in (decoupled from compute), so choose it deliberately — see [Storage Options for EC2](../templates/README.md#storage-options-for-ec2)
 - Use EFS instead when multiple instances need concurrent write access to the same files
 
 **Delete Unused Resources**
@@ -149,20 +149,24 @@ For organizations managing multiple accounts, [Cloud Intelligence Dashboards](ht
 
 ### Budget Alerts
 
-Use the **Budget Alert** template (`templates/governance/budget-alert.yaml`) to create automated budget tracking per cost center. The template:
-- Creates a monthly budget filtered by your `CostCenter` tag (optionally narrowed to a specific `Project`)
-- Sends email alerts at 50% (actual), 80% (actual), 100% (forecasted), and 100% (actual) of your budget
+Use the **Budget Alert** template (`templates/governance/budget-alert.yaml`) to create automated budget tracking. It sends email alerts at 50% (actual), 80% (actual), 100% (forecasted), and 100% (actual) of your monthly budget.
 
-Deploy via Service Catalog or CloudFormation:
+It has two modes:
+
+**Account-wide (default, no prerequisites).** Leave `CostCenter` blank and the budget tracks total account spend. Nothing to activate, works immediately — the simplest way to put a guardrail on a lab/project account. Best when you use one account per lab or grant (the recommended isolation model).
 ```bash
 aws cloudformation create-stack \
-  --stack-name grant-12345-budget \
+  --stack-name lab-monthly-budget \
   --template-body file://templates/governance/budget-alert.yaml \
   --parameters \
-    ParameterKey=BudgetName,ParameterValue=grant-12345-monthly \
+    ParameterKey=BudgetName,ParameterValue=lab-monthly \
     ParameterKey=BudgetAmountUSD,ParameterValue=5000 \
-    ParameterKey=CostCenter,ParameterValue=grant-12345 \
     ParameterKey=NotificationEmail,ParameterValue=pi@university.edu
+```
+
+**Per cost center (tag-filtered).** Set `CostCenter` (optionally `ProjectName`) to track spend for a specific grant across a shared account. This **requires the cost allocation tag to be activated first** — see [Activating Cost Allocation Tags](#activating-cost-allocation-tags). Until the tag is activated, a filtered budget silently tracks $0 (the template's stack outputs flag this). Activation is a management-account action and takes ~24h.
+```bash
+    ParameterKey=CostCenter,ParameterValue=grant-12345    # add to the parameters above
 ```
 
 Note: AWS Budgets evaluates cost data with a 12-24 hour lag. Budget alerts are safety nets, not real-time spending caps.

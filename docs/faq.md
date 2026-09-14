@@ -16,8 +16,9 @@ The CLI handles multipart uploads automatically for large files — no special s
 
 **How do I get data onto EFS or an EC2 instance?**
 
-The recommended default is S3 Files — EC2 templates auto-create an S3-backed filesystem mounted at `/mnt/s3files`. Upload your data to the backing S3 bucket (via console or CLI) and it appears on the filesystem automatically. For other approaches:
-- **Copy from S3 to EFS** (if using EFS): connect to your EC2 instance and run `aws s3 sync s3://my-bucket/ /mnt/efs/data/`
+The recommended path is S3 Files — set `SharedStorageBucketName` when you deploy an EC2 template and it creates an S3-backed filesystem mounted at `/mnt/s3files` (storage is opt-in, not automatic — see [Storage Options for EC2](../templates/README.md#storage-options-for-ec2)). Upload your data to the backing S3 bucket (via console or CLI) and it appears on the filesystem. For other approaches:
+- **Copy from S3 to EFS** (if using EFS via `EfsFileSystemId`): connect to your EC2 instance and run `aws s3 sync s3://my-bucket/ /mnt/efs/data/`
+- **Plain S3 + CLI** (if you set `S3BucketName` for access without a mount): `aws s3 sync s3://my-bucket/ /data/` on the instance
 - **rsync/scp over SSH** directly to an EC2 instance (requires a key pair and allowed IP): `rsync -avz ./my-data/ ec2-user@<IP>:/home/ec2-user/data/`
 
 **What about very large datasets (multi-TB)?**
@@ -59,8 +60,8 @@ SSM is more secure (no inbound ports, no key management, no public IP required) 
 
 **How do I transfer files to/from my instance?**
 
-- **S3 Files (default)**: EC2 templates auto-create an S3-backed filesystem at `/mnt/s3files`. Upload data to the S3 bucket and it appears on the mount. Write files to the mount and they sync to S3.
-- **S3 via CLI**: Grant the instance access to an S3 bucket (via the `S3BucketName` parameter), then use `aws s3 cp` or `aws s3 sync` from the instance.
+- **S3 Files (recommended)**: set `SharedStorageBucketName` at deploy time to create an S3-backed filesystem at `/mnt/s3files`. Upload data to the backing S3 bucket and it appears on the mount; write files to the mount and they sync to S3. (Opt-in — see [Storage Options for EC2](../templates/README.md#storage-options-for-ec2).)
+- **S3 via CLI**: Grant the instance access to an existing S3 bucket (via the `S3BucketName` parameter) — no mount — then use `aws s3 cp` or `aws s3 sync` from the instance. Best for high-I/O jobs (sync to local EBS, compute, sync results back).
 - **EFS**: Mount shared storage (via the `EfsFileSystemId` parameter) — any instance that mounts the same EFS filesystem sees the same files with real-time consistency.
 - **SCP/SFTP**: Provide a key pair when deploying and use a public subnet — port 22 opens automatically when a key pair is set. Then use `scp` or `sftp` from your local machine. Without a key pair, port 22 stays closed.
 
@@ -84,7 +85,7 @@ Every resource deployed by ResearchStack is automatically tagged with `Project`,
 
 **How do I set up budget alerts?**
 
-Deploy the `budget-alert.yaml` template with your cost center and monthly budget amount. You'll get email alerts at 50%, 80%, and 100% of your budget. See the [Cost Optimization Guide](cost-optimization-guide.md#budget-alerts) for deployment instructions.
+Deploy the `budget-alert.yaml` template with a monthly budget amount and notification email. You'll get email alerts at 50%, 80%, and 100% of your budget. By default it's account-wide (no setup needed) — leave `CostCenter` blank. To track a specific grant instead, set `CostCenter`, but that requires activating the cost allocation tag in the management account first (otherwise the budget silently tracks $0). See the [Cost Optimization Guide](cost-optimization-guide.md#budget-alerts) for both modes.
 
 **Will my instances stop automatically if I forget?**
 

@@ -13,7 +13,7 @@ Have questions about connecting, costs, data transfer, or security? See the [FAQ
 ## Available Templates
 
 ### Networking (`networking/`)
-- **research-vpc.yaml** — Reusable VPC with public/private subnets, NAT gateway, S3 gateway endpoint, and configurable AZs. Note: the NAT gateway has a base cost (~$32/mo) plus data processing charges — delete the stack when not in use to avoid idle costs.
+- **research-vpc.yaml** — Reusable VPC with public/private subnets, NAT gateway, S3 gateway endpoint, and configurable AZs (spans 3 AZs by default, so scarce instance types like GPUs have more AZs to land in; set `AvailabilityZones=2` for a smaller footprint). Note: the NAT gateway has a base cost (~$32/mo) plus data processing charges — delete the stack when not in use to avoid idle costs.
 
 ### Storage (`storage/`)
 - **s3-research-bucket.yaml** — Secure S3 bucket with versioning, encryption, intelligent tiering, and HTTPS-only policy
@@ -29,7 +29,23 @@ Have questions about connecting, costs, data transfer, or security? See the [FAQ
 - **ec2-spot-fleet.yaml** — Cost-optimized Spot instances across multiple instance generations and AZs. Pick a family (general/compute/memory) and size — the fleet automatically selects the best available Spot pool. Up to 70% savings vs On-Demand.
 - **parallelcluster-hpc.yaml** — Full HPC cluster with Slurm scheduler, shared storage, and optional DCV remote desktop. See the [ParallelCluster Guide](../docs/parallelcluster-guide.md) for deployment, job submission, and post-deploy customization (adding queues, multi-user, login nodes).
 
-All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. EC2 templates auto-create S3 Files shared storage by default (mounted at `/mnt/s3files`, no cost until you store data). Set `AutoCreateStorage` to `none` to opt out. ParallelCluster auto-creates an EFS volume at `/shared` unless you provide an existing `EfsFileSystemId`. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
+All EC2 templates require a VPC and subnet — deploy the Research VPC template first if you don't have one. Storage is decoupled from compute: an EC2 instance is created with no shared storage unless you ask for it, so you choose the option that fits your workload (see [Storage Options for EC2](#storage-options-for-ec2) below). ParallelCluster auto-creates an EFS volume at `/shared` unless you provide an existing `EfsFileSystemId`. Instance types are constrained by family (e.g., M-series for general purpose) but not pinned to specific generations, so new instance types work automatically as AWS releases them.
+
+### Storage Options for EC2
+
+Every EC2 template offers four ways to attach storage. All are optional and off by default — pick one (or none). **S3 Files is the recommended default** for most single-instance research workloads: it's ~13x cheaper than EFS and gives you a POSIX filesystem backed by S3.
+
+| Option | Parameter | Mount / access | When to use |
+|--------|-----------|----------------|-------------|
+| **S3 Files (new)** — *recommended* | `SharedStorageBucketName` | `/mnt/s3files` | Simplest path. Creates a new S3 Files filesystem + backing bucket in one step. Best for single-instance work. |
+| **S3 Files (existing)** | `S3FilesFileSystemId` | `/mnt/s3files` | Reuse an S3 Files filesystem you already deployed (via `s3-files.yaml`) — e.g. to share it across instances or keep data between runs. |
+| **EFS** | `EfsFileSystemId` | `/mnt/efs` | Multiple instances writing the same files concurrently, with real-time consistency. Deploy `efs-shared-storage.yaml` first. |
+| **Plain S3 (CLI access, no mount)** | `S3BucketName` | `aws s3 cp/sync` | Grants the instance read/write to an existing bucket. No mount — you move data explicitly. Good for high-I/O jobs where you sync to fast local EBS, compute, then sync results back. |
+
+Notes:
+- **New S3 Files:** set `SharedStorageBucketName=my-project` → the template creates an S3 Files filesystem backed by a bucket named `my-project-{account}-{region}`, mounted at `/mnt/s3files`. Data written to the mount syncs to S3.
+- **Mounting an existing *plain* bucket:** there's no single parameter for this — S3 Files needs its own filesystem in front of the bucket. Deploy `s3-files.yaml` against the bucket first, then pass the resulting filesystem ID as `S3FilesFileSystemId`. If you only need to read/write the bucket from the CLI, use `S3BucketName` instead (no mount).
+- Leaving all four blank (the default) gives you an instance with only its EBS root volume — fine for quick experiments or when you'll attach storage later.
 
 ### Machine Learning (`ml/`)
 - **sagemaker-studio.yaml** — Managed Jupyter environment with GPU support. Configured for [IAM Identity Center](https://aws.amazon.com/iam/identity-center/) (IDC) authentication — requires IDC to be enabled in your account. After deployment, [assign users or IDC groups to the domain](https://docs.aws.amazon.com/sagemaker/latest/dg/domain-user-profile-add-remove.html).
